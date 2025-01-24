@@ -1,0 +1,72 @@
+{
+  "name": "vscode-cmsis-debugger",
+  "displayName": "Arm CMSIS Debugger",
+  "description": "Run and debug embedded and IoT projects on Arm Cortex-M single or multi core devices. Connects via pyOCD to CMSIS-DAP or other GDB servers.",
+  "version": "0.0.0",
+  "preview": true,
+  "publisher": "Arm",
+  "author": "Jens Reinecke <jens.reinecke@arm.com>",
+  "license": "SEE LICENSE IN LICENSE",
+  "main": "dist/main.js",
+  "repository": "https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger",
+  "qna": "https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/issues",
+  "bugs": {
+    "url": "https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/issues"
+  },
+  "icon": "media/arm.png",
+  "galleryBanner": {
+    "color": "#333E48",
+    "theme": "dark"
+  },
+  "engines": {
+    "vscode": "^1.63.0"
+  },
+  "categories": [
+    "Debuggers",
+    "Extension Packs"
+  ],
+  "keywords": [
+    "arm",
+    "microcontroller",
+    "embedded",
+    "CMSIS"
+  ],
+  "scripts": {
+    "prepare": "yarn run build",
+    "clean": "git clean -f -x ./node_modules ./dist ./coverage",
+    "build": "webpack --mode production && yarn lint",
+    "watch": "webpack -w",
+    "lint": "eslint .",
+    "package": "vsce package --yarn"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.8",
+    "@types/vscode": "^1.63.0",
+    "@typescript-eslint/eslint-plugin": "^8.21.0",
+    "@typescript-eslint/parser": "^8.21.0",
+    "@vscode/vsce": "^3.2.1",
+    "eslint": "^9.19.0",
+    "ts-loader": "^9.5.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5",
+    "typescript-eslint": "8.21.0",
+    "webpack": "^5.97.1",
+    "webpack-cli": "^6.0.1"
+  },
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "vsce": {
+    "yarn": true,
+    "baseContentUrl": "https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/blob/main/README.md"
+  },
+  "extensionPack": [
+    "arm.environment-manager",
+    "eclipse-cdt.cdt-gdb-vscode",
+    "eclipse-cdt.memory-inspector",
+    "eclipse-cdt.peripheral-inspector"
+  ],
+  "extensionKind": [
+    "workspace"
+  ]
+}
