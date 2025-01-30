@@ -14,5 +14,5 @@
  * limitations under the License.
  */
 
-export const PACKAGE_NAME = 'vscode-cmsis-debugger';
-export const DISPLAY_NAME = 'Arm CMSIS Debugger';
+export * from './gdbtarget-configuration';
+export * from './gdbtarget-configuration-provider';

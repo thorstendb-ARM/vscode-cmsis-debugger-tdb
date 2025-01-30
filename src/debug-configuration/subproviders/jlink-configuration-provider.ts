@@ -15,6 +15,19 @@
  */
 
 import * as vscode from 'vscode';
-import * as manifest from './manifest';
+import { logger } from '../../logger';
 
-export const logger = vscode.window.createOutputChannel(manifest.DISPLAY_NAME, { log: true });
+export const JLINK_SERVER_TYPE_REGEXP = /.*JLinkGDBServer(|.exe)\s*$/i;
+
+export class JlinkConfigurationProvider implements vscode.DebugConfigurationProvider {
+
+    public async resolveDebugConfigurationWithSubstitutedVariables(
+        _folder: vscode.WorkspaceFolder | undefined,
+        debugConfiguration: vscode.DebugConfiguration,
+        _token?: vscode.CancellationToken
+    ): Promise<vscode.DebugConfiguration | null | undefined> {
+        logger.debug('Resolving J-Link configuration');
+        return debugConfiguration;
+    }
+
+}
