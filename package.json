@@ -57,13 +57,12 @@
             "program": "${command:cmsis-csolution.getBinaryFile}",
             "gdb": "arm-none-eabi-gdb",
             "initCommands": [
-              "monitor reset halt",
               "load",
               "break main",
               "continue"
             ],
             "target": {
-              "server": "pyOCD",
+              "server": "pyocd",
               "port": "3333"
             },
             "cmsis": {
@@ -83,13 +82,12 @@
               "program": "^\"\\${command:cmsis-csolution.getBinaryFile}\"",
               "gdb": "arm-none-eabi-gdb",
               "initCommands": [
-                "monitor reset halt",
                 "load",
                 "break main",
                 "continue"
               ],
               "target": {
-                "server": "pyOCD",
+                "server": "pyocd",
                 "port": "3333"
               },
               "cmsis": {

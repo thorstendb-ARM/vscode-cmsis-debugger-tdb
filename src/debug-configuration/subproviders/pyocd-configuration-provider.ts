@@ -42,36 +42,25 @@ export class PyocdConfigurationProvider implements vscode.DebugConfigurationProv
         const parameters = debugConfiguration.target.serverParameters ??= [];
         // gdbserver
         if (await this.shouldAppendParam(parameters, 'gdbserver')) {
-            parameters.push('gdbserver');
-        }
-        // target
-        if (await this.shouldAppendParam(parameters, '--target')) {
-            parameters.push('--target');
-            parameters.push('${command:cmsis-csolution.getDeviceName}');
-        }
-        // pack
-        if (await this.shouldAppendParam(parameters, '--pack')) {
-            parameters.push('--pack');
-            parameters.push('${command:cmsis-csolution.getDfpPath}');
+            // Prepend, it must be the first argument
+            parameters.unshift('gdbserver');
         }
         // port (use value defined in 'port' outside 'serverParamters')
         const port = debugConfiguration.target?.port;
-        if (await this.shouldAppendParam(parameters, '--port') && port) {
+        if (port && await this.shouldAppendParam(parameters, '--port')) {
             parameters.push('--port');
             parameters.push(`${port}`);
         }
-        // cbuild-run (ToDo: comment in the code when pyOCD supports it)
-        /*
+        // cbuild-run
         const cbuildRunFile = debugConfiguration.cmsis?.cbuildRunFile;
-        if (await this.shouldAppendParam(parameters, '--cbuild-run') && cbuildRunFile) {
+        if (cbuildRunFile && await this.shouldAppendParam(parameters, '--cbuild-run')) {
             parameters.push('--cbuild-run');
             parameters.push(`${cbuildRunFile}`);
         }
-        */
         return debugConfiguration;
     }
 
-    public async resolveDebugConfiguration(
+    public async resolveDebugConfigurationWithSubstitutedVariables(
         _folder: vscode.WorkspaceFolder | undefined,
         debugConfiguration: vscode.DebugConfiguration,
         _token?: vscode.CancellationToken
