@@ -1,0 +1,69 @@
+name: Issue Report
+description: Report a bug, request a feature, or ask a question
+title: "[Issue]: "
+labels: []
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: "### Thank you for contributing! Please select the type of issue."
+
+  - type: dropdown
+    id: issue_type
+    attributes:
+      label: "Issue Type"
+      description: "What kind of issue are you reporting?"
+      options:
+        - Bug
+        - Feature
+        - Documentation
+        - Question
+        - Idea
+        - Task
+    validations:
+      required: true
+
+  - type: input
+    id: summary
+    attributes:
+      label: "Issue Summary"
+      description: "Briefly describe the issue or feature request."
+      placeholder: "e.g., App crashes when opening settings"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: "Description"
+      description: "Provide details about the issue or request."
+      placeholder: "Explain the problem or feature in detail."
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: "Steps to Reproduce (for Bugs)"
+      description: "List the steps to reproduce the issue (if applicable)."
+      placeholder: |
+        1. Go to '...'
+        2. Click on '...'
+        3. See error"
+    validations:
+      required: false
+
+  - type: textarea
+    id: expected_behavior
+    attributes:
+      label: "Expected Behavior"
+      description: "What should happen instead?"
+      placeholder: "Describe what you expected to happen."
+
+  - type: textarea
+    id: additional_info
+    attributes:
+      label: "Additional Information"
+      description: "Any extra context or screenshots?"
+      placeholder: "Paste logs, screenshots, or links here."
