@@ -1,6 +1,8 @@
 name: Issue Report
-description: Report a bug, request a feature, or ask a question
-title: "[Issue]: "
+description: Report a bug
+title: "[Bug]: "
+type: "Bug"
+projects: "github/21"
 labels: []
 assignees: []
 
@@ -9,26 +11,11 @@ body:
     attributes:
       value: "### Thank you for contributing! Please select the type of issue."
 
-  - type: dropdown
-    id: issue_type
-    attributes:
-      label: "Issue Type"
-      description: "What kind of issue are you reporting?"
-      options:
-        - Bug
-        - Feature
-        - Documentation
-        - Question
-        - Idea
-        - Task
-    validations:
-      required: true
-
   - type: input
     id: summary
     attributes:
-      label: "Issue Summary"
-      description: "Briefly describe the issue or feature request."
+      label: "Summary"
+      description: "Briefly describe the bug."
       placeholder: "e.g., App crashes when opening settings"
     validations:
       required: true
@@ -37,16 +24,16 @@ body:
     id: description
     attributes:
       label: "Description"
-      description: "Provide details about the issue or request."
-      placeholder: "Explain the problem or feature in detail."
+      description: "Provide details about the bug."
+      placeholder: "Explain the problem in detail."
     validations:
       required: true
 
   - type: textarea
     id: steps
     attributes:
-      label: "Steps to Reproduce (for Bugs)"
-      description: "List the steps to reproduce the issue (if applicable)."
+      label: "Steps to Reproduce"
+      description: "List the steps to reproduce the bug."
       placeholder: |
         1. Go to '...'
         2. Click on '...'
