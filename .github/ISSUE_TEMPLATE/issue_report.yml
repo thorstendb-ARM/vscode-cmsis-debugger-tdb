@@ -1,4 +1,4 @@
-name: Issue Report
+name: Bug Report
 description: Report a bug
 title: "[Bug]: "
 type: "Bug"
@@ -9,7 +9,7 @@ assignees: []
 body:
   - type: markdown
     attributes:
-      value: "### Thank you for contributing! Please select the type of issue."
+      value: "### Thank you for reporting a problem!"
 
   - type: input
     id: summary
@@ -25,7 +25,7 @@ body:
     attributes:
       label: "Description"
       description: "Provide details about the bug."
-      placeholder: "Explain the problem in detail."
+      placeholder: "Explain the unexpected behavior in detail."
     validations:
       required: true
 
