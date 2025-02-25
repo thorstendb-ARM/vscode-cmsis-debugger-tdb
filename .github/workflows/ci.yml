@@ -29,6 +29,30 @@ jobs:
           always-auth: true
           cache: 'yarn'
 
+      - name: Set version
+        run: |
+          case ${{ github.event_name }} in
+            release)
+              TAG="${{ github.event.release.tag_name }}"
+              yarn version --no-git-tag-version --new-version "${TAG#v}"
+              ;;
+            pull_request)
+              DESCRIBE=$(git describe --tags | grep -Eo 'v[0-9]+\.[0-9]+\.[0-9]+')
+              QUALIFIER=$(git describe --tags | grep -Eo '\-g[0-9a-f]+$')
+              yarn version -s --no-git-tag-version --new-version "${DESCRIBE#v}"
+              yarn version --no-git-tag-version --prepatch --preid "pr${{ github.event.number }}${QUALIFIER}"
+              ;;
+            *)
+              DESCRIBE=$(git describe --tags | grep -Eo 'v[0-9]+\.[0-9]+\.[0-9]+')
+              QUALIFIER=$(git describe --tags | grep -Eo '[0-9]+\-g[0-9a-f]+$')
+              yarn version -s --no-git-tag-version --new-version "${DESCRIBE#v}"
+              yarn version --no-git-tag-version --prepatch --preid "${{ github.ref_name }}${QUALIFIER}"
+              ;;
+          esac
+          VERSION="$(jq -r ".version" < package.json)"
+          sed -i "s/## Unreleased/## ${VERSION}/" CHANGELOG.md
+          echo "Version is ${VERSION}"
+
       - name: Build
         env:
           GITHUB_TOKEN: ${{github.token}}
@@ -42,8 +66,21 @@ jobs:
         with:
           name: dist
           path: |
+            ./CHANGELOG.md
+            ./package.json
             ./dist
           retention-days: 1
+
+      - name: Commit changelog
+        if: github.event_name == 'release'
+        run: |
+          sed -i '3i ## Unreleased\n' CHANGELOG.md
+          git checkout main
+          git config user.name github-actions
+          git config user.email git@github.com
+          git add CHANGELOG.md
+          git commit -m "Update CHANGELOG.md after release [skip ci]"
+          git push
 
   package:
     name: Package
@@ -73,7 +110,7 @@ jobs:
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
         with:
           name: dist
-          path: dist
+          path: .
 
       - name: Cache tools
         uses: actions/cache@0c907a75c2c80ebcb7f088228285e798b750cf8f # v4.2.6
