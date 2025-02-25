@@ -1,4 +1,4 @@
-# Arm CMSIS Debugger Extension for Visual Studio Code
+# Arm CMSIS Debugger Extension for Visual Studio Code (In Progress)
 
 The Arm CMSIS Debugger extension for Visual Studio Code is an extension pack demonstrating how to combine technologies from various open source projects to create a comprehensive debug platform for Arm based IoT solutions. 
 
