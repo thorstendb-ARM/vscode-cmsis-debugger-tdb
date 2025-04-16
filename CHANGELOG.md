@@ -1,6 +1,17 @@
 # Change Log
 
-## Unreleased
+## 0.1.1
+- Fixes [#153](https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/issues/153): PATH variable in terminal sometimes loses modifications from other extensions.
+- Fixes [#155](https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/issues/155): Go-to-main in `initCommands` of the `launch.json` leaves behind the breakpoint.
+- Partially implements [#96](https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/issues/96): Enable Peripheral Inspector.
+  - Extracts first SVD file path found in `*.cbuild-run.yml` debug configuration file to automatically set up Peripheral Inspector.
+- Adds initial version of extension [documentation](./docs/index.md).
+- Updates included pyOCD distribution
+  - Fixes [#133](https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/issues/133): Adds default memory map for Cortex-M devices.
+  - Improves memory map creation and flash algorithms sorting.
+  - Selects current processor core (for example used for flash programming) based on active gdb server connection.
+
+## 0.1.0
 - Updates included pyOCD distribution
   - Fixes [#92](https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/issues/92): `monitor reset halt` command fails for LPCXpresso55S69 if using CMSIS Pack support in pyOCD.
   - Fixes [#93](https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/issues/93): Download to LPC55S69 flash with GDB and pyOCD ends in errors.
