@@ -1,10 +1,15 @@
 # Change Log
 
-## Unreleased
+## 0.3.0
 
-- Switch away from `pre-release` distribution channel. Extension remains at `preview` status.
-- Included [Microsoft® Serial `Monitor`](https://marketplace.visualstudio.com/items?itemName=ms-vscode.vscode-serial-monitor)
+- Switches away from `pre-release` distribution channel. Extension remains at `preview` status.
+- Includes Microsoft® [`Serial Monitor`](https://marketplace.visualstudio.com/items?itemName=ms-vscode.vscode-serial-monitor)
 in extension pack.
+- Updates [README](https://marketplace.visualstudio.com/items?itemName=Arm.vscode-cmsis-debugger) with usage documentation.
+- Updates included pyOCD distribution
+    - Improves robustness of debug sequence execution.
+    - Updates behavior when `cbuild-run` target clashes with an internally registered target, to overwrite.
+    - Sets debugger clock based on the `debugger` node in `*.cbuilld-run.yml` file.
 
 ## 0.2.0
 
