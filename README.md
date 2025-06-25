@@ -4,230 +4,132 @@
 
 # Arm CMSIS Debugger
 
-The Arm® CMSIS Debugger is an extension pack for Visual Studio Code® that demonstrates how to combine technologies from
-various open source projects to create a comprehensive debug platform for Arm-based IoT solutions. It allows to install
-multiple separate extensions together.
 
-- [Arm CMSIS Debugger](#arm-cmsis-debugger)
-    - [Included Extensions](#included-extensions)
-    - [Recommended Extensions](#recommended-extensions)
-    - [Debug Setup](#debug-setup)
-    - [Start Debugging](#start-debugging)
-    - [Flash and Run](#flash-and-run)
-    - [Run and Debug view](#run-and-debug-view)
-    - [Extension Functionality](#extension-functionality)
-    - [Known Limitations and Workarounds](#known-limitations-and-workarounds)
-    - [Related projects](#related-projects)
-    - [Trademarks](#trademarks)
+The Arm® CMSIS Debugger extension pack is a comprehensive debug platform for Arm Cortex-M processor-based devices that uses the GDB/MI protocol.
 
-## Included Extensions
+- Supports single and multi-core processor systems.
+- Built-in RTOS kernel support for FreeRTOS, RTX, ThreadX, and Zephyr.
+- Wide debug adapter support for CMSIS-DAP (ULink, MCULink, NuLink, etc.), JLink, and ST-Link.
+- Can be combined with other VS Code debug extensions, such as those for Linux application debugging.
 
-The following extensions are included in this extension pack:
+The Arm CMSIS Debugger includes [pyOCD](https://pyocd.io/) for target connection and Flash download, [GNU GDB](https://www.sourceware.org/gdb/documentation/) for core debug features, and adds these VS Code extensions:
 
-- [CDT™ GDB Debug Adapter Extension](https://marketplace.visualstudio.com/items?itemName=eclipse-cdt.cdt-gdb-vscode),
-an Eclipse CDT.cloud extension that supports debugging using GDB and any other debuggers that
-supports the MI protocol.
+- [CDT™ GDB Debug Adapter Extension](https://marketplace.visualstudio.com/items?itemName=eclipse-cdt.cdt-gdb-vscode) for starting applications (_launch_) or connecting to running systems (_attach_).
+- [Memory Inspector](https://marketplace.visualstudio.com/items?itemName=eclipse-cdt.memory-inspector) provides a powerful and configurable memory viewer.
+- [Peripheral Inspector](https://marketplace.visualstudio.com/items?itemName=eclipse-cdt.peripheral-inspector) provides a structured view to device peripheral registers during debugging.
+- [Serial Monitor](https://marketplace.visualstudio.com/items?itemName=ms-vscode.vscode-serial-monitor) to view output from and send messages to serial (UART) or TCP ports.
 
-- [Memory Inspector](https://marketplace.visualstudio.com/items?itemName=eclipse-cdt.memory-inspector), an Eclipse
-CDT.cloud extension that provides a powerful and configurable memory viewer that works with debug adapters.
+This extension is [free to use](https://marketplace.visualstudio.com/items/Arm.vscode-cmsis-debugger/license) and you can install it individually or as part of the [Arm Keil® Studio pack](https://marketplace.visualstudio.com/items?itemName=Arm.keil-studio-pack). For optimum debugger experience use it with these extensions (included in Arm Keil Studio pack):
 
-- [Peripheral Inspector](https://marketplace.visualstudio.com/items?itemName=eclipse-cdt.peripheral-inspector), an
-EclipseCDT.cloud extension that provides a CMSIS SVD viewer and works with debug adapters.
+- [Arm CMSIS Solution](https://marketplace.visualstudio.com/items?itemName=Arm.cmsis-csolution) a user interface for _csolution projects_ that simplifies the [Run and Debug configuration](https://mdk-packs.github.io/vscode-cmsis-solution-docs/configuration.html#configure-run-and-debug).
+- [Arm Tools Environment Manager](https://marketplace.visualstudio.com/items?itemName=Arm.environment-manager) installs tools (compiler, simulation models, and utilities) for software development.
 
-- [Serial Monitor](https://marketplace.visualstudio.com/items?itemName=ms-vscode.vscode-serial-monitor),
-an extension that provides a serial monitor to view output from as well as send messages to serial ports.
+## Debugger Configuration
 
-## Recommended Extensions
+VS Code uses the file `.vscode/launch.json` to configure target-specific debug parameters such as project files, device, and debug adapter. The Arm CMSIS Solution automatically generates this file based on the _csolution project_ with all [required settings](https://mdk-packs.github.io/vscode-cmsis-solution-docs/configuration.html#configure-run-and-debug), streamlining this setup. It provides both _launch_ and _attach_ configurations; for multi-processor system each core gets an _attach_ configuration, while the start core also gets a _launch_ configuration.
 
-We recommend to install the following extensions to improve the user experience:
+To start debugging, the CMSIS Solution offers action buttons and menu commands.
 
-- [Arm Tools Environment Manager](https://marketplace.visualstudio.com/items?itemName=Arm.environment-manager), an
-extension that allows you to download, install, and manage software development tools using
-[Microsoft Vcpkg](https://vcpkg.io/en/index.html) artifacts. For example, use this extension to install the
-[Arm GNU Toolchain](https://developer.arm.com/Tools%20and%20Software/GNU%20Toolchain) which comes with a GDB
-variant for Arm CPUs.
+![CMSIS-View - action buttons](https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/raw/main/images/cmsis-view-actions.png)
 
-- [Arm CMSIS Solution](https://marketplace.visualstudio.com/items?itemName=Arm.cmsis-csolution), an extension that
-is a graphical user interface for csolution projects that use the
-[CMSIS-Toolbox](https://open-cmsis-pack.github.io/cmsis-toolbox/). Use this extension to build your csolution
-projects, to generate `*.cbuild-run.yml` debug configuration files, and to make use of contributed commands in
-your debug launch configurations.
+- **Load & Debug application** starts the CMSIS Debugger with _launch_ configuration.
+- **Load & Run application** starts program execution and the GDB server; use then _attach_ configurations to connect to the running system.
 
-## Debug Setup
+## Debugger User Interface
 
-The debug setup requires a GDB installation supporting the GDB remote protocol and that can connect to a
-GDB server like pyOCD.
+Many features of the CMSIS Debugger extension are exposed in the **Run and Debug** view of VS Code.
 
-We recommend to install the [`Arm GNU Toolchain`](https://developer.arm.com/Tools%20and%20Software/GNU%20Toolchain)
-using the `Arm Tools Environment Manager` extension. It comes with `arm-none-eabi-gdb` which is used in the
-Arm CMSIS Debugger default debug configurations.
+1. **Start debugging** selects a configuration: _launch_ to start download/debug, _attach_ to connect with a running system.
+2. **Debug Toolbar** has buttons for the most common debugging actions that control execution.
+3. **Debug Statusbar** shows the configuration along with the workspace name. A color change indicates an active debug session.
 
-### pyOCD Debug Setup
+![Run and Debug view](https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/raw/main/images/RunAndDebugView.png)
 
-This extension includes a pyOCD distribution which is used by default.
+Most editor features are available during debugging. For example, developers can use Find and edit source code to correct program errors.
 
-If you wish to use a different pyOCD installation, enter the full path to the executable (including the file name)
-in the `target`>`server` setting.
+The **Run and Debug** view provides:
 
-### SEGGER® J-LINK® Debug Setup
+- [**VARIABLES**](#variables) section which include local function variables and CPU register values.
+- [**WATCH**](#watch) section which allows to view user-defined expressions, for example variable values.
+- [**CALL STACK**](#call-stack) section that shows active RTOS threads along with the call stack.
+- [**BREAKPOINTS**](#breakpoints) section for managing stop points in application execution to inspect the state.
 
-Install the latest
-[J-LINK Software and Documentation Pack](https://www.segger.com/downloads/jlink/#J-LinkSoftwareAndDocumentationPack)
-from [SEGGER](https://www.segger.com/). Ensure all required drivers and host platform specific settings are done.
+> **TIP**<br>
+> Click on a _line number badge_ to navigate to the source code line.
 
-The extension expects the installation folder to be on your system `PATH` environment variable. Alternatively, update
-your debug configuration's `target`>`server` setting to contain the full path to the J-LINK GDB server executable
-(including the file name).
+Other debugger specific views:
 
-## Start Debugging
-
-There are two ways to start a debug session:
-
-1. If you have installed the CMSIS Solution extension, in the **CMSIS view**
-   ![CMSIS view](https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/raw/main/images/cmsis-view-icon.png),
-   click on the **Debug** icon
-   ![Debug icon in the CMSIS view](https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/raw/main/images/debug-icon.png).
-   The configuration for the debugger configured in the active `target-set` is written to the launch.json file and will
-   be used to start the debug session.
-
-2. In the **Run and debug view**
-![Run and debug view](https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/raw/main/images/run-debug-view-icon.png),
-click the **Play** icon
-   next to the selected debug connection
-   ![Play button](https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/raw/main/images/play-debug-button.png).
-   The debug starts with the selected configuration.
-
-The debugger loads the application program and executes the startup code. When program execution stops (by default at
-`main`), the source code opens at the next executable statement which is marked with a yellow arrow in the editor:
-
-![Execution stopped at main](https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/raw/main/images/stop-at-main.png)
-
-Most editor features are available in debug mode. For example, developers can use the Find command and can correct program
-errors.
-
-## Flash and Run
-
-If you do not wish to enter a debug session, you can issue a flash download only, followed by a reset of the device.
-
-In the **CMSIS view** ![CMSIS view](https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/raw/main/images/cmsis-view-icon.png),
-click on the **Run** icon
-![Run icon in the CMSIS view](https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/raw/main/images/run-icon.png).
-
-## Run and Debug view
-
-![Run and Debug view](https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/raw/main/images/run-debug-view.png)
-
-The **Run and debug view**
-![Run and debug view](https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/raw/main/images/run-debug-view-icon.png)
-differs from the other views in the following aspects:
-
-- [Debug toolbar](#debug-toolbar) is available.
-
-- [VARIABLE section](#variables-section) is available.
-
-- [WATCH section](#watch-section) is available.
-
-- [CALL STACK section](#call-stack-section) is available.
-
-- [BREAKPOINTS section](#breakpoints-section) is available.
-
-- [Peripheral Inspector](#peripheral-inspector) is available (requires configuration).
-
-- [Memory Inspector](#memory-inspector) can be opened.
-
-- [Disassembly View](#disassembly-view) can be opened.
-
-- [Debug Console](#debug-console) can be used to enter GDB commands.
-
-> 📝 **Note:**  
-> The following is using information from
-> [Debug code with Visual Studio Code](https://code.visualstudio.com/docs/debugtest/debugging#_debugger-user-interface),
-> [Eclipse CDT Cloud - Memory Inspector](https://github.com/eclipse-cdt-cloud/vscode-memory-inspector),
-> [Eclipse CDT Cloud - Peripherals Inspector](https://github.com/eclipse-cdt-cloud/vscode-peripheral-inspector).
+- [**Disassembly**](#disassembly) shows assembly instructions and supports run control, for example with stepping and breakpoints.
+- [**Debug Console**](#debug-console) lists debug output messages and allows to enter an expressions or GDB commands.
+- [**Peripherals**](#peripherals) show the device peripheral registers and allows to change their values.
+- [**Serial Monitor**](#serial-monitor) uses serial or TCP communication to interact with application I/O functions (`printf`, `getc`, etc.).
 
 ### Debug toolbar
 
-Once a debug session starts, the **Debug toolbar** appears at the top of the window. The toolbar contains actions to
-control the flow of the debug session, such as stepping through code, pausing execution, and stopping the debug
-session.
+During debugging, the **Debug toolbar** contains actions to control the flow of the debug session, such as stepping through code, pausing execution, and stopping the debug session.
 
 ![Debug toolbar](https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/raw/main/images/debug-toolbar.png)
 
-The following table describes the actions available in the debug toolbar:
-
 | Action | Description |
 |--------|-------------|
-| Continue/Pause (F5) | **Continue**: Resume normal program/script execution (up to the next breakpoint).<br>**Pause**: Inspect code executing at the current line and debug line-by-line. |
-| Step Over (F10) | Execute the next method as a single command without inspecting or following its component steps. |
-| Step Into (F11) | Enter the next method to follow its execution line-by-line. |
-| Step Out (Shift + F11) | When inside a method or subroutine, return to the earlier execution context by completing remaining lines of the current method as though it were a single command. |
-| Restart (Shift + Ctrl/Cmd + F5) | Terminate the current program execution and start debugging again using the current run configuration. |
-| Stop (Shift + F5) | Terminate the current program execution. |
+| Continue/Pause | **Continue**: Resume normal program execution (up to the next breakpoint).<br>**Pause**: Inspect code executing at the current location. |
+| Step Over | Execute the next statement as a single command without inspecting or following its component steps. |
+| Step Into | Enter the next statement to follow its execution line-by-line. |
+| Step Out | When inside a function, return to the earlier execution context by completing remaining lines of the current method as though it were a single command. |
+| Restart | Terminate the current program execution and start debugging again using the current run configuration. |
+| Stop/Disconnect | **Stop**: Terminate the current debug session.<br>**Disconnect:** Detach debugger from a core without changing the execution status (running/pause). |
+| Debug Session | For multi-core devices, the list of active debug sessions and switch between them. |
+| Reset Target | Reset the target device. |
 
-If your debugging sessions involve multiple targets (for example, a multi-core device), the debug toolbar shows the
-list of sessions and lets you switch between them.
+### VARIABLES
 
-### VARIABLES section
-
-During a debugging session, you can inspect variables, expressions, and registers in the **VARIABLES section** of the
-**Run and Debug view** or by hovering over their source in the editor. Variable values and expression evaluation are
-relative to the selected stack frame in the **CALL STACK section**. In case of multi-core, registers are relative to
-the core that you are debugging.
+During a debugging, you can inspect variables, expressions, and registers in the **VARIABLES** section of the **Run and Debug view** or by hovering over a variable or expression in the source code editor. Variable values and expression are evaluated in context of the selected stack frame in the [**CALL STACK**](#call-stack) section. In case of multi-core, the content is relative to active debug session.
 
 ![VARIABLES section](https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/raw/main/images/VARIABLES-section.png)
 
-To change the value of a variable during the debugging session, right-click on the variable in the
-**VARIABLES section** and select **Set Value**.
+To change the value of a variable during the debugging session, right-click on the variable in the **VARIABLES** section and select **Set Value**.
 
 You can use the **Copy Value action** to copy the variable's value, or the **Copy as Expression action** to copy an
-iexpression to access the variable. You can then use this expression in the [**WATCH section**](#watch-section).
+expression to access the variable. You can then use this expression in the [**WATCH**](#watch) section.
 
 To filter variables by their name or value, use the Alt/Opt + Ctrl/Cmd + F keyboard shortcut while the focus is on the
 **VARIABLES section**, and type a search term.
 
 ![Searching in VARIABLES section](https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/raw/main/images/search-VARIABLES.png)
 
-### WATCH section
+### WATCH
 
-Variables and expressions can also be evaluated and watched in the Run and Debug view's WATCH section.
+Variables and expressions can also be evaluated and watched in the WATCH section.
+You can use the Copy Value action to copy the variable's value, or the Copy as Expression action to copy an expression to access the variable. You can then use this expression in the WATCH section.
 
 ![WATCH section](https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/raw/main/images/WATCH-section.png)
 
-### CALL STACK section
+### CALL STACK
 
-The **CALL STACK** sections shows objects that are currently on stack. Threads are shown for applications
-that use an RTOS. Each object is associated to its location or value, and type.
+The **CALL STACK** sections shows function call tree that is currently on stack. Threads are shown for applications
+that use an RTOS. Each function call is associated to its location and when source code is available a _line number badge_ is shown. A click on this badge navigates to source file location.
+
+The window content is updated whenever program execution stops.
 
 ![CALL STACK section](https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/raw/main/images/call-stack-section.png)
 
-The window content is updated automatically whenever program execution stops.
+### BREAKPOINTS
 
-The context menu allows to:
-
-- copy the call stack.
-
-- open **Disassembly View**.
-
-### BREAKPOINTS section
-
-A breakpoint pauses the execution of your code at a specific point, so you can inspect the state of your
-application at that point. VS Code supports several types of breakpoints.
+A breakpoint pauses the code execution at a specific point, so you can inspect the state of your
+application at that point. There are several breakpoint types.
 
 #### Setting breakpoints
 
 To set or unset a breakpoint, click on the editor margin or use **F9** on the current line.
 
 - Breakpoints in the editor margin are normally shown as red filled circles.
-
 - Disabled breakpoints have a filled gray circle.
-
 - When a debugging session starts, breakpoints that can't be registered with the debugger change to a gray hollow
 circle. The same might happen if the source is edited while a debug session without live-edit support is running.
 
-![Breakpoint in the edirot margin](https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/raw/main/images/bkpt-in-editor-margin.png)
+![Breakpoint in the editor margin](https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/raw/main/images/bkpt-in-editor-margin.png)
 
-For more control of your breakpoints, use the Run and Debug view's **BREAKPOINTS section**. This section lists all
-breakpoints in your code and provides extra actions to manage them.
+For more control of breakpoints, use the **BREAKPOINTS** section that lists and manages all breakpoints.
 
 ![BREAKPOINTS section](https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/raw/main/images/breakpoints-section.png)
 
@@ -235,13 +137,10 @@ breakpoints in your code and provides extra actions to manage them.
 
 ##### Conditional breakpoints
 
-A powerful VS Code debugging feature is the ability to set conditions based on expressions, hit counts,
-or a combination of both.
+Set breakpoint conditions based on expressions, hit counts, or a combination of both.
 
 - Expression condition: The breakpoint is hit whenever the expression evaluates to true.
-
 - Hit count: The hit count controls how many times a breakpoint needs to be hit before it interrupts execution.
-
 - Wait for breakpoint: The breakpoint is activated when another breakpoint is hit ([triggered breakpoint](#triggered-breakpoints)).
 
 To add a conditional breakpoint:
@@ -249,7 +148,6 @@ To add a conditional breakpoint:
 - Create a conditional breakpoint
 
     - Right-click in the editor margin and select Add Conditional Breakpoint.
-
     - Use the Add Conditional Breakpoint command in the Command Palette (⇧⌘P).
 
 - Choose the type of condition you want to set (expression, hit count, or wait for breakpoint).
@@ -261,9 +159,7 @@ To add a condition to an existing breakpoint:
 - Edit an existing breakpoint
 
     - Right-click on the breakpoint in the editor margin and select Edit Breakpoint.
-
-    - Select the pencil icon next for an existing breakpoint in the **BREAKPOINTS section** of
-    the **Run and Debug view**.
+    - Select the pencil icon next for an existing breakpoint in the **BREAKPOINTS section** of the **Run and Debug view**.
 
 - Edit the condition (expression, hit count, or wait for breakpoint).
 
@@ -318,9 +214,9 @@ To add a logpoint, right-click in the editor left margin and select Add Logpoint
 Just like regular breakpoints, logpoints can be enabled or disabled and can also be controlled by a condition
 and/or hit count.
 
-### PERIPHERAL Inspector
+### Peripherals
 
-The Eclipse CDT Cloud **Periperhal Inspector** is a standalone SVD Viewer extension.
+The **Peripherals** view shows the device peripheral registers and allows to change their values. It uses the CMSIS-SVD files that are provided by silicon vendors and distributed as part of the CMSIS Device Family Packs (DFP).
 
 ![Peripheral Inspector](https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/raw/main/images/peripheral-inspector.png)
 
@@ -329,44 +225,27 @@ For more information, refer to the
 
 ### Memory Inspector
 
-The Eclipse CDT Cloud **Memory Inspector** provides a powerful and configurable memory viewer that works with
-debug adapters.
-
-![Memory Inspector](https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/raw/main/images/memory-inspector.png)
-
-It features:
+The **Memory Inspector** provides a powerful and configurable memory viewer that features:
 
 - Configurable Memory Display: Shows memory data with various display options.
-
 - Address Navigation: Easily jump to and scroll through memory addresses.
-
 - Variable Highlights: Colors memory ranges for variables.
-
 - Multiple Memory Formats: Shows memory data on hover in multiple formats.
-
 - Edit Memory: Allows in-place memory editing, if the debug adapter supports the WriteMemoryRequest.
-
 - Memory Management: Enables saving and restoring memory data for specific address ranges (Intel Hex format).
-
 - Customized Views: Create and customize as many memory views as you need.
-
 - Lock Views: Keep views static, unaffected by updates from the debug session.
-
 - Periodic Refresh: Automatically refresh the memory data.
-
 - Multiple Debug Sessions: Switch between multiple debug sessions using a dropdown in the memory view.
+
+![Memory Inspector](https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/raw/main/images/memory-inspector.png)
 
 For more information, refer to the
 [Memory Inspector GitHub repository](https://github.com/eclipse-cdt-cloud/vscode-memory-inspector).
 
-### Disassembly View
+### Disassembly
 
-The **Disassembly View** shows the program execution in assembly code intermixed with the source code.
-
-To open the **Disassembly View**:
-
-- press **Ctrl/Cmd + Shift + p** and select "Open Disassembly View" or
-- Right-click an item in the [**CALL STACK section**](#call-stack-section) and select "Open Disassembly View"
+The command **Open Disassembly View** (available from [command palette](https://code.visualstudio.com/docs/getstarted/userinterface#_command-palette) or context menus) shows the assembler instructions of the program intermixed with the source code. Using this view allows single stepping or managing breakpoints at the CPU instruction level.
 
 ![Disassembly View](https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/raw/main/images/disassembly-view.png)
 
@@ -392,6 +271,10 @@ application is run with the `> continue` command.
 
 ![Entering GDB commands in the Debug Console REPL](https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/raw/main/images/entering_gdb_commands.gif)
 
+### Serial Monitor
+
+The [Serial Monitor](https://learn.microsoft.com/en-us/cpp/embedded/serial-monitor?view=msvc-170&tabs=visual-studio) allows users to configure, monitor, and communicate with serial or TCP ports.
+
 ## Extension Functionality
 
 This extension contributes additional functionality to work seamlessly with other extensions.
@@ -399,7 +282,7 @@ This extension contributes additional functionality to work seamlessly with othe
 - A [debug configuration provider](https://code.visualstudio.com/api/references/vscode-api#DebugConfigurationProvider)
 for the type `gdbtarget` which comes with the [CDT GDB Debug Adapter Extension](https://marketplace.visualstudio.com/items?itemName=eclipse-cdt.cdt-gdb-vscode).
 This provider automatically fills in default values for known remote GDB servers when launching a debug session.
-- CMSIS specific launch configuration items for the `*` debugger type, i.e. visible for all debugger types.
+- CMSIS specific _launch_ configuration items for the `*` debugger type, i.e. visible for all debugger types.
 It depends on the actually used debug adapter type if this information is known and utilized.
 
 ### Debug Configuration Provider
@@ -588,3 +471,75 @@ Related open source projects are:
 - SEGGER and J-LINK are registered trademarks of SEGGER Microcontroller GmbH.  
 - Node.js is a registered trademark of the OpenJS Foundation.  
 - GDB and GCC are part of the GNU Project and are maintained by the Free Software Foundation.  
+
+-----
+
+## Debug Setup
+
+The debug setup requires a GDB installation supporting the GDB remote protocol and that can connect to a
+GDB server like pyOCD.
+
+We recommend to install the [`Arm GNU Toolchain`](https://developer.arm.com/Tools%20and%20Software/GNU%20Toolchain)
+using the `Arm Tools Environment Manager` extension. It comes with `arm-none-eabi-gdb` which is used in the
+Arm CMSIS Debugger default debug configurations.
+
+### pyOCD Debug Setup
+
+This extension includes a pyOCD distribution which is used by default.
+
+If you wish to use a different pyOCD installation, enter the full path to the executable (including the file name)
+in the `target`>`server` setting.
+
+### SEGGER® J-LINK® Debug Setup
+
+Install the latest
+[J-LINK Software and Documentation Pack](https://www.segger.com/downloads/jlink/#J-LinkSoftwareAndDocumentationPack)
+from [SEGGER](https://www.segger.com/). Ensure all required drivers and host platform specific settings are done.
+
+The extension expects the installation folder to be on your system `PATH` environment variable. Alternatively, update
+your debug configuration's `target`>`server` setting to contain the full path to the J-LINK GDB server executable
+(including the file name).
+
+## Start Debugging
+
+There are two ways to start a debug session:
+
+1. If you have installed the CMSIS Solution extension, in the **CMSIS view**
+   ![CMSIS view](https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/raw/main/images/cmsis-view-icon.png),
+   click on the **Debug** icon
+   ![Debug icon in the CMSIS view](https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/raw/main/images/debug-icon.png).
+   The configuration for the debugger configured in the active `target-set` is written to the launch.json file and will
+   be used to start the debug session.
+
+2. In the **Run and debug view**
+![Run and debug view](https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/raw/main/images/run-debug-view-icon.png),
+click the **Play** icon
+   next to the selected debug connection
+   ![Play button](https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/raw/main/images/play-debug-button.png).
+   The debug starts with the selected configuration.
+
+The debugger loads the application program and executes the startup code. When program execution stops (by default at
+`main`), the source code opens at the next executable statement which is marked with a yellow arrow in the editor:
+
+![Execution stopped at main](https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/raw/main/images/stop-at-main.png)
+
+Most editor features are available in debug mode. For example, developers can use the Find command and can correct program
+errors.
+
+## Flash and Run
+
+If you do not wish to enter a debug session, you can issue a flash download only, followed by a reset of the device.
+
+In the **CMSIS view** ![CMSIS view](https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/raw/main/images/cmsis-view-icon.png),
+click on the **Run** icon
+![Run icon in the CMSIS view](https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/raw/main/images/run-icon.png).
+
+## Run and Debug view
+
+![Run and Debug view](https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/raw/main/images/run-debug-view.png)
+
+> 📝 **Note:**  
+> The following is using information from
+> [Debug code with Visual Studio Code](https://code.visualstudio.com/docs/debugtest/debugging#_debugger-user-interface),
+> [Eclipse CDT Cloud - Memory Inspector](https://github.com/eclipse-cdt-cloud/vscode-memory-inspector),
+> [Eclipse CDT Cloud - Peripherals Inspector](https://github.com/eclipse-cdt-cloud/vscode-peripheral-inspector).
