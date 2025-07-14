@@ -80,6 +80,9 @@ jobs:
           GITHUB_TOKEN: ${{github.token}}
         run: yarn --frozen-lockfile --prefer-offline
 
+      - name: Check copyright
+        run: yarn copyright:check
+
       - name: Test
         run: yarn test
 
