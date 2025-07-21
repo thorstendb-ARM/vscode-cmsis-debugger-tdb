@@ -89,6 +89,7 @@
     "download-tools": "ts-node scripts/download-tools.ts",
     "clean": "git clean -f -x ./node_modules ./dist ./coverage ./tools",
     "build": "webpack --mode production && yarn lint",
+    "build:no-lint": "webpack --mode production",
     "watch": "webpack -w",
     "lint": "eslint .",
     "test": "jest --reporters=default --reporters=./node_modules/jest-html-reporter",
