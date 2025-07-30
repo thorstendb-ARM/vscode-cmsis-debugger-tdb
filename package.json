@@ -60,6 +60,14 @@
                   "cbuildRunFile": {
                     "type": "string",
                     "description": "Path to *.cbuild-run.yml debug configuration file generated with CMSIS-Toolbox."
+                  },
+                  "componentViewer": {
+                    "type": "array",
+                    "description": "List of Component Viewer (SVCD) files.",
+                    "items": {
+                      "type": "string"
+                    },
+                    "default": []
                   }
                 }
               }

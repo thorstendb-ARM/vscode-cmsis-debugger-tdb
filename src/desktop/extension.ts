@@ -19,6 +19,7 @@ import { GDBTargetDebugTracker } from '../debug-configuration/gdbtarget-debug-tr
 import { GDBTargetConfigurationProvider } from '../debug-configuration';
 import { logger } from '../logger';
 import { addToolsToPath } from './add-to-path';
+import { ComponentViewer } from '../component-viewer/component-viewer';
 
 const BUILTIN_TOOLS_PATHS = [
     'tools/pyocd/pyocd',
@@ -28,11 +29,13 @@ const BUILTIN_TOOLS_PATHS = [
 export const activate = async (context: vscode.ExtensionContext): Promise<void> => {
     const gdbtargetDebugTracker = new GDBTargetDebugTracker();
     const gdbtargetConfigurationProvider = new GDBTargetConfigurationProvider();
+    const componentViewer = new ComponentViewer();
 
     addToolsToPath(context, BUILTIN_TOOLS_PATHS);
     // Activate components
     gdbtargetDebugTracker.activate(context);
     gdbtargetConfigurationProvider.activate(context);
+    componentViewer.activate(context);
 
     logger.debug('Extension Pack activated');
 };
