@@ -9,20 +9,23 @@
  *********************************************************************/
 import * as vscode from 'vscode';
 import { URI } from 'vscode-uri';
+import { parser } from './parser';
 
 const svvdFile = '/Users/thode01/work/ComponentViewer/Files/BaseExample.scvd';
-
 export class ComponentViewer {
+    protected scvdReader: parser;
 
     public constructor(
     ) {
         this.initScvdReader(URI.file(svvdFile));
+        this.scvdReader = new parser();
     }
 
     protected initScvdReader(filename: URI) {
         // This is where you would initialize the SCVD reader
         // For example, you might want to read the file and parse it
         console.log(`Initializing SCVD reader with file: ${filename}`);
+
     }
 
     public activate(_ctx: vscode.ExtensionContext) {
