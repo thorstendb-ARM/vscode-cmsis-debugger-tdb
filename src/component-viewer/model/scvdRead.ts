@@ -18,6 +18,7 @@
 
 import { NumberType } from './numberType';
 import { ScvdBase } from './scvdBase';
+import { ScvdEndian } from './scvdEndian';
 import { ScvdExpression } from './scvdExpression';
 import { ScvdCondition } from './scvdScvdCondition';
 import { ScvdSymbol } from './scvdSymbol';
@@ -30,6 +31,7 @@ export class ScvdRead extends ScvdBase {
     private _const: NumberType = new NumberType(0); // default is 0
     private _cond: ScvdCondition = new ScvdCondition(this);
     private _size: ScvdExpression;
+    private _endian: ScvdEndian | undefined;
 
     private _typeObj: ScvdTypedef | undefined;
     private _symbolObj: ScvdSymbol | undefined;
@@ -96,6 +98,14 @@ export class ScvdRead extends ScvdBase {
     }
     set size(value: string) {
         this._size = new ScvdExpression(this, value);
+    }
+
+    get endian(): ScvdEndian | undefined {
+        return this._endian;
+    }
+    set endian(value: string) {
+        this._endian = new ScvdEndian(this, value);
+        this.isModified = true;
     }
 
 
