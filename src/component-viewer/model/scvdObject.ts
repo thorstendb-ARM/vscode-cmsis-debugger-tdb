@@ -17,24 +17,24 @@
 // https://arm-software.github.io/CMSIS-View/main/elem_objects.html
 
 import { ScvdCalc } from './scvdCalc';
-import { ScvdItem } from './scvdItem';
+import { ScvdBase } from './scvdBase';
 import { ScvdList } from './scvdList';
 import { ScvdOut } from './scvdOut';
 import { ScvdRead } from './scvdRead';
 import { ScvdReadList } from './scvdReadList';
 import { ScvdVar } from './scvdVar';
 
-export class ScvdObjects extends ScvdItem {
+export class ScvdObjects extends ScvdBase {
 
     constructor(
-        parent: ScvdItem | undefined,
+        parent: ScvdBase | undefined,
     ) {
         super(parent);
     }
 
 }
 
-export class ScvdObject extends ScvdItem {
+export class ScvdObject extends ScvdBase {
     private _vars: ScvdVar[] = [];
     private _calcs: ScvdCalc[] = [];
     private _lists: ScvdList[] = [];
@@ -43,7 +43,7 @@ export class ScvdObject extends ScvdItem {
     private _outs: ScvdOut[] = [];
 
     constructor(
-        parent: ScvdItem | undefined,
+        parent: ScvdBase | undefined,
     ) {
         super(parent, true);
     }

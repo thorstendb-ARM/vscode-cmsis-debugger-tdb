@@ -18,16 +18,16 @@
 
 import { ScvdDataType } from './scvdDataType';
 import { ScvdExpression } from './scvdExpression';
-import { ScvdItem } from './scvdItem';
+import { ScvdBase } from './scvdBase';
 import { ScvdCondition } from './scvdScvdCondition';
 
-export class ScvdOut extends ScvdItem {
+export class ScvdOut extends ScvdBase {
     private _value: ScvdExpression | undefined; // name._value — expression that evaluates to the value of the output.
     private _type: ScvdDataType | undefined;
     private _cond: ScvdCondition;
 
     constructor(
-        parent: ScvdItem | undefined,
+        parent: ScvdBase | undefined,
     ) {
         super(parent);
         this._cond = new ScvdCondition(this);
@@ -44,5 +44,12 @@ export class ScvdOut extends ScvdItem {
     }
     public get type(): ScvdDataType | undefined {
         return this._type;
+    }
+
+    public get cond(): ScvdCondition {
+        return this._cond;
+    }
+    public set cond(value: string) {
+        this._cond.expression = value;
     }
 }

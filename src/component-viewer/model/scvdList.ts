@@ -18,12 +18,12 @@
 
 import { ScvdCalc } from './scvdCalc';
 import { ScvdExpression } from './scvdExpression';
-import { ScvdItem } from './scvdItem';
+import { ScvdBase } from './scvdBase';
 import { ScvdRead } from './scvdRead';
 import { ScvdReadList } from './scvdReadList';
 import { ScvdVar } from './scvdVar';
 
-export class ScvdList extends ScvdItem {
+export class ScvdList extends ScvdBase {
     private _start: ScvdExpression;
     private _limit: ScvdExpression;
     private _while: ScvdExpression;
@@ -37,7 +37,7 @@ export class ScvdList extends ScvdItem {
 
 
     constructor(
-        parent: ScvdItem | undefined,
+        parent: ScvdBase | undefined,
     ) {
         super(parent);
         this._start = new ScvdExpression(this, '0'); // default is 0

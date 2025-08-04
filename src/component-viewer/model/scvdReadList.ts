@@ -18,41 +18,28 @@
 
 import { NumberType, NumberTypeInput } from './numberType';
 import { ScvdExpression } from './scvdExpression';
-import { ScvdItem } from './scvdItem';
+import { ScvdBase } from './scvdBase';
 import { ScvdCondition } from './scvdScvdCondition';
 import { ScvdSymbol } from './scvdSymbol';
 import { ScvdTypedef } from './scvdTypedef';
+import { ScvdRead } from './scvdRead';
 
-export class ScvdReadList extends ScvdItem {
-    private _type: string | undefined;
+export class ScvdReadList extends ScvdRead {
     private _count: ScvdExpression = new ScvdExpression(this, '1'); // default is 1
     private _next: string | undefined;
-    private _symbol: string | undefined;
-    private _offset: ScvdExpression = new ScvdExpression(this, '0'); // default is 0
-    private _const: NumberType = new NumberType(0); // default is 0
-    private _cond: ScvdCondition = new ScvdCondition(this);
     private _init: NumberType = new NumberType(0); // discard prev. read objects? default is 0
     private _based: NumberType = new NumberType(0); // is attribute+offset a pointer? default is 0
 
     private _nextObj: ScvdTypedef | undefined;
-    private _typeObj: ScvdTypedef | undefined;
-    private _symbolObj: ScvdSymbol | undefined;
 
     private readonly countMin = 1;
     private readonly countMax = 1024;
 
     constructor(
-        parent: ScvdItem | undefined,
+        parent: ScvdBase | undefined,
     ) {
         super(parent);
         this._count.setMinMax(this.countMin, this.countMax);
-    }
-
-    public set type(name: string | undefined) {
-        this._type = name;
-    }
-    public get type(): string | undefined {
-        return this._type;
     }
 
     set count(value: string ) {
@@ -67,34 +54,6 @@ export class ScvdReadList extends ScvdItem {
     }
     get next(): string | undefined {
         return this._next;
-    }
-
-    set symbol(name: string | undefined) {
-        this._symbol = name;
-    }
-    get symbol(): string | undefined {
-        return this._symbol;
-    }
-
-    set offset(value: string) {
-        this._offset = new ScvdExpression(this, value);
-    }
-    get offset(): ScvdExpression {
-        return this._offset;
-    }
-
-    set const(value: number) {
-        this._const = new NumberType(value);
-    }
-    get const(): NumberType {
-        return this._const;
-    }
-
-    set cond(value: ScvdCondition) {
-        this._cond = value;
-    }
-    get cond(): ScvdCondition {
-        return this._cond;
     }
 
     set init(value: NumberTypeInput) {
@@ -120,21 +79,6 @@ export class ScvdReadList extends ScvdItem {
         return this._nextObj;
     }
 
-    public set typeObj(type: ScvdTypedef | undefined) {
-        this._typeObj = type;
-    }
-    public get typeObj(): ScvdTypedef | undefined {
-        return this._typeObj;
-    }
-
-    public set symbolObj(symbol: ScvdSymbol | undefined) {
-        this._symbolObj = symbol;
-    }
-    public get symbolObj(): ScvdSymbol | undefined {
-        return this._symbolObj;
-    }
-
-
     public resolveAndLink(): boolean {
         if (this._next !== undefined) {
             const foundNext = undefined; //this.findTypedefByName(this._next);
@@ -142,19 +86,7 @@ export class ScvdReadList extends ScvdItem {
                 this._nextObj = foundNext;
             }
         }
-        if (this._type !== undefined) {
-            const foundType = undefined; //this.findTypeByName(this._typeName);
-            if (foundType) {
-                this._type = foundType;
-            }
-        }
-        if (this._symbol !== undefined) {
-            const foundSymbol = undefined; //this.findSymbolByName(this._symbol);
-            if (foundSymbol) {
-                this._symbolObj = foundSymbol;
-            }
-        }
-
+        super.resolveAndLink();
         return true;
     }
 

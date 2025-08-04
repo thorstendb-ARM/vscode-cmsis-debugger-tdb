@@ -17,14 +17,14 @@
 // https://arm-software.github.io/CMSIS-View/main/scvd_expression.html
 
 import { NumberType } from './numberType';
-import { ScvdItem } from './scvdItem';
+import { ScvdBase } from './scvdBase';
 
-export class ScvdExpression extends ScvdItem {
+export class ScvdExpression extends ScvdBase {
     private _expression: string | undefined;
     private _result: NumberType | undefined;
 
     constructor(
-        parent: ScvdItem | undefined,
+        parent: ScvdBase | undefined,
         expression: string | undefined
     ) {
         super(parent);

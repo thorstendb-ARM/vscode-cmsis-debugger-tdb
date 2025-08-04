@@ -16,12 +16,12 @@
 
 //
 
-import { ScvdItem } from './scvdItem';
+import { ScvdBase } from './scvdBase';
 
-export class ScvdEvents extends ScvdItem {
+export class ScvdEvents extends ScvdBase {
 
     constructor(
-        parent: ScvdItem | undefined,
+        parent: ScvdBase | undefined,
     ) {
         super(parent);
     }
@@ -29,10 +29,10 @@ export class ScvdEvents extends ScvdItem {
 }
 
 
-export class ScvdEvent extends ScvdItem {
+export class ScvdEvent extends ScvdBase {
 
     constructor(
-        parent: ScvdItem | undefined,
+        parent: ScvdBase | undefined,
     ) {
         super(parent, true);
     }

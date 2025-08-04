@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-import { ScvdItem } from './scvdItem';
+import { ScvdBase } from './scvdBase';
 
-export class ScvdComponent extends ScvdItem {
+export class ScvdComponent extends ScvdBase {
     private _version: string | undefined;
 
     constructor(
-        parent: ScvdItem | undefined,
+        parent: ScvdBase | undefined,
     ) {
         super(parent);
     }

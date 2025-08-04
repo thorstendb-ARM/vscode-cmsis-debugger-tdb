@@ -17,13 +17,13 @@
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
 import { ScvdExpression } from './scvdExpression';
-import { ScvdItem } from './scvdItem';
+import { ScvdBase } from './scvdBase';
 
-export class ScvdEnum extends ScvdItem {
+export class ScvdEnum extends ScvdBase {
     private _value: ScvdExpression;
 
     constructor(
-        parent: ScvdItem | undefined,
+        parent: ScvdBase | undefined,
         lastEnum: ScvdEnum | undefined,
     ) {
         super(parent);
@@ -35,7 +35,7 @@ export class ScvdEnum extends ScvdItem {
     public get value(): ScvdExpression {
         return this._value;
     }
-    public set value(value: string | undefined) {
-        this._value.expression = value;
+    public set value(value: string) {
+        this._value = new ScvdExpression(this, value);
     }
 }

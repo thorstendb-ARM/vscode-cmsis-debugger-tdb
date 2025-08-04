@@ -18,23 +18,23 @@
 
 import { NumberType } from './numberType';
 import { ScvdExpression } from './scvdExpression';
-import { ScvdItem } from './scvdItem';
+import { ScvdBase } from './scvdBase';
 import { ScvdMember } from './scvdMember';
 import { ScvdSymbol } from './scvdSymbol';
 import { ScvdVar } from './scvdVar';
 
 // Container
-export class ScvdTypedefs extends ScvdItem {
+export class ScvdTypedefs extends ScvdBase {
 
     constructor(
-        parent: ScvdItem | undefined,
+        parent: ScvdBase | undefined,
     ) {
         super(parent);
     }
 }
 
 // Typedefs
-export class ScvdTypedef extends ScvdItem {
+export class ScvdTypedef extends ScvdBase {
     private _size: ScvdExpression | undefined;
     private _import: ScvdSymbol | undefined;
 
@@ -42,7 +42,7 @@ export class ScvdTypedef extends ScvdItem {
     private _vars: ScvdVar[] = [];
 
     constructor(
-        parent: ScvdItem | undefined,
+        parent: ScvdBase | undefined,
     ) {
         super(parent, true);
     }

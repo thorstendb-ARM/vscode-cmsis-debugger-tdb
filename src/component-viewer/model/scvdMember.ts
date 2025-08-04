@@ -20,16 +20,16 @@ import { NumberType, NumberTypeInput } from './numberType';
 import { ScvdDataType } from './scvdDataType';
 import { ScvdEnum } from './scvdEnum';
 import { ScvdExpression } from './scvdExpression';
-import { ScvdItem } from './scvdItem';
+import { ScvdBase } from './scvdBase';
 
-export class ScvdMember extends ScvdItem {
+export class ScvdMember extends ScvdBase {
     private _type: ScvdDataType | undefined;
     private _offset: ScvdExpression | undefined;
     private _size: NumberType | undefined;
     private _enums: ScvdEnum[] = [];
 
     constructor(
-        parent: ScvdItem | undefined,
+        parent: ScvdBase | undefined,
     ) {
         super(parent);
     }

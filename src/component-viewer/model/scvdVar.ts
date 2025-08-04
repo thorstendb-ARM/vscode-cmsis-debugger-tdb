@@ -18,14 +18,14 @@
 
 import { ScvdDataType } from './scvdDataType';
 import { ScvdExpression } from './scvdExpression';
-import { ScvdItem } from './scvdItem';
+import { ScvdBase } from './scvdBase';
 
-export class ScvdVar extends ScvdItem {
+export class ScvdVar extends ScvdBase {
     private _value: ScvdExpression | undefined;
     private _type: ScvdDataType | undefined;
 
     constructor(
-        parent: ScvdItem | undefined,
+        parent: ScvdBase | undefined,
     ) {
         super(parent);
     }
@@ -33,7 +33,7 @@ export class ScvdVar extends ScvdItem {
     public get value(): ScvdExpression | undefined {
         return this._value;
     }
-    public set value(value: string | undefined) {
+    public set value(value: string) {
         this._value = new ScvdExpression(this, value);
     }
 

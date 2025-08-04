@@ -18,18 +18,18 @@
 
 import { ScvdComponent } from './scvdComponent';
 import { ScvdEvent } from './scvdEvent';
-import { ScvdItem } from './scvdItem';
+import { ScvdBase } from './scvdBase';
 import { ScvdObjects } from './scvdObject';
 import { ScvdTypedefs } from './scvdTypedef';
 
-export class ScvdModel extends ScvdItem {
+export class ScvdModel extends ScvdBase {
     private _component: ScvdComponent | undefined;
     private _typedefs: ScvdTypedefs | undefined;
     private _objects: ScvdObjects | undefined;
     private _events: ScvdEvent | undefined;
 
     constructor(
-        parent: ScvdItem | undefined,
+        parent: ScvdBase | undefined,
     ) {
         super(parent);
     }
@@ -46,16 +46,4 @@ export class ScvdModel extends ScvdItem {
     get events(): ScvdEvent | undefined {
         return this._events;
     }
-
-    public configure(_typedefs: ScvdTypedefs): boolean {
-        if (this._typedefs !== undefined) {
-            return false;
-        }
-
-        this.objects?.map((obj) => {
-            obj.configure(_typedefs);
-        });
-        return true;
-    }
-
 }

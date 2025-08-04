@@ -17,15 +17,15 @@
 // https://arm-software.github.io/CMSIS-View/main/elem_calc.html
 
 import { ScvdExpression } from './scvdExpression';
-import { ScvdItem } from './scvdItem';
+import { ScvdBase } from './scvdBase';
 import { ScvdCondition } from './scvdScvdCondition';
 
-export class ScvdCalc extends ScvdItem {
+export class ScvdCalc extends ScvdBase {
     private _cond: ScvdCondition;
     private _expressions: ScvdExpression[] = [];
 
     constructor(
-        parent: ScvdItem | undefined,
+        parent: ScvdBase | undefined,
     ) {
         super(parent);
         this._cond = new ScvdCondition(this);

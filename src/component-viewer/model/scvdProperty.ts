@@ -16,31 +16,22 @@
 
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
-import { ScvdExpression } from './scvdExpression';
 import { ScvdBase } from './scvdBase';
 
-export class ScvdCondition extends ScvdBase {
-    private _expression: ScvdExpression | undefined;
+export class ScvdProperty extends ScvdBase {
+    private _text: string | undefined;
 
     constructor(
         parent: ScvdBase | undefined,
-        expression: string = '1' // default condition is true
     ) {
         super(parent);
-        this._expression = new ScvdExpression(this, expression);
     }
 
-    public get expression(): ScvdExpression | undefined {
-        return this._expression;
+    public get text(): string | undefined {
+        return this._text;
     }
-
-    public set expression(value: string) {
-        this._expression = new ScvdExpression(this, value);
-    }
-
-    public get result(): boolean {
-        return this._expression
-            ? this._expression.value ? true : false
-            : true;
+    public set text(value: string | undefined) {
+        this._text = value;
+        this.isModified = true;
     }
 }

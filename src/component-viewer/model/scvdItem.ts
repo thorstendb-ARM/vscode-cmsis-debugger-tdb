@@ -14,104 +14,97 @@
  * limitations under the License.
  */
 
-import { NumberType } from './numberType';
-import { ScvdTypedefs } from './scvdTypedef';
+// https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
+import { ScvdBase } from './scvdBase';
+import { ScvdExpression } from './scvdExpression';
+import { ScvdList } from './scvdList';
+import { ScvdPrint } from './scvdPrint';
+import { ScvdProperty } from './scvdProperty';
+import { ScvdCondition } from './scvdScvdCondition';
 
-export class ScvdItem {
-    private _parent: ScvdItem | undefined;
-    private _children: ScvdItem[] = [];
-    private _isModified: boolean = false;
-    private _name: string | undefined;
-    private _info: string | undefined;
+export class ScvdItem extends ScvdBase {
+    private _property: ScvdProperty | undefined;
+    private _value: ScvdExpression | undefined;
+    private _cond: ScvdCondition | undefined;
+    private _bold: ScvdCondition | undefined;
+    private _alert: ScvdCondition | undefined;
+    private _item: ScvdItem[] = []; // Array of child items
+    private _list: ScvdList[] = []; // Array of child lists
+    private _print: ScvdPrint[] = []; // Array of child prints
+
 
     constructor(
-        parent: ScvdItem | undefined,
-        addChild: boolean = false,
+        parent: ScvdBase | undefined,
     ) {
-        if (parent instanceof ScvdItem) {
-            this._parent = parent;
+        super(parent);
+        this._cond = new ScvdCondition(this, '1'); // default is 1
+        this._bold = new ScvdCondition(this, '0'); // default is 0
+        this._alert = new ScvdCondition(this, '0'); // default is 0
+    }
 
-            if (addChild) {
-                parent.addChild(this);
-            }
+    public get property(): ScvdProperty | undefined {
+        return this._property;
+    }
+    public set property(value: string) {
+        this._property = new ScvdProperty(this);
+        this._property.text = value;
+        this.isModified = true;
+    }
+
+    public get value(): ScvdExpression | undefined {
+        return this._value;
+    }
+    public set value(value: string) {
+        if (value !== undefined) {
+            this._value = new ScvdExpression(this, value);
         }
+        this.isModified = true;
     }
 
-    /**
-     * Applies the provided callback function to each child and returns an array of results.
-     * @param callbackfn Function that produces an element of the new array, taking a child and its index.
-     * @returns Array of mapped results.
-     */
-    public map<T>(_callbackfn: (child: ScvdItem, index: number, array: ScvdItem[]) => T): T[] {
-        return this._children.map(_callbackfn);
+    get cond(): ScvdCondition | undefined {
+        return this._cond;
     }
 
-    // Member function available to all ScvdItems and derived classes
-    public resolveAndLink(): boolean {
-        // Default implementation does nothing, can be overridden by subclasses
-        return true;
+    set cond(value: string) {
+        this._cond = new ScvdCondition(this, value);
     }
 
-    public applyInit(): boolean {
-        // Default implementation does nothing, can be overridden by subclasses
-        return true;
+    get bold(): ScvdCondition | undefined {
+        return this._bold;
     }
 
-    public funcRunning(): NumberType | undefined {
-        // Default implementation returns undefined, can be overridden by subclasses
-        return undefined;
+    set bold(value: string) {
+        this._bold = new ScvdCondition(this, value);
     }
 
-    public funcCount(): NumberType | undefined {
-        // Default implementation returns undefined, can be overridden by subclasses
-        return undefined;
+    get alert(): ScvdCondition | undefined {
+        return this._alert;
     }
 
-    public funcAddr(): NumberType | undefined {
-        // Default implementation returns undefined, can be overridden by subclasses
-        return undefined;
+    set alert(value: string) {
+        this._alert = new ScvdCondition(this, value);
     }
 
-
-
-    public get parent(): ScvdItem | undefined {
-        return this._parent;
+    public get item(): ScvdItem[] {
+        return this._item;
     }
-    public get children(): ScvdItem[] {
-        return this._children;
+    public addItem(item: ScvdItem) {
+        this._item.push(item);
+        this.addChild(item);
     }
-    protected addChild(child: ScvdItem) {
-        this._children.push(child);
+    public get list(): ScvdList[] {
+        return this._list;
     }
-
-
-    public set name(name: string) {
-        this._name = name;
+    public addList(list: ScvdList) {
+        this._list.push(list);
+        this.addChild(list);
     }
-    public get name(): string | undefined {
-        return this._name;
+    public get print(): ScvdPrint[] {
+        return this._print;
     }
-
-    public set info(text: string) {
-        this._info = text;
-    }
-    public get info(): string | undefined {
-        return this._info;
-    }
-
-    public get isModified(): boolean {
-        return this._isModified;
-    }
-    public set isModified(value: boolean) {
-        this._isModified = value;
-    }
-
-    // Workers
-    public configure(_typedefs: ScvdTypedefs): boolean {
-        return true;
-    }
-    public reset(): boolean {
-        return true;
+    public addPrint(print: ScvdPrint) {
+        this._print.push(print);
+        this.addChild(print);
     }
 }

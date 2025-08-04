@@ -16,7 +16,7 @@
 
 // https://arm-software.github.io/CMSIS-View/main/data_type.html#scalar_data_type
 
-import { ScvdItem } from './scvdItem';
+import { ScvdBase } from './scvdBase';
 
 const ScvdDataTypeMap: Record<string, [number, string]> = {
     'uint8_t': [8, 'unsigned char'],
@@ -31,10 +31,10 @@ const ScvdDataTypeMap: Record<string, [number, string]> = {
     'double': [64, 'double precision floating number'],
 };
 
-export class ScvdDataType extends ScvdItem {
+export class ScvdDataType extends ScvdBase {
 
     constructor(
-        parent: ScvdItem | undefined,
+        parent: ScvdBase | undefined,
         value: string | undefined
     ) {
         super(parent);
