@@ -37,30 +37,25 @@ export class ScvdTypedefs extends ScvdItem {
 export class ScvdTypedef extends ScvdItem {
     private _size: ScvdExpression | undefined;
     private _import: ScvdSymbol | undefined;
+
     private _members: ScvdMember[] = [];
     private _vars: ScvdVar[] = [];
 
     constructor(
         parent: ScvdItem | undefined,
     ) {
-        super(parent);
+        super(parent, true);
     }
 
     get size(): NumberType | undefined {
-        return this._size?.result;
+        return this._size?.value;
     }
-    set size(value: string | undefined) {
-        if (this._size === undefined) {
-            this._size = new ScvdExpression(this);
-        }
-        this._size.expression = value;
+    set size(value: string) {
+        this._size = new ScvdExpression(this, value);
     }
 
     set import(value: string) {
-        if( this._import === undefined) {
-            this._import = new ScvdSymbol(this);
-        }
-        this._import.name = value;
+        this._import = new ScvdSymbol(this, value);
     }
 
     public addMember(): ScvdMember {

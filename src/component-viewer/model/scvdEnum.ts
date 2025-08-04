@@ -27,13 +27,9 @@ export class ScvdEnum extends ScvdItem {
         lastEnum: ScvdEnum | undefined,
     ) {
         super(parent);
-        this._value = new ScvdExpression(this);
         const lastValue = lastEnum?.value;
-        if (lastValue) {
-            this.value = '(' + lastValue.expression + ') + 1';
-        } else {
-            this.value = '0';
-        }
+        const valStr = lastValue ? `(${lastValue.expression}) + 1` : '0';
+        this._value = new ScvdExpression(this, valStr);
     }
 
     public get value(): ScvdExpression {

@@ -33,14 +33,12 @@ export class ScvdCondition extends ScvdItem {
     }
 
     public set expression(value: string) {
-        const expression = new ScvdExpression(this);
-        expression.expression = value;
-        this._expression = expression;
+        this._expression = new ScvdExpression(this, value);
     }
 
     public get result(): boolean {
         return this._expression
-            ? this._expression.result ? true : false
+            ? this._expression.value ? true : false
             : true;
     }
 }

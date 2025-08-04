@@ -14,23 +14,23 @@
  * limitations under the License.
  */
 
-// https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
+import { NumberType } from './numberType';
+import { ScvdDataBase } from './scvdDataBase';
 
-import { ScvdItem } from './scvdItem';
 
-export class ScvdSymbol extends ScvdItem {
+export class ScvdDataDword extends ScvdDataBase {
+    private _data: NumberType | undefined;
 
     constructor(
-        parent: ScvdItem | undefined,
-        value: string = '',
     ) {
-        super(parent);
-        this.name = value;
+        super();
     }
 
-    public fetch(): void {
-        const name = this.name;
-        // Placeholder for fetch logic, if needed
-        console.log('Fetching symbol data...', name);
+    public get data(): NumberType | undefined {
+        return this._data;
+    }
+    public set data(value: NumberType | undefined) {
+        this._data = value;
+        this.valid = true;
     }
 }

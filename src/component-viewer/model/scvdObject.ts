@@ -19,6 +19,9 @@
 import { ScvdCalc } from './scvdCalc';
 import { ScvdItem } from './scvdItem';
 import { ScvdList } from './scvdList';
+import { ScvdOut } from './scvdOut';
+import { ScvdRead } from './scvdRead';
+import { ScvdReadList } from './scvdReadList';
 import { ScvdVar } from './scvdVar';
 
 export class ScvdObjects extends ScvdItem {
@@ -35,11 +38,14 @@ export class ScvdObject extends ScvdItem {
     private _vars: ScvdVar[] = [];
     private _calcs: ScvdCalc[] = [];
     private _lists: ScvdList[] = [];
+    private _reads: ScvdRead[] = [];
+    private _readLists: ScvdReadList[] = [];
+    private _outs: ScvdOut[] = [];
 
     constructor(
         parent: ScvdItem | undefined,
     ) {
-        super(parent);
+        super(parent, true);
     }
 
     public addVar(): ScvdVar {
@@ -69,5 +75,30 @@ export class ScvdObject extends ScvdItem {
         return this._lists;
     }
 
+    public addRead(): ScvdRead {
+        const readItem = new ScvdRead(this);
+        this._reads.push(readItem);
+        return readItem;
+    }
+    public get reads(): ScvdRead[] {
+        return this._reads;
+    }
 
+    public addReadList(): ScvdReadList {
+        const readListItem = new ScvdReadList(this);
+        this._readLists.push(readListItem);
+        return readListItem;
+    }
+    public get readLists(): ScvdReadList[] {
+        return this._readLists;
+    }
+
+    public addOut(): ScvdOut {
+        const outItem = new ScvdOut(this);
+        this._outs.push(outItem);
+        return outItem;
+    }
+    public get outs(): ScvdOut[] {
+        return this._outs;
+    }
 }

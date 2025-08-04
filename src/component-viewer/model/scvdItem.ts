@@ -14,22 +14,66 @@
  * limitations under the License.
  */
 
+import { NumberType } from './numberType';
+import { ScvdTypedefs } from './scvdTypedef';
+
 
 export class ScvdItem {
     private _parent: ScvdItem | undefined;
     private _children: ScvdItem[] = [];
-
+    private _isModified: boolean = false;
     private _name: string | undefined;
     private _info: string | undefined;
 
     constructor(
         parent: ScvdItem | undefined,
+        addChild: boolean = false,
     ) {
         if (parent instanceof ScvdItem) {
             this._parent = parent;
-            parent.addChild(this);
+
+            if (addChild) {
+                parent.addChild(this);
+            }
         }
     }
+
+    /**
+     * Applies the provided callback function to each child and returns an array of results.
+     * @param callbackfn Function that produces an element of the new array, taking a child and its index.
+     * @returns Array of mapped results.
+     */
+    public map<T>(_callbackfn: (child: ScvdItem, index: number, array: ScvdItem[]) => T): T[] {
+        return this._children.map(_callbackfn);
+    }
+
+    // Member function available to all ScvdItems and derived classes
+    public resolveAndLink(): boolean {
+        // Default implementation does nothing, can be overridden by subclasses
+        return true;
+    }
+
+    public applyInit(): boolean {
+        // Default implementation does nothing, can be overridden by subclasses
+        return true;
+    }
+
+    public funcRunning(): NumberType | undefined {
+        // Default implementation returns undefined, can be overridden by subclasses
+        return undefined;
+    }
+
+    public funcCount(): NumberType | undefined {
+        // Default implementation returns undefined, can be overridden by subclasses
+        return undefined;
+    }
+
+    public funcAddr(): NumberType | undefined {
+        // Default implementation returns undefined, can be overridden by subclasses
+        return undefined;
+    }
+
+
 
     public get parent(): ScvdItem | undefined {
         return this._parent;
@@ -54,5 +98,20 @@ export class ScvdItem {
     }
     public get info(): string | undefined {
         return this._info;
+    }
+
+    public get isModified(): boolean {
+        return this._isModified;
+    }
+    public set isModified(value: boolean) {
+        this._isModified = value;
+    }
+
+    // Workers
+    public configure(_typedefs: ScvdTypedefs): boolean {
+        return true;
+    }
+    public reset(): boolean {
+        return true;
     }
 }

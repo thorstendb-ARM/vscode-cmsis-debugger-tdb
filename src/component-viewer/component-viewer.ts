@@ -14,6 +14,7 @@ import { parser } from './parser';
 const svvdFile = '/Users/thode01/work/ComponentViewer/Files/BaseExample.scvd';
 export class ComponentViewer {
     protected scvdReader: parser;
+    private _model: ScvdModel | undefined;
 
     public constructor(
     ) {

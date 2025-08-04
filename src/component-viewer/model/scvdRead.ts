@@ -14,34 +14,16 @@
  * limitations under the License.
  */
 
-// https://arm-software.github.io/CMSIS-View/main/elem_var.html
+// https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
-import { ScvdDataType } from './scvdDataType';
-import { ScvdExpression } from './scvdExpression';
 import { ScvdItem } from './scvdItem';
 
-export class ScvdVar extends ScvdItem {
-    private _value: ScvdExpression | undefined;
-    private _type: ScvdDataType | undefined;
+export class ScvdRead extends ScvdItem {
 
     constructor(
         parent: ScvdItem | undefined,
     ) {
         super(parent);
-    }
-
-    public get value(): ScvdExpression | undefined {
-        return this._value;
-    }
-    public set value(value: string | undefined) {
-        this._value = new ScvdExpression(this, value);
-    }
-
-    get type(): ScvdDataType | undefined {
-        return this._type;
-    }
-    set type(value: string) {
-        this._type = new ScvdDataType(this, value);
     }
 
 }

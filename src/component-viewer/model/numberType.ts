@@ -32,12 +32,22 @@ interface NumContainer {
     displayFormat: NumFormat;
     numOfDigits: number;
     numOfDisplayBits: number;
+    numMin?: number; // optional, used for min/max values
+    numMax?: number; // optional, used for min/max values
 }
 
-export class NumberType {
-    private _value: NumContainer = { value: 0, numFormat: NumFormat.undefined, displayFormat: NumFormat.undefined, numOfDigits: 1, numOfDisplayBits: 1 };
+export type NumberTypeInput = number | NumberType | string;
 
-    constructor(val?: number | NumberType | string, numFormat?: NumFormat) {
+export class NumberType {
+    private _value: NumContainer = {
+        value: 0,
+        numFormat: NumFormat.undefined,
+        displayFormat: NumFormat.undefined,
+        numOfDigits: 1,
+        numOfDisplayBits: 1
+    };
+
+    constructor(val?: NumberTypeInput, numFormat?: NumFormat) {
 
         if (typeof val === 'number') {
             this._value.value = val;
@@ -48,7 +58,7 @@ export class NumberType {
             }
             this._value.displayFormat = this._value.numFormat;
         } else if (val instanceof NumberType) {
-            this._value = { value: val.val, numFormat: val.format, displayFormat: val.displayFormat, numOfDigits: val._value.numOfDigits, numOfDisplayBits: val._value.numOfDisplayBits };
+            this._value = { value: val.value, numFormat: val.format, displayFormat: val.displayFormat, numOfDigits: val._value.numOfDigits, numOfDisplayBits: val._value.numOfDisplayBits };
         } else if (typeof val === 'string') {
             this._value = this.toNumber(val);
         }
@@ -135,10 +145,17 @@ export class NumberType {
         return num;
     }
 
-    public get val(): number {
+    public get value(): number {
+        if (this._value.numMin && this._value.value < this._value.numMin) {
+            return this._value.numMin;
+        } else if (this._value.numMax && this._value.value > this._value.numMax) {
+            return this._value.numMax;
+        }
+
         return this._value.value;
     }
-    public set val(val: number | NumberType | string) {
+
+    public set value(val: number | NumberType | string) {
         if (typeof val === 'number') {
             this._value.value = val;
             if (this._value.numFormat == NumFormat.undefined) {
@@ -174,11 +191,11 @@ export class NumberType {
 
     public getValStrByFormat(format: NumFormat, digits: number) {
         if (format == NumFormat.undefined) {
-            const tmp = this.val.toString(NumFormat.decimal);
+            const tmp = this.value.toString(NumFormat.decimal);
             return tmp.toUpperCase();
         }
 
-        let val = this.val;
+        let val = this.value;
         let negative = false;
         if (val < 0) {
             negative = true;
@@ -201,7 +218,7 @@ export class NumberType {
         }
 
         if (!text.length) {
-            const tmp = this.val.toString(NumFormat.decimal);
+            const tmp = this.value.toString(NumFormat.decimal);
             return tmp.toUpperCase();
         }
 
@@ -295,6 +312,31 @@ export class NumberType {
         }
 
         return text;
+    }
+
+    public setMin(min: number) {
+        this._value.numMin = min;
+    }
+
+    public setMax(max: number) {
+        this._value.numMax = max;
+    }
+
+    public get min(): number | undefined {
+        return this._value.numMin;
+    }
+
+    public get max(): number | undefined {
+        return this._value.numMax;
+    }
+
+    public setMinMax(min: number | undefined, max: number | undefined) {
+        if (min !== undefined) {
+            this._value.numMin = min;
+        }
+        if (max !== undefined) {
+            this._value.numMax = max;
+        }
     }
 }
 

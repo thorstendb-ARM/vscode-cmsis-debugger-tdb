@@ -25,8 +25,10 @@ export class ScvdExpression extends ScvdItem {
 
     constructor(
         parent: ScvdItem | undefined,
+        expression: string | undefined
     ) {
         super(parent);
+        this._expression = expression;
     }
 
     public get expression(): string | undefined {
@@ -34,13 +36,24 @@ export class ScvdExpression extends ScvdItem {
     }
     public set expression(value: string | undefined) {
         this._expression = value;
+        this.isModified = true;
     }
 
-    public get result(): NumberType | undefined {
+    public get value(): NumberType {
         if( this._result === undefined) {
             this._result = this.evaluate();
         }
-        return this._result;
+        return this._result ?? new NumberType(1);
+    }
+
+    public setMinMax(min: number | undefined, max: number | undefined) {
+        if (this._result) {
+            this._result.setMinMax(min, max);
+        }
+    }
+
+    public getResultBoolean(): boolean {
+        return this.value !== undefined && this.value.value > 0;
     }
 
     // Method to evaluate the expression, returns size in bytes

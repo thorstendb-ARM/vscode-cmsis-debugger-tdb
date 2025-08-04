@@ -35,14 +35,17 @@ export class ScvdDataType extends ScvdItem {
 
     constructor(
         parent: ScvdItem | undefined,
+        value: string | undefined
     ) {
         super(parent);
+
+        if( value !== undefined && value !== '') {
+            this.name = value;
+        }
     }
 
     public get size(): number | undefined {
-        if(this.name === undefined) {
-            return undefined;
-        }
-        return ScvdDataTypeMap[this.name]?.[0] / 8; // Convert bits to bytes
+        const info = this.name && ScvdDataTypeMap[this.name];
+        return info ? info[0] / 8 : undefined;
     }
 }

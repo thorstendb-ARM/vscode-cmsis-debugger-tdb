@@ -41,17 +41,12 @@ export class ScvdCalc extends ScvdItem {
         }
     }
 
-    get conditionResult(): boolean {
-        return this._cond.result;
-    }
-
     get expressions(): ScvdExpression[] {
         return this._expressions;
     }
 
-    addExpression(expression: string): void {
-        const expr = new ScvdExpression(this);
-        expr.expression = expression;
+    addExpression(value: string): void {
+        const expr = new ScvdExpression(this, value);
         this._expressions.push(expr);
     }
 

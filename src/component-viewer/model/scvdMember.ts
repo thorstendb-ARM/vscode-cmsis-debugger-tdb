@@ -16,7 +16,7 @@
 
 // https://arm-software.github.io/CMSIS-View/main/elem_member.html
 
-import { NumberType } from './numberType';
+import { NumberType, NumberTypeInput } from './numberType';
 import { ScvdDataType } from './scvdDataType';
 import { ScvdEnum } from './scvdEnum';
 import { ScvdExpression } from './scvdExpression';
@@ -38,29 +38,23 @@ export class ScvdMember extends ScvdItem {
         return this._type;
     }
 
-    set type(value: ScvdDataType) {
-        if (!this._type) {
-            this._type = new ScvdDataType(this);
-        }
-        this._type = value;
+    set type(value: string) {
+        this._type = new ScvdDataType(this, value);
     }
 
     get offset(): ScvdExpression | undefined {
         return this._offset;
     }
 
-    set offset(value: ScvdExpression) {
-        if (!this._offset) {
-            this._offset = new ScvdExpression(this);
-        }
-        this._offset = value;
+    set offset(value: string) {
+        this._offset = new ScvdExpression(this, value);
     }
 
     get size(): NumberType | undefined {
         return this._size;
     }
 
-    set size(value: number | string | NumberType | undefined) {
+    set size(value: NumberTypeInput) {
         this._size = new NumberType(value);
     }
 
@@ -75,7 +69,7 @@ export class ScvdMember extends ScvdItem {
     }
 
     public getEnum(index: NumberType): ScvdEnum | undefined {
-        const enumItem = this._enums.find((item) => item.value?.result?.val === index.val);
+        const enumItem = this._enums.find((item) => item.value?.value?.value === index.value);
         return enumItem;
     }
 }
