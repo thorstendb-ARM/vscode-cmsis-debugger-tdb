@@ -34,7 +34,7 @@ export class ScvdVar extends ScvdBase {
         return this._value;
     }
     public set value(value: string) {
-        this._value = new ScvdExpression(this, value);
+        this._value = new ScvdExpression(value);
     }
 
     get type(): ScvdDataType | undefined {

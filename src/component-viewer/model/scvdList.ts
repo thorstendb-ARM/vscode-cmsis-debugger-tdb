@@ -40,10 +40,10 @@ export class ScvdList extends ScvdBase {
         parent: ScvdBase | undefined,
     ) {
         super(parent);
-        this._start = new ScvdExpression(this, '0'); // default is 0
-        //this._limit = new ScvdExpression(this, '0'); // default is 0
-        //this._while = new ScvdExpression(this, '1'); // default is 1
-        this._cond = new ScvdExpression(this, '1'); // default is 1
+        this._start = new ScvdExpression('0'); // default is 0
+        //this._limit = new ScvdExpression('0'); // default is 0
+        //this._while = new ScvdExpression('1'); // default is 1
+        this._cond = new ScvdExpression('1'); // default is 1
     }
 
     public verify(): boolean {
@@ -59,7 +59,7 @@ export class ScvdList extends ScvdBase {
     }
 
     set start(value: string) {
-        this._start = new ScvdExpression(this, value);
+        this._start = new ScvdExpression(value);
     }
 
     get limit(): ScvdExpression | undefined {
@@ -67,7 +67,7 @@ export class ScvdList extends ScvdBase {
     }
 
     set limit(value: string) {
-        this._limit = new ScvdExpression(this, value);
+        this._limit = new ScvdExpression(value);
     }
 
     get while(): ScvdExpression | undefined {
@@ -75,7 +75,7 @@ export class ScvdList extends ScvdBase {
     }
 
     set while(value: string) {
-        this._while = new ScvdExpression(this, value);
+        this._while = new ScvdExpression(value);
     }
 
     get cond(): ScvdExpression | undefined {
@@ -83,7 +83,7 @@ export class ScvdList extends ScvdBase {
     }
 
     set cond(value: string) {
-        this._cond = new ScvdExpression(this, value);
+        this._cond = new ScvdExpression(value);
     }
 
     public applyInit(): boolean {

@@ -47,7 +47,7 @@ export class ScvdMember extends ScvdBase {
     }
 
     set offset(value: string) {
-        this._offset = new ScvdExpression(this, value);
+        this._offset = new ScvdExpression(value);
     }
 
     get size(): NumberType | undefined {

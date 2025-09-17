@@ -41,9 +41,9 @@ export class ScvdItem extends ScvdBase {
         alert: string = '0',
     ) {
         super(parent);
-        this._cond = new ScvdCondition(this, cond);
-        this._bold = new ScvdCondition(this, bold);
-        this._alert = new ScvdCondition(this, alert);
+        this._cond = new ScvdCondition(cond);
+        this._bold = new ScvdCondition(bold);
+        this._alert = new ScvdCondition(alert);
     }
 
     public get property(): ScvdValueOutput | undefined {
@@ -55,7 +55,7 @@ export class ScvdItem extends ScvdBase {
     }
     public set value(value: string) {
         if (value !== undefined) {
-            this._value = new ScvdExpression(this, value);
+            this._value = new ScvdExpression(value);
         }
         this.isModified = true;
     }
@@ -65,7 +65,7 @@ export class ScvdItem extends ScvdBase {
     }
 
     set cond(value: string) {
-        this._cond = new ScvdCondition(this, value);
+        this._cond = new ScvdCondition(value);
     }
 
     get bold(): ScvdCondition | undefined {
@@ -73,7 +73,7 @@ export class ScvdItem extends ScvdBase {
     }
 
     set bold(value: string) {
-        this._bold = new ScvdCondition(this, value);
+        this._bold = new ScvdCondition(value);
     }
 
     get alert(): ScvdCondition | undefined {
@@ -81,7 +81,7 @@ export class ScvdItem extends ScvdBase {
     }
 
     set alert(value: string) {
-        this._alert = new ScvdCondition(this, value);
+        this._alert = new ScvdCondition(value);
     }
 
     public get item(): ScvdItem[] {
@@ -96,13 +96,11 @@ export class ScvdItem extends ScvdBase {
     }
     public addList(list: ScvdList) {
         this._list.push(list);
-        this.addChild(list);
     }
     public get print(): ScvdPrint[] {
         return this._print;
     }
     public addPrint(print: ScvdPrint) {
         this._print.push(print);
-        this.addChild(print);
     }
 }

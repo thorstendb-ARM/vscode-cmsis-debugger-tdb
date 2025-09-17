@@ -16,12 +16,11 @@
 
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
-import { ScvdBase } from './scvdBase';
 import { ScvdExpression } from './scvdExpression';
 import { ScvdValueOutput } from './scvdValueOutput';
 import { ScvdCondition } from './scvdCondition';
 
-export class ScvdPrint extends ScvdBase {
+export class ScvdPrint {
     private _cond: ScvdCondition;
     private _property: ScvdValueOutput;
     private _value: ScvdExpression;
@@ -29,19 +28,17 @@ export class ScvdPrint extends ScvdBase {
     private _alert: ScvdCondition;
 
     constructor(
-        parent: ScvdBase | undefined,
         cond: string,
         property: string,
         value: string,
         bold: string = '0',
         alert: string = '0',
     ) {
-        super(parent);
-        this._cond = new ScvdCondition(this, cond);
+        this._cond = new ScvdCondition(cond);
         this._property = new ScvdValueOutput(property);
-        this._value = new ScvdExpression(this, value);
-        this._bold = new ScvdCondition(this, bold);
-        this._alert = new ScvdCondition(this, alert);
+        this._value = new ScvdExpression(value);
+        this._bold = new ScvdCondition(bold);
+        this._alert = new ScvdCondition(alert);
     }
 
     get property(): ScvdValueOutput {

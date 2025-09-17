@@ -27,9 +27,9 @@ import { ScvdTypedef } from './scvdTypedef';
 export class ScvdRead extends ScvdBase {
     private _type: string | undefined;
     private _symbol: string | undefined;
-    private _offset: ScvdExpression = new ScvdExpression(this, '0'); // default is 0
+    private _offset: ScvdExpression = new ScvdExpression('0'); // default is 0
     private _const: NumberType = new NumberType(0); // default is 0
-    private _cond: ScvdCondition = new ScvdCondition(this);
+    private _cond: ScvdCondition = new ScvdCondition();
     private _size: ScvdExpression;
     private _endian: ScvdEndian | undefined;
 
@@ -40,7 +40,7 @@ export class ScvdRead extends ScvdBase {
         parent: ScvdBase | undefined,
     ) {
         super(parent);
-        this._size = new ScvdExpression(this, '1'); // default is 1
+        this._size = new ScvdExpression('1'); // default is 1
         this._size.setMinMax(1, 512); // Array size must be between 1 and 512
     }
 
@@ -59,7 +59,7 @@ export class ScvdRead extends ScvdBase {
     }
 
     set offset(value: string) {
-        this._offset = new ScvdExpression(this, value);
+        this._offset = new ScvdExpression(value);
     }
     get offset(): ScvdExpression {
         return this._offset;
@@ -97,7 +97,7 @@ export class ScvdRead extends ScvdBase {
         return this._size?.value;
     }
     set size(value: string) {
-        this._size = new ScvdExpression(this, value);
+        this._size = new ScvdExpression(value);
     }
 
     get endian(): ScvdEndian | undefined {

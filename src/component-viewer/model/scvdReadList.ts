@@ -23,7 +23,7 @@ import { ScvdTypedef } from './scvdTypedef';
 import { ScvdRead } from './scvdRead';
 
 export class ScvdReadList extends ScvdRead {
-    private _count: ScvdExpression = new ScvdExpression(this, '1'); // default is 1
+    private _count: ScvdExpression = new ScvdExpression('1'); // default is 1
     private _next: string | undefined;
     private _init: NumberType = new NumberType(0); // discard prev. read objects? default is 0
     private _based: NumberType = new NumberType(0); // is attribute+offset a pointer? default is 0
@@ -41,7 +41,7 @@ export class ScvdReadList extends ScvdRead {
     }
 
     set count(value: string ) {
-        this._count = new ScvdExpression(this, value);
+        this._count = new ScvdExpression(value);
     }
     get count(): ScvdExpression {
         return this._count;

@@ -17,17 +17,14 @@
 // https://arm-software.github.io/CMSIS-View/main/scvd_expression.html
 
 import { NumberType } from './numberType';
-import { ScvdBase } from './scvdBase';
 
-export class ScvdExpression extends ScvdBase {
+export class ScvdExpression {
     private _expression: string | undefined;
     private _result: NumberType | undefined;
 
     constructor(
-        parent: ScvdBase | undefined,
         expression: string | undefined
     ) {
-        super(parent);
         this._expression = expression;
     }
 
@@ -36,7 +33,6 @@ export class ScvdExpression extends ScvdBase {
     }
     public set expression(value: string | undefined) {
         this._expression = value;
-        this.isModified = true;
     }
 
     public get value(): NumberType {

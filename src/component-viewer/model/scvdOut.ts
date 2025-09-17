@@ -30,11 +30,11 @@ export class ScvdOut extends ScvdBase {
         parent: ScvdBase | undefined,
     ) {
         super(parent);
-        this._cond = new ScvdCondition(this);
+        this._cond = new ScvdCondition();
     }
 
     public set value(value: string) {
-        this._value = new ScvdExpression(this, value);
+        this._value = new ScvdExpression(value);
     }
     public get value(): ScvdExpression | undefined {
         return this._value;

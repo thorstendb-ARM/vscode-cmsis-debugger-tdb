@@ -62,7 +62,7 @@ export class ScvdTypedef extends ScvdBase {
         return this._size?.value;
     }
     set size(value: string) {
-        this._size = new ScvdExpression(this, value);
+        this._size = new ScvdExpression(value);
     }
 
     set import(value: string) {
