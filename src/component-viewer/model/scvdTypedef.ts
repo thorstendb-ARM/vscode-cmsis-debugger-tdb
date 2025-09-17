@@ -27,6 +27,12 @@ import { ScvdVar } from './scvdVar';
 export class ScvdTypedefs extends ScvdBase {
     private _typedef: ScvdTypedef[] = [];
 
+    constructor(
+        parent: ScvdBase | undefined,
+    ) {
+        super(parent);
+    }
+
     get typedef(): ScvdTypedef[] {
         return this._typedef;
     }
@@ -35,12 +41,6 @@ export class ScvdTypedefs extends ScvdBase {
         const typedefItem = new ScvdTypedef(this);
         this._typedef.push(typedefItem);
         return typedefItem;
-    }
-
-    constructor(
-        parent: ScvdBase | undefined,
-    ) {
-        super(parent);
     }
 }
 

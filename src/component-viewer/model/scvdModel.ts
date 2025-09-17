@@ -17,7 +17,7 @@
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
 import { ScvdComponentIdentifier } from './scvdComponentIdentifier';
-import { ScvdEvent } from './scvdEvent';
+import { ScvdEvents } from './scvdEvents';
 import { ScvdBase } from './scvdBase';
 import { ScvdObjects } from './scvdObject';
 import { ScvdTypedefs } from './scvdTypedef';
@@ -26,7 +26,7 @@ export class ScvdComonentViewer extends ScvdBase {
     private _component: ScvdComponentIdentifier | undefined;
     private _typedefs: ScvdTypedefs | undefined;
     private _objects: ScvdObjects | undefined;
-    private _events: ScvdEvent | undefined;
+    private _events: ScvdEvents | undefined;
 
     constructor(
         parent: ScvdBase | undefined,
@@ -58,7 +58,7 @@ export class ScvdComonentViewer extends ScvdBase {
     get objects(): ScvdObjects | undefined {
         return this._objects;
     }
-    get events(): ScvdEvent | undefined {
+    get events(): ScvdEvents | undefined {
         return this._events;
     }
 }
