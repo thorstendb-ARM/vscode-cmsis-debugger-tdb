@@ -106,8 +106,8 @@ export class ScvdEvent extends ScvdBase {
     public get state(): ScvdEventState | undefined {
         return this._state;
     }
-    public set state(value: ScvdEventState | undefined) {
-        this._state = value;
+    public set state(value: string) {
+        this._state = new ScvdEventState(value);
     }
 
     public get tracking(): ScvdEventTracking | undefined {

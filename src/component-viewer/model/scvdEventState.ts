@@ -16,14 +16,63 @@
 
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
-import { ScvdBase } from './scvdBase';
-
-export class ScvdEventState extends ScvdBase {
+export class ScvdEventState {
+    private _name: string;
+    private _plot: 'off' | 'line' | 'box' = 'off';
+    private _color: 'blue' | 'red' | 'green' | 'black' = 'blue';
+    private _unique: boolean = false;
+    private _dormant: boolean = false;
+    private _ssel: boolean = false;
 
     constructor(
-        parent: ScvdBase | undefined,
+        state: string,
+        plot: 'off' | 'line' | 'box' = 'off',
     ) {
-        super(parent);
+        this._name = state;
+        this._plot = plot;
     }
 
+    public get plot(): 'off' | 'line' | 'box' {
+        return this._plot;
+    }
+
+    public set plot(value: 'off' | 'line' | 'box') {
+        this._plot = value;
+    }
+
+    public get name(): string {
+        return this._name;
+    }
+
+    public get color(): 'blue' | 'red' | 'green' | 'black' {
+        return this._color;
+    }
+
+    public set color(value: 'blue' | 'red' | 'green' | 'black') {
+        this._color = value;
+    }
+
+    public get unique(): boolean {
+        return this._unique;
+    }
+
+    public set unique(value: boolean) {
+        this._unique = value;
+    }
+
+    public get dormant(): boolean {
+        return this._dormant;
+    }
+
+    public set dormant(value: boolean) {
+        this._dormant = value;
+    }
+
+    public get ssel(): boolean {
+        return this._ssel;
+    }
+
+    public set ssel(value: boolean) {
+        this._ssel = value;
+    }
 }

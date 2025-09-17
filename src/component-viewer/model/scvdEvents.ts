@@ -47,8 +47,12 @@ export class ScvdEvents extends ScvdBase {
     get group(): ScvdGroup[] {
         return this._group;
     }
-    public addGroup(): ScvdGroup {
-        const group = new ScvdGroup(this);
+    public addGroup(
+        brief: string,
+        no: string,
+        prefix: string,
+    ): ScvdGroup {
+        const group = new ScvdGroup(this, brief, no, prefix);
         this._group.push(group);
         return group;
     }
