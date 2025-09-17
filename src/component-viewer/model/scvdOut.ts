@@ -19,7 +19,7 @@
 import { ScvdDataType } from './scvdDataType';
 import { ScvdExpression } from './scvdExpression';
 import { ScvdBase } from './scvdBase';
-import { ScvdCondition } from './scvdScvdCondition';
+import { ScvdCondition } from './scvdCondition';
 
 export class ScvdOut extends ScvdBase {
     private _value: ScvdExpression | undefined; // name._value — expression that evaluates to the value of the output.

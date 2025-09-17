@@ -114,6 +114,7 @@
     "baseContentUrl": "https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/blob/main/README.md"
   },
   "dependencies": {
+    "xml2js": "^0.6.2",
     "yaml": "^2.8.0"
   },
   "devDependencies": {
@@ -124,6 +125,7 @@
     "@types/node-fetch": "^2.6.12",
     "@types/sax": "^1.2.7",
     "@types/vscode": "^1.63.0",
+    "@types/xml2js": "^0.4.14",
     "@types/yargs": "^17.0.33",
     "@types/yarnpkg__lockfile": "^1.1.9",
     "@typescript-eslint/eslint-plugin": "^8.37.0",

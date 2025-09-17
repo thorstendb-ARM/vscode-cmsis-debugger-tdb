@@ -18,11 +18,11 @@
 
 import { ScvdExpression } from './scvdExpression';
 import { ScvdBase } from './scvdBase';
-import { ScvdCondition } from './scvdScvdCondition';
+import { ScvdCondition } from './scvdCondition';
 
 export class ScvdCalc extends ScvdBase {
     private _cond: ScvdCondition;
-    private _expressions: ScvdExpression[] = [];
+    private _expression: ScvdExpression[] = [];
 
     constructor(
         parent: ScvdBase | undefined,
@@ -41,13 +41,13 @@ export class ScvdCalc extends ScvdBase {
         }
     }
 
-    get expressions(): ScvdExpression[] {
-        return this._expressions;
+    get expression(): ScvdExpression[] {
+        return this._expression;
     }
 
     addExpression(value: string): void {
         const expr = new ScvdExpression(this, value);
-        this._expressions.push(expr);
+        this._expression.push(expr);
     }
 
 }

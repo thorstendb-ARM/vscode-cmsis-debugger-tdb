@@ -20,7 +20,7 @@ import { NumberType } from './numberType';
 import { ScvdBase } from './scvdBase';
 import { ScvdEndian } from './scvdEndian';
 import { ScvdExpression } from './scvdExpression';
-import { ScvdCondition } from './scvdScvdCondition';
+import { ScvdCondition } from './scvdCondition';
 import { ScvdSymbol } from './scvdSymbol';
 import { ScvdTypedef } from './scvdTypedef';
 

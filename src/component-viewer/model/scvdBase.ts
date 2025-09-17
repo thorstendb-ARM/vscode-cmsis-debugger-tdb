@@ -37,6 +37,15 @@ export class ScvdBase {
         }
     }
 
+    public verify(): boolean {
+        return true;
+    }
+
+    // public readXml(xml: any): boolean {
+    //     // Default implementation does nothing, can be overridden by subclasses
+    //     return true;
+    // }
+
     /**
      * Applies the provided callback function to each child and returns an array of results.
      * @param callbackfn Function that produces an element of the new array, taking a child and its index.
@@ -113,4 +122,5 @@ export class ScvdBase {
     public reset(): boolean {
         return true;
     }
+
 }

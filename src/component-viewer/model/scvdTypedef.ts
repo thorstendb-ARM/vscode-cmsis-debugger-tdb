@@ -25,6 +25,17 @@ import { ScvdVar } from './scvdVar';
 
 // Container
 export class ScvdTypedefs extends ScvdBase {
+    private _typedef: ScvdTypedef[] = [];
+
+    get typedef(): ScvdTypedef[] {
+        return this._typedef;
+    }
+
+    public addTypedef(): ScvdTypedef {
+        const typedefItem = new ScvdTypedef(this);
+        this._typedef.push(typedefItem);
+        return typedefItem;
+    }
 
     constructor(
         parent: ScvdBase | undefined,
@@ -38,8 +49,8 @@ export class ScvdTypedef extends ScvdBase {
     private _size: ScvdExpression | undefined;
     private _import: ScvdSymbol | undefined;
 
-    private _members: ScvdMember[] = [];
-    private _vars: ScvdVar[] = [];
+    private _member: ScvdMember[] = [];
+    private _var: ScvdVar[] = [];
 
     constructor(
         parent: ScvdBase | undefined,
@@ -57,23 +68,26 @@ export class ScvdTypedef extends ScvdBase {
     set import(value: string) {
         this._import = new ScvdSymbol(this, value);
     }
+    get import(): ScvdSymbol | undefined {
+        return this._import;
+    }
 
     public addMember(): ScvdMember {
         const memberItem = new ScvdMember(this);
-        this._members.push(memberItem);
+        this._member.push(memberItem);
         return memberItem;
     }
-    public get members(): ScvdMember[] {
-        return this._members;
+    public get member(): ScvdMember[] {
+        return this._member;
     }
 
     public addVar(): ScvdVar {
         const varItem = new ScvdVar(this);
-        this._vars.push(varItem);
+        this._var.push(varItem);
         return varItem;
     }
-    public get vars(): ScvdVar[] {
-        return this._vars;
+    public get var(): ScvdVar[] {
+        return this._var;
     }
 
 }

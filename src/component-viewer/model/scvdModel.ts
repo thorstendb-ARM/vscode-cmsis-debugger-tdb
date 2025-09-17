@@ -16,14 +16,14 @@
 
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
-import { ScvdComponent } from './scvdComponent';
+import { ScvdComponentIdentifier } from './scvdComponentIdentifier';
 import { ScvdEvent } from './scvdEvent';
 import { ScvdBase } from './scvdBase';
 import { ScvdObjects } from './scvdObject';
 import { ScvdTypedefs } from './scvdTypedef';
 
-export class ScvdModel extends ScvdBase {
-    private _component: ScvdComponent | undefined;
+export class ScvdComonentViewer extends ScvdBase {
+    private _component: ScvdComponentIdentifier | undefined;
     private _typedefs: ScvdTypedefs | undefined;
     private _objects: ScvdObjects | undefined;
     private _events: ScvdEvent | undefined;
@@ -34,7 +34,22 @@ export class ScvdModel extends ScvdBase {
         super(parent);
     }
 
-    get component(): ScvdComponent | undefined {
+    // public readXml(xml: any): boolean {
+    //     if (xml.component_viewer) {
+    //         this._component = new ScvdComponent(this);
+    //         this._component.readXml(xml.component_viewer.component[0]);
+    //         this._typedefs = new ScvdTypedefs(this);
+    //         this._typedefs.readXml(xml.component_viewer.typedefs[0]);
+    //         this._objects = new ScvdObjects(this);
+    //         this._objects.readXml(xml.component_viewer.objects[0]);
+    //         this._events = new ScvdEvent(this);
+    //         this._events.readXml(xml.component_viewer.events[0]);
+    //         return true;
+    //     }
+    //     return false;
+    // }
+
+    get component(): ScvdComponentIdentifier | undefined {
         return this._component;
     }
     get typedefs(): ScvdTypedefs | undefined {

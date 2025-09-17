@@ -20,11 +20,11 @@ import { ScvdBase } from './scvdBase';
 import { ScvdExpression } from './scvdExpression';
 import { ScvdList } from './scvdList';
 import { ScvdPrint } from './scvdPrint';
-import { ScvdProperty } from './scvdProperty';
-import { ScvdCondition } from './scvdScvdCondition';
+import { ScvdValueOutput } from './scvdValueOutput';
+import { ScvdCondition } from './scvdCondition';
 
 export class ScvdItem extends ScvdBase {
-    private _property: ScvdProperty | undefined;
+    private _property: ScvdValueOutput | undefined;
     private _value: ScvdExpression | undefined;
     private _cond: ScvdCondition | undefined;
     private _bold: ScvdCondition | undefined;
@@ -36,20 +36,18 @@ export class ScvdItem extends ScvdBase {
 
     constructor(
         parent: ScvdBase | undefined,
+        cond: string,
+        bold: string = '0',
+        alert: string = '0',
     ) {
         super(parent);
-        this._cond = new ScvdCondition(this, '1'); // default is 1
-        this._bold = new ScvdCondition(this, '0'); // default is 0
-        this._alert = new ScvdCondition(this, '0'); // default is 0
+        this._cond = new ScvdCondition(this, cond);
+        this._bold = new ScvdCondition(this, bold);
+        this._alert = new ScvdCondition(this, alert);
     }
 
-    public get property(): ScvdProperty | undefined {
+    public get property(): ScvdValueOutput | undefined {
         return this._property;
-    }
-    public set property(value: string) {
-        this._property = new ScvdProperty(this);
-        this._property.text = value;
-        this.isModified = true;
     }
 
     public get value(): ScvdExpression | undefined {

@@ -25,15 +25,15 @@ import { ScvdVar } from './scvdVar';
 
 export class ScvdList extends ScvdBase {
     private _start: ScvdExpression;
-    private _limit: ScvdExpression;
-    private _while: ScvdExpression;
+    private _limit: ScvdExpression | undefined = undefined;
+    private _while: ScvdExpression | undefined = undefined;
     private _cond: ScvdExpression;
 
-    private _lists: ScvdList[] = [];
-    private _readlists: ScvdReadList[] = [];
-    private _reads: ScvdRead[] = [];
-    private _vars: ScvdVar[] = [];
-    private _calcs: ScvdCalc[] = [];
+    private _list: ScvdList[] = [];
+    private _readlist: ScvdReadList[] = [];
+    private _read: ScvdRead[] = [];
+    private _var: ScvdVar[] = [];
+    private _calc: ScvdCalc[] = [];
 
 
     constructor(
@@ -41,9 +41,17 @@ export class ScvdList extends ScvdBase {
     ) {
         super(parent);
         this._start = new ScvdExpression(this, '0'); // default is 0
-        this._limit = new ScvdExpression(this, '0'); // default is 0
-        this._while = new ScvdExpression(this, '1'); // default is 1
+        //this._limit = new ScvdExpression(this, '0'); // default is 0
+        //this._while = new ScvdExpression(this, '1'); // default is 1
         this._cond = new ScvdExpression(this, '1'); // default is 1
+    }
+
+    public verify(): boolean {
+        if(this._limit && this._while) {
+            console.error('List cannot have both limit and while attributes');
+            return false;
+        }
+        return true;
     }
 
     get start(): ScvdExpression | undefined {
@@ -84,46 +92,46 @@ export class ScvdList extends ScvdBase {
 
     public addList(): ScvdList {
         const listItem = new ScvdList(this);
-        this._lists.push(listItem);
+        this._list.push(listItem);
         return listItem;
     }
 
     public get lists(): ScvdList[] {
-        return this._lists;
+        return this._list;
     }
 
     public addReadList(): ScvdReadList {
         const readListItem = new ScvdReadList(this);
-        this._readlists.push(readListItem);
+        this._readlist.push(readListItem);
         return readListItem;
     }
 
     public get readLists(): ScvdReadList[] {
-        return this._readlists;
+        return this._readlist;
     }
 
     public addRead(): ScvdRead {
         const readItem = new ScvdRead(this);
-        this._reads.push(readItem);
+        this._read.push(readItem);
         return readItem;
     }
-    public get reads(): ScvdRead[] {
-        return this._reads;
+    public get read(): ScvdRead[] {
+        return this._read;
     }
     public addVar(): ScvdVar {
         const varItem = new ScvdVar(this);
-        this._vars.push(varItem);
+        this._var.push(varItem);
         return varItem;
     }
-    public get vars(): ScvdVar[] {
-        return this._vars;
+    public get var(): ScvdVar[] {
+        return this._var;
     }
     public addCalc(): ScvdCalc {
         const calcItem = new ScvdCalc(this);
-        this._calcs.push(calcItem);
+        this._calc.push(calcItem);
         return calcItem;
     }
-    public get calcs(): ScvdCalc[] {
-        return this._calcs;
+    public get calc(): ScvdCalc[] {
+        return this._calc;
     }
 }

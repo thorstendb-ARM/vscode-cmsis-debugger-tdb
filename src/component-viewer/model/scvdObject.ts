@@ -25,22 +25,27 @@ import { ScvdReadList } from './scvdReadList';
 import { ScvdVar } from './scvdVar';
 
 export class ScvdObjects extends ScvdBase {
+    private _object: ScvdObject;
 
     constructor(
         parent: ScvdBase | undefined,
     ) {
         super(parent);
+        this._object = new ScvdObject(this);
     }
 
+    public get object(): ScvdObject {
+        return this._object;
+    }
 }
 
 export class ScvdObject extends ScvdBase {
     private _vars: ScvdVar[] = [];
     private _calcs: ScvdCalc[] = [];
-    private _lists: ScvdList[] = [];
-    private _reads: ScvdRead[] = [];
-    private _readLists: ScvdReadList[] = [];
-    private _outs: ScvdOut[] = [];
+    private _list: ScvdList[] = [];
+    private _read: ScvdRead[] = [];
+    private _readList: ScvdReadList[] = [];
+    private _out: ScvdOut[] = [];
 
     constructor(
         parent: ScvdBase | undefined,
@@ -68,37 +73,37 @@ export class ScvdObject extends ScvdBase {
 
     public addList(): ScvdList {
         const listItem = new ScvdList(this);
-        this._lists.push(listItem);
+        this._list.push(listItem);
         return listItem;
     }
     public get lists(): ScvdList[] {
-        return this._lists;
+        return this._list;
     }
 
     public addRead(): ScvdRead {
         const readItem = new ScvdRead(this);
-        this._reads.push(readItem);
+        this._read.push(readItem);
         return readItem;
     }
     public get reads(): ScvdRead[] {
-        return this._reads;
+        return this._read;
     }
 
     public addReadList(): ScvdReadList {
         const readListItem = new ScvdReadList(this);
-        this._readLists.push(readListItem);
+        this._readList.push(readListItem);
         return readListItem;
     }
     public get readLists(): ScvdReadList[] {
-        return this._readLists;
+        return this._readList;
     }
 
     public addOut(): ScvdOut {
         const outItem = new ScvdOut(this);
-        this._outs.push(outItem);
+        this._out.push(outItem);
         return outItem;
     }
-    public get outs(): ScvdOut[] {
-        return this._outs;
+    public get out(): ScvdOut[] {
+        return this._out;
     }
 }

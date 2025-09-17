@@ -14,27 +14,117 @@
  * limitations under the License.
  */
 
-//
+// https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
+import { NumberType } from './numberType';
 import { ScvdBase } from './scvdBase';
-
-export class ScvdEvents extends ScvdBase {
-
-    constructor(
-        parent: ScvdBase | undefined,
-    ) {
-        super(parent);
-    }
-
-}
-
+import { ScvdEventId } from './scvdEventId';
+import { ScvdEventLevel } from './scvdEventLevel';
+import { ScvdEventState } from './scvdEventState';
+import { ScvdEventTracking } from './scvdEventTracking';
+import { ScvdExpression } from './scvdExpression';
+import { ScvdPrint } from './scvdPrint';
+import { ScvdValueOutput } from './scvdValueOutput';
 
 export class ScvdEvent extends ScvdBase {
+    private _id: ScvdEventId;
+    private _level: ScvdEventLevel;
+    private _property: ScvdValueOutput;
+    private _value: ScvdValueOutput | undefined;
+    private _doc: string | undefined;
+    private _handle: NumberType | undefined;
+    private _hname: ScvdExpression | undefined;
+    private _state: ScvdEventState | undefined; // reference
+    private _tracking: ScvdEventTracking | undefined;
+    private _print: ScvdPrint[] = [];
 
     constructor(
         parent: ScvdBase | undefined,
+        id: string,
+        level: string,
+        property: string,
+        value: string | undefined = undefined,
     ) {
-        super(parent, true);
+        super(parent);
+        this._id = new ScvdEventId(id);
+        this._level = new ScvdEventLevel(level);
+        this._property = new ScvdValueOutput(property);
+        if(value !== undefined) {
+            this._value = new ScvdValueOutput(value);
+        }
     }
 
+    public get id(): ScvdEventId {
+        return this._id;
+    }
+    public set id(value: ScvdEventId) {
+        this._id = value;
+    }
+
+    public get level(): ScvdEventLevel {
+        return this._level;
+    }
+    public set level(value: ScvdEventLevel) {
+        this._level = value;
+    }
+
+    public get property(): ScvdValueOutput {
+        return this._property;
+    }
+    public set property(value: ScvdValueOutput) {
+        this._property = value;
+    }
+
+    public get value(): ScvdValueOutput | undefined {
+        return this._value;
+    }
+    public set value(value: ScvdValueOutput | undefined) {
+        this._value = value;
+    }
+
+    public get doc(): string | undefined {
+        return this._doc;
+    }
+    public set doc(value: string | undefined) {
+        this._doc = value;
+    }
+
+    public get handle(): NumberType | undefined {
+        return this._handle;
+    }
+    public set handle(value: NumberType | undefined) {
+        this._handle = value;
+    }
+
+    public get hname(): ScvdExpression | undefined {
+        return this._hname;
+    }
+    public set hname(value: ScvdExpression | undefined) {
+        this._hname = value;
+    }
+
+    public get state(): ScvdEventState | undefined {
+        return this._state;
+    }
+    public set state(value: ScvdEventState | undefined) {
+        this._state = value;
+    }
+
+    public get tracking(): ScvdEventTracking | undefined {
+        return this._tracking;
+    }
+    public set tracking(value: ScvdEventTracking | undefined) {
+        this._tracking = value;
+    }
+
+    public get print(): ScvdPrint[] {
+        return this._print;
+    }
+    public set print(value: ScvdPrint[]) {
+        this._print = value;
+    }
+
+    public addPrint(entry: ScvdPrint): void {
+        this._print.push(entry);
+    }
 }

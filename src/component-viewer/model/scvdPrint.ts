@@ -18,40 +18,34 @@
 
 import { ScvdBase } from './scvdBase';
 import { ScvdExpression } from './scvdExpression';
-import { ScvdProperty } from './scvdProperty';
-import { ScvdCondition } from './scvdScvdCondition';
+import { ScvdValueOutput } from './scvdValueOutput';
+import { ScvdCondition } from './scvdCondition';
 
 export class ScvdPrint extends ScvdBase {
     private _cond: ScvdCondition;
-    private _property: ScvdProperty;
+    private _property: ScvdValueOutput;
     private _value: ScvdExpression;
     private _bold: ScvdCondition;
     private _alert: ScvdCondition;
 
-
     constructor(
         parent: ScvdBase | undefined,
+        cond: string,
+        property: string,
+        value: string,
+        bold: string = '0',
+        alert: string = '0',
     ) {
         super(parent);
-        this._cond = new ScvdCondition(this); // default is 1
-        this._property = new ScvdProperty(this);
-        this._value = new ScvdExpression(this, '0'); // default is 0
-        this._bold = new ScvdCondition(this, '0'); // default is 0
-        this._alert = new ScvdCondition(this, '0'); // default is 0
-    }
-
-    set property(value: string) {
-        this._property.text = value;
-        this.isModified = true;
-    }
-
-    get property(): ScvdProperty {
-        return this._property;
-    }
-
-    set value(value: string) {
+        this._cond = new ScvdCondition(this, cond);
+        this._property = new ScvdValueOutput(property);
         this._value = new ScvdExpression(this, value);
-        this.isModified = true;
+        this._bold = new ScvdCondition(this, bold);
+        this._alert = new ScvdCondition(this, alert);
+    }
+
+    get property(): ScvdValueOutput {
+        return this._property;
     }
 
     get value(): ScvdExpression {
@@ -62,23 +56,12 @@ export class ScvdPrint extends ScvdBase {
         return this._cond;
     }
 
-    set cond(value: string) {
-        this._cond = new ScvdCondition(this, value);
-    }
-
     get bold(): ScvdCondition {
         return this._bold;
-    }
-
-    set bold(value: string) {
-        this._bold = new ScvdCondition(this, value);
     }
 
     get alert(): ScvdCondition {
         return this._alert;
     }
 
-    set alert(value: string) {
-        this._alert = new ScvdCondition(this, value);
-    }
 }

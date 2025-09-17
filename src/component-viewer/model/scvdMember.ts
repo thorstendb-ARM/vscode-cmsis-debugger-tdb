@@ -26,7 +26,7 @@ export class ScvdMember extends ScvdBase {
     private _type: ScvdDataType | undefined;
     private _offset: ScvdExpression | undefined;
     private _size: NumberType | undefined;
-    private _enums: ScvdEnum[] = [];
+    private _enum: ScvdEnum[] = [];
 
     constructor(
         parent: ScvdBase | undefined,
@@ -59,17 +59,17 @@ export class ScvdMember extends ScvdBase {
     }
 
     public addEnum(): ScvdEnum {
-        const lastEnum = this._enums[this._enums.length - 1];
+        const lastEnum = this._enum[this._enum.length - 1];
         const enumItem = new ScvdEnum(this, lastEnum);
-        this._enums.push(enumItem);
+        this._enum.push(enumItem);
         return enumItem;
     }
-    public get enums(): ScvdEnum[] {
-        return this._enums;
+    public get enum(): ScvdEnum[] {
+        return this._enum;
     }
 
     public getEnum(index: NumberType): ScvdEnum | undefined {
-        const enumItem = this._enums.find((item) => item.value?.value?.value === index.value);
+        const enumItem = this._enum.find((item) => item.value?.value?.value === index.value);
         return enumItem;
     }
 }

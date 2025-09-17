@@ -19,8 +19,6 @@
 import { NumberType, NumberTypeInput } from './numberType';
 import { ScvdExpression } from './scvdExpression';
 import { ScvdBase } from './scvdBase';
-import { ScvdCondition } from './scvdScvdCondition';
-import { ScvdSymbol } from './scvdSymbol';
 import { ScvdTypedef } from './scvdTypedef';
 import { ScvdRead } from './scvdRead';
 

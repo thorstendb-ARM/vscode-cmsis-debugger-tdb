@@ -9,12 +9,22 @@
  *********************************************************************/
 import * as vscode from 'vscode';
 import { URI } from 'vscode-uri';
+import { parseStringPromise, ParserOptions } from 'xml2js';
 import { parser } from './parser';
+import { ScvdComonentViewer } from './model/scvdModel';
+
 
 const svvdFile = '/Users/thode01/work/ComponentViewer/Files/BaseExample.scvd';
+
+const parserOptions: ParserOptions = {
+    explicitArray: false,
+    preserveChildrenOrder: true,
+    attrkey: 'attribute',
+};
+
 export class ComponentViewer {
     protected scvdReader: parser;
-    private _model: ScvdModel | undefined;
+    private model: ScvdComonentViewer | undefined;
 
     public constructor(
     ) {
@@ -22,11 +32,34 @@ export class ComponentViewer {
         this.scvdReader = new parser();
     }
 
-    protected initScvdReader(filename: URI) {
+    protected async initScvdReader(filename: URI) {
         // This is where you would initialize the SCVD reader
         // For example, you might want to read the file and parse it
         console.log(`Initializing SCVD reader with file: ${filename}`);
+        const buf = (await this.readFileToBuffer(filename)).toString('utf-8');
+        this.parseXml(buf);
+        this.model = new ScvdComonentViewer(undefined);
 
+        console.log('Model: ', this.model);
+    }
+
+    private async readFileToBuffer(filePath: URI): Promise<Buffer> {
+        try {
+            const buffer = await vscode.workspace.fs.readFile(filePath);
+            return Buffer.from(buffer);
+        } catch (error) {
+            console.error('Error reading file:', error);
+            throw error;
+        }
+    }
+    private async parseXml(text: string) {
+        try {
+            const result = await parseStringPromise(text, parserOptions);
+
+            console.log(JSON.stringify(result, null, 2));
+        } catch (err) {
+            console.error('Error parsing XML:', err);
+        }
     }
 
     public activate(_ctx: vscode.ExtensionContext) {

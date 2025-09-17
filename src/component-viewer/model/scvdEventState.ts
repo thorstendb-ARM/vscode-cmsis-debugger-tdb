@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
+// https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
+
 import { ScvdBase } from './scvdBase';
 
-export class ScvdComponent extends ScvdBase {
-    private _version: string | undefined;
+export class ScvdEventState extends ScvdBase {
 
     constructor(
         parent: ScvdBase | undefined,
@@ -25,10 +26,4 @@ export class ScvdComponent extends ScvdBase {
         super(parent);
     }
 
-    public get version(): string | undefined {
-        return this._version;
-    }
-    public set version(version: string) {
-        this._version = version;
-    }
 }

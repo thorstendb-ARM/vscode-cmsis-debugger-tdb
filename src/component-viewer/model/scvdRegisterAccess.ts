@@ -18,8 +18,7 @@
 
 import { ScvdBase } from './scvdBase';
 
-export class ScvdProperty extends ScvdBase {
-    private _text: string | undefined;
+export class ScvdRegisterAccess extends ScvdBase {
 
     constructor(
         parent: ScvdBase | undefined,
@@ -27,11 +26,4 @@ export class ScvdProperty extends ScvdBase {
         super(parent);
     }
 
-    public get text(): string | undefined {
-        return this._text;
-    }
-    public set text(value: string | undefined) {
-        this._text = value;
-        this.isModified = true;
-    }
 }
