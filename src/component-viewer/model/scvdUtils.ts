@@ -48,3 +48,6 @@ export function clearSignBit(num: number) {
     return num >>> 0;
 }
 
+export function getArrayFromJson<T>(value: T | T[] | undefined): T[] | undefined {
+    return value === undefined ? undefined : (Array.isArray(value) ? value : [value]);
+}

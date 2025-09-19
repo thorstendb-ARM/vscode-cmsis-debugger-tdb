@@ -16,44 +16,45 @@
 
 import { NumberType } from './numberType';
 
+// add linter exception for Json
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type Json = Record<string, any>;
+
 
 export class ScvdBase {
     private _parent: ScvdBase | undefined;
-    private _children: ScvdBase[] = [];
-    private _isModified: boolean = false;
+
     private _name: string | undefined;
     private _info: string | undefined;
 
+    private _isModified: boolean = false;
+
     constructor(
         parent: ScvdBase | undefined,
-        addChild: boolean = false,
     ) {
         if (parent instanceof ScvdBase) {
             this._parent = parent;
-
-            if (addChild) {
-                parent.addChild(this);
-            }
         }
     }
 
-    public verify(): boolean {
+    public readXml(xml: Json): boolean {
+        if (xml === undefined ) {
+            return false;
+        }
+
+        this.name = xml.name;
+        this.info = xml.info;
         return true;
     }
-
-    // public readXml(xml: any): boolean {
-    //     // Default implementation does nothing, can be overridden by subclasses
-    //     return true;
-    // }
 
     /**
      * Applies the provided callback function to each child and returns an array of results.
      * @param callbackfn Function that produces an element of the new array, taking a child and its index.
      * @returns Array of mapped results.
      */
-    public map<T>(_callbackfn: (child: ScvdBase, index: number, array: ScvdBase[]) => T): T[] {
+    /*public map<T>(_callbackfn: (child: ScvdBase, index: number, array: ScvdBase[]) => T): T[] {
         return this._children.map(_callbackfn);
-    }
+    }*/
 
     // Member function available to all ScvdItems and derived classes
     public resolveAndLink(): boolean {
@@ -86,13 +87,6 @@ export class ScvdBase {
     public get parent(): ScvdBase | undefined {
         return this._parent;
     }
-    public get children(): ScvdBase[] {
-        return this._children;
-    }
-    protected addChild(child: ScvdBase) {
-        this._children.push(child);
-    }
-
 
     public set name(name: string) {
         this._name = name;

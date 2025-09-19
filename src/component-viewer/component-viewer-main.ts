@@ -11,15 +11,28 @@ import * as vscode from 'vscode';
 import { URI } from 'vscode-uri';
 import { parseStringPromise, ParserOptions } from 'xml2js';
 import { parser } from './parser';
-import { ScvdComonentViewer } from './model/scvdModel';
+import { ScvdComonentViewer } from './model/scvdComonentViewer';
+import { Json } from './model/scvdBase';
 
 
-const svvdFile = '/Users/thode01/work/ComponentViewer/Files/BaseExample.scvd';
+const scvdFiles: string[] = [
+    '/Users/thode01/work/ComponentViewer/Files/BaseExample.scvd',
+    '/Users/thode01/work/ComponentViewer/Files/RTX5.scvd',
+];
 
-const parserOptions: ParserOptions = {
+enum scvdExamples {
+    BaseExample = 0,
+    RTX5 = 1,
+}
+
+const scvdFile = scvdFiles[scvdExamples.RTX5];
+
+
+const xmlOpts: ParserOptions = {
     explicitArray: false,
-    preserveChildrenOrder: true,
-    attrkey: 'attribute',
+    mergeAttrs: true,
+    explicitRoot: true,
+    trim: true
 };
 
 export class ComponentViewer {
@@ -28,7 +41,7 @@ export class ComponentViewer {
 
     public constructor(
     ) {
-        this.initScvdReader(URI.file(svvdFile));
+        this.initScvdReader(URI.file(scvdFile));
         this.scvdReader = new parser();
     }
 
@@ -37,8 +50,10 @@ export class ComponentViewer {
         // For example, you might want to read the file and parse it
         console.log(`Initializing SCVD reader with file: ${filename}`);
         const buf = (await this.readFileToBuffer(filename)).toString('utf-8');
-        this.parseXml(buf);
+        const xml: Json = await this.parseXml(buf);
         this.model = new ScvdComonentViewer(undefined);
+        this.model.readXml(xml);
+
 
         console.log('Model: ', this.model);
     }
@@ -54,9 +69,9 @@ export class ComponentViewer {
     }
     private async parseXml(text: string) {
         try {
-            const result = await parseStringPromise(text, parserOptions);
-
-            console.log(JSON.stringify(result, null, 2));
+            const json = await parseStringPromise(text, xmlOpts);
+            console.log(JSON.stringify(json, null, 2));
+            return json;
         } catch (err) {
             console.error('Error parsing XML:', err);
         }

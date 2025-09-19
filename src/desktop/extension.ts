@@ -19,7 +19,7 @@ import { GDBTargetDebugTracker } from '../debug-configuration/gdbtarget-debug-tr
 import { GDBTargetConfigurationProvider } from '../debug-configuration';
 import { logger } from '../logger';
 import { addToolsToPath } from './add-to-path';
-import { ComponentViewer } from '../component-viewer/component-viewer';
+import { ComponentViewer } from '../component-viewer/component-viewer-main';
 
 const BUILTIN_TOOLS_PATHS = [
     'tools/pyocd/pyocd',

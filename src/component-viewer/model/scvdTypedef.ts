@@ -55,7 +55,7 @@ export class ScvdTypedef extends ScvdBase {
     constructor(
         parent: ScvdBase | undefined,
     ) {
-        super(parent, true);
+        super(parent);
     }
 
     get size(): NumberType | undefined {

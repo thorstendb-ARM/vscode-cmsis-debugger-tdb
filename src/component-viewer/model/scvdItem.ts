@@ -89,7 +89,6 @@ export class ScvdItem extends ScvdBase {
     }
     public addItem(item: ScvdItem) {
         this._item.push(item);
-        this.addChild(item);
     }
     public get list(): ScvdList[] {
         return this._list;
