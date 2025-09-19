@@ -18,37 +18,43 @@
 // https://arm-software.github.io/CMSIS-View/main/elem_events.html
 
 import { NumberType } from './numberType';
-import { ScvdBase } from './scvdBase';
+import { Json, ScvdBase } from './scvdBase';
 import { ScvdEventState } from './scvdEventState';
 
 export class ScvdGroup extends ScvdBase {
-    private _brief: string;
-    private _no: NumberType;
-    private _prefix: string; // hyperlink
+    private _brief: string | undefined;
+    private _no: NumberType | undefined;
+    private _prefix: string | undefined; // hyperlink
     private _state: ScvdEventState[] = [];
 
     constructor(
         parent: ScvdBase | undefined,
-        brief: string,
-        no: string,
-        prefix: string,
     ) {
         super(parent);
-        this._brief = brief;
-        this._no = new NumberType(no);
-        this._prefix = prefix;
+    }
+
+    public readXml(xml: Json): boolean {
+        if (xml === undefined ) {
+            return false;
+        }
+
+        this._brief = xml.brief;
+        this._no = new NumberType(xml.no);
+        this._prefix = xml.prefix;
+
+        return super.readXml(xml);
     }
 
 
-    public get brief(): string {
+    public get brief(): string | undefined {
         return this._brief;
     }
 
-    public get no(): NumberType {
+    public get no(): NumberType | undefined {
         return this._no;
     }
 
-    public get prefix(): string {
+    public get prefix(): string | undefined {
         return this._prefix;
     }
 

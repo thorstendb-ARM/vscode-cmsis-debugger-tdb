@@ -44,12 +44,26 @@ export class ScvdObjects extends ScvdBase {
             return false;       // only one object supported
         }
 
+        objects?.forEach( (v: Json) => {
+            const object = this.addObject();
+            object.readXml(v);
+        });
+
         this._object = new ScvdObject(this);
         this._object.readXml(objects[0]);
 
         return super.readXml(xml);
     }
 
+    public addObject(): ScvdObject {
+        if(this._object !== undefined) {    // only one object supported
+            return this._object;
+        }
+
+        const object = new ScvdObject(this);
+        this._object = object;
+        return object;
+    }
 
     public get object(): ScvdObject {
         return this._object;

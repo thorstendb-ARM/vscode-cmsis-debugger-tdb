@@ -16,9 +16,10 @@
 
 //
 
-import { ScvdBase } from './scvdBase';
+import { Json, ScvdBase } from './scvdBase';
 import { ScvdEvent } from './scvdEvent';
 import { ScvdGroup } from './scvdGroup';
+import { getArrayFromJson } from './scvdUtils';
 
 export class ScvdEvents extends ScvdBase {
     private _event: ScvdEvent[] = [];
@@ -30,16 +31,36 @@ export class ScvdEvents extends ScvdBase {
         super(parent);
     }
 
+    public readXml(xml: Json): boolean {
+        if (xml === undefined ) {
+            return false;
+        }
+
+        const events = xml;
+        if( events === undefined) {
+            return false;
+        }
+
+        const event = getArrayFromJson(events.event);
+        event?.forEach( (v: Json) => {
+            const varItem = this.addEvent();
+            varItem.readXml(v);
+        });
+
+        const groups = getArrayFromJson(events.group);
+        groups?.forEach( (v: Json) => {
+            const varItem = this.addGroup();
+            varItem.readXml(v);
+        });
+
+        return super.readXml(xml);
+    }
+
     get event(): ScvdEvent[] {
         return this._event;
     }
-    public addEvent(
-        id: string,
-        level: string,
-        property: string,
-        value: string | undefined = undefined,
-    ): ScvdEvent {
-        const event = new ScvdEvent(this, id, level, property, value);
+    public addEvent(): ScvdEvent {
+        const event = new ScvdEvent(this);
         this._event.push(event);
         return event;
     }
@@ -47,12 +68,8 @@ export class ScvdEvents extends ScvdBase {
     get group(): ScvdGroup[] {
         return this._group;
     }
-    public addGroup(
-        brief: string,
-        no: string,
-        prefix: string,
-    ): ScvdGroup {
-        const group = new ScvdGroup(this, brief, no, prefix);
+    public addGroup(): ScvdGroup {
+        const group = new ScvdGroup(this);
         this._group.push(group);
         return group;
     }

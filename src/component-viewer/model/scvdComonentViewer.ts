@@ -77,8 +77,7 @@ export class ScvdComonentViewer extends ScvdBase {
             this._typedefs.readXml(typedefs);
         }
 
-        const eventsContainer = componentViewer?.events;
-        const events = getArrayFromJson(eventsContainer?.event);
+        const events = componentViewer?.events;
         if(events !== undefined) {
             this._events = new ScvdEvents(this);
             this._events.readXml(events);

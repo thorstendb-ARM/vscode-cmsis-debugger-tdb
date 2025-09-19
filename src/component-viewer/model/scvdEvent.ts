@@ -17,7 +17,7 @@
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
 import { NumberType } from './numberType';
-import { ScvdBase } from './scvdBase';
+import { Json, ScvdBase } from './scvdBase';
 import { ScvdEventId } from './scvdEventId';
 import { ScvdEventLevel } from './scvdEventLevel';
 import { ScvdEventState } from './scvdEventState';
@@ -27,9 +27,9 @@ import { ScvdPrint } from './scvdPrint';
 import { ScvdValueOutput } from './scvdValueOutput';
 
 export class ScvdEvent extends ScvdBase {
-    private _id: ScvdEventId;
-    private _level: ScvdEventLevel;
-    private _property: ScvdValueOutput;
+    private _id: ScvdEventId | undefined;
+    private _level: ScvdEventLevel | undefined;
+    private _property: ScvdValueOutput | undefined;
     private _value: ScvdValueOutput | undefined;
     private _doc: string | undefined;
     private _handle: NumberType | undefined;
@@ -40,42 +40,42 @@ export class ScvdEvent extends ScvdBase {
 
     constructor(
         parent: ScvdBase | undefined,
-        id: string,
-        level: string,
-        property: string,
-        value: string | undefined = undefined,
     ) {
         super(parent);
-        this._id = new ScvdEventId(id);
-        this._level = new ScvdEventLevel(level);
-        this._property = new ScvdValueOutput(property);
-        if(value !== undefined) {
-            this._value = new ScvdValueOutput(value);
-        }
     }
 
-    public get id(): ScvdEventId {
+    public readXml(xml: Json): boolean {
+        if (xml === undefined ) {
+            return false;
+        }
+
+        //this.tag = xml.tag;
+
+        return super.readXml(xml);
+    }
+
+    public get id(): ScvdEventId | undefined {
         return this._id;
     }
     public set id(value: ScvdEventId) {
         this._id = value;
     }
 
-    public get level(): ScvdEventLevel {
+    public get level(): ScvdEventLevel | undefined {
         return this._level;
     }
     public set level(value: ScvdEventLevel) {
         this._level = value;
     }
 
-    public get property(): ScvdValueOutput {
+    public get property(): ScvdValueOutput | undefined {
         return this._property;
     }
     public set property(value: ScvdValueOutput) {
         this._property = value;
     }
 
-    public get value(): ScvdValueOutput | undefined {
+    public get value() {
         return this._value;
     }
     public set value(value: ScvdValueOutput | undefined) {
