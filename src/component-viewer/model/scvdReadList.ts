@@ -18,13 +18,13 @@
 
 import { NumberType, NumberTypeInput } from './numberType';
 import { ScvdExpression } from './scvdExpression';
-import { ScvdBase } from './scvdBase';
+import { Json, ScvdBase } from './scvdBase';
 import { ScvdTypedef } from './scvdTypedef';
 import { ScvdRead } from './scvdRead';
 
 export class ScvdReadList extends ScvdRead {
     private _count: ScvdExpression = new ScvdExpression('1'); // default is 1
-    private _next: string | undefined;
+    private _next: string | undefined;  // member name for the .next pointer
     private _init: NumberType = new NumberType(0); // discard prev. read objects? default is 0
     private _based: NumberType = new NumberType(0); // is attribute+offset a pointer? default is 0
 
@@ -39,6 +39,35 @@ export class ScvdReadList extends ScvdRead {
         super(parent);
         this._count.setMinMax(this.countMin, this.countMax);
     }
+
+    public readXml(xml: Json): boolean {
+        if (xml === undefined ) {
+            return false;
+        }
+
+        const count = xml.count;
+        if(count !== undefined) {
+            this._count = new ScvdExpression(count);
+        }
+
+        const next = xml.next;
+        if(next !== undefined) {
+            this._next = next;
+        }
+
+        const init = xml.init;
+        if(init !== undefined) {
+            this._init = new NumberType(init);
+        }
+
+        const based = xml.based;
+        if(based !== undefined) {
+            this._based = new NumberType(based);
+        }
+
+        return super.readXml(xml);
+    }
+
 
     set count(value: string ) {
         this._count = new ScvdExpression(value);

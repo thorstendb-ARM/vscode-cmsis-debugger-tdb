@@ -18,16 +18,17 @@
 
 import { ScvdCalc } from './scvdCalc';
 import { ScvdExpression } from './scvdExpression';
-import { ScvdBase } from './scvdBase';
+import { Json, ScvdBase } from './scvdBase';
 import { ScvdRead } from './scvdRead';
 import { ScvdReadList } from './scvdReadList';
 import { ScvdVar } from './scvdVar';
+import { getArrayFromJson } from './scvdUtils';
 
 export class ScvdList extends ScvdBase {
-    private _start: ScvdExpression;
+    private _start: ScvdExpression | undefined = undefined;
     private _limit: ScvdExpression | undefined = undefined;
     private _while: ScvdExpression | undefined = undefined;
-    private _cond: ScvdExpression;
+    private _cond: ScvdExpression | undefined = undefined;
 
     private _list: ScvdList[] = [];
     private _readlist: ScvdReadList[] = [];
@@ -40,10 +41,74 @@ export class ScvdList extends ScvdBase {
         parent: ScvdBase | undefined,
     ) {
         super(parent);
-        this._start = new ScvdExpression('0'); // default is 0
-        //this._limit = new ScvdExpression('0'); // default is 0
-        //this._while = new ScvdExpression('1'); // default is 1
-        this._cond = new ScvdExpression('1'); // default is 1
+    }
+
+    public readXml(xml: Json): boolean {
+        if (xml === undefined ) {
+            return false;
+        }
+
+        const start = xml.start;
+        if(start !== undefined) {
+            this._start = new ScvdExpression(start);
+        }
+
+        const limit = xml.limit;
+        if(limit !== undefined) {
+            this._limit = new ScvdExpression(limit);
+        }
+
+        const whileAttr = xml.while;
+        if(whileAttr !== undefined) {
+            this._while = new ScvdExpression(whileAttr);
+        }
+
+        const cond = xml.cond;
+        if(cond !== undefined) {
+            this._cond = new ScvdExpression(cond);
+        }
+
+        const lists = getArrayFromJson(xml.list);
+        if(lists) {
+            lists.forEach(list => {
+                const listItem = this.addList();
+                listItem.readXml(list);
+            });
+        }
+
+        const readLists = getArrayFromJson(xml.readlist);
+        if(readLists) {
+            readLists.forEach(readList => {
+                const readListItem = this.addReadList();
+                readListItem.readXml(readList);
+            });
+        }
+
+        const reads = getArrayFromJson(xml.read);
+        if(reads) {
+            reads.forEach(read => {
+                const readItem = this.addRead();
+                readItem.readXml(read);
+            });
+        }
+
+        const vars = getArrayFromJson(xml.var);
+        if(vars) {
+            vars.forEach(v => {
+                const varItem = this.addVar();
+                varItem.readXml(v);
+            });
+        }
+
+        const calcs = getArrayFromJson(xml.calc);
+        if(calcs) {
+            calcs.forEach(c => {
+                const calcItem = this.addCalc();
+                calcItem.readXml(c);
+            });
+        }
+
+        return super.readXml(xml);
     }
 
     public verify(): boolean {

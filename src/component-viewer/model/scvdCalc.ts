@@ -17,19 +17,51 @@
 // https://arm-software.github.io/CMSIS-View/main/elem_calc.html
 
 import { ScvdExpression } from './scvdExpression';
-import { ScvdBase } from './scvdBase';
+import { Json, ScvdBase } from './scvdBase';
 import { ScvdCondition } from './scvdCondition';
 
 export class ScvdCalc extends ScvdBase {
-    private _cond: ScvdCondition;
+    private _cond: ScvdCondition | undefined;
     private _expression: ScvdExpression[] = [];
 
     constructor(
         parent: ScvdBase | undefined,
     ) {
         super(parent);
-        this._cond = new ScvdCondition();
     }
+
+    public readXml(xml: Json): boolean {
+        if (xml === undefined ) {
+            return false;
+        }
+
+        const cond = xml.cond;
+        if( cond !== undefined) {
+            this._cond = new ScvdCondition(cond);
+        }
+
+        // Extract raw text body (multiline) from the XML JSON object.
+        // Depending on the XML-to-JSON converter, text may reside in '#text', '_', or 'text'.
+        let expressions: string[] = [];
+        const text: string | undefined = typeof xml === 'string'
+            ? xml
+            : (xml?.['#text'] ?? xml?._ ?? xml?.text);
+        if (typeof text === 'string') {
+            expressions = text
+                .split(/\r?\n/)
+                .map(l => l.trim())
+                .filter(l => l.length > 0);
+
+            if (expressions.length > 0) {
+                expressions.forEach( (v: string) => {
+                    this.addExpression(v);
+                });
+            }
+        }
+
+        return super.readXml(xml);
+    }
+
     get cond(): ScvdCondition | undefined {
         return this._cond;
     }

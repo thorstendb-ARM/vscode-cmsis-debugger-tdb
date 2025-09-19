@@ -49,9 +49,6 @@ export class ScvdObjects extends ScvdBase {
             object.readXml(v);
         });
 
-        this._object = new ScvdObject(this);
-        this._object.readXml(objects[0]);
-
         return super.readXml(xml);
     }
 

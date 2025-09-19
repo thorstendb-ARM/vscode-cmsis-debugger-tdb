@@ -17,7 +17,7 @@
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
 import { NumberType } from './numberType';
-import { ScvdBase } from './scvdBase';
+import { Json, ScvdBase } from './scvdBase';
 import { ScvdEndian } from './scvdEndian';
 import { ScvdExpression } from './scvdExpression';
 import { ScvdCondition } from './scvdCondition';
@@ -43,6 +43,17 @@ export class ScvdRead extends ScvdBase {
         this._size = new ScvdExpression('1'); // default is 1
         this._size.setMinMax(1, 512); // Array size must be between 1 and 512
     }
+
+    public readXml(xml: Json): boolean {
+        if (xml === undefined ) {
+            return false;
+        }
+
+        //this.tag = xml.tag;
+
+        return super.readXml(xml);
+    }
+
 
     public set type(name: string | undefined) {
         this._type = name;

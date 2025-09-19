@@ -18,7 +18,7 @@
 
 import { ScvdDataType } from './scvdDataType';
 import { ScvdExpression } from './scvdExpression';
-import { ScvdBase } from './scvdBase';
+import { Json, ScvdBase } from './scvdBase';
 
 export class ScvdVar extends ScvdBase {
     private _value: ScvdExpression | undefined;
@@ -28,6 +28,17 @@ export class ScvdVar extends ScvdBase {
         parent: ScvdBase | undefined,
     ) {
         super(parent);
+    }
+
+    public readXml(xml: Json): boolean {
+        if (xml === undefined ) {
+            return false;
+        }
+
+        this.value = xml.value;
+        this.type = xml.type;
+
+        return super.readXml(xml);
     }
 
     public get value(): ScvdExpression | undefined {
