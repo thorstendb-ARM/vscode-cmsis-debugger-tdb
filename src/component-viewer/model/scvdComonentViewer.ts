@@ -83,7 +83,7 @@ export class ScvdComonentViewer extends ScvdBase {
             this._events.readXml(events);
         }
 
-        return true;
+        return super.readXml(xml);
     }
 
     get component(): ScvdComponentIdentifier | undefined {

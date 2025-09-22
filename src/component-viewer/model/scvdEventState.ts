@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
+import { Json, ScvdBase } from './scvdBase';
+
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
-export class ScvdEventState {
-    private _name: string;
+export class ScvdEventState extends ScvdBase {
     private _plot: 'off' | 'line' | 'box' = 'off';
     private _color: 'blue' | 'red' | 'green' | 'black' = 'blue';
     private _unique: boolean = false;
@@ -25,11 +26,42 @@ export class ScvdEventState {
     private _ssel: boolean = false;
 
     constructor(
-        state: string,
-        plot: 'off' | 'line' | 'box' = 'off',
+        parent: ScvdBase | undefined,
     ) {
-        this._name = state;
-        this._plot = plot;
+        super(parent);
+    }
+
+    public readXml(xml: Json): boolean {
+        if (xml === undefined ) {
+            return false;
+        }
+
+        const plot = xml.plot;
+        if(plot !== undefined && (plot === 'off' || plot === 'line' || plot === 'box')) {
+            this._plot = plot;
+        }
+
+        const color = xml.color;
+        if(color !== undefined && (color === 'blue' || color === 'red' || color === 'green' || color === 'black')) {
+            this._color = color;
+        }
+
+        const unique = xml.unique;
+        if(unique !== undefined) {
+            this._unique = (unique === 'true' || unique === true);
+        }
+
+        const dormant = xml.dormant;
+        if(dormant !== undefined) {
+            this._dormant = (dormant === 'true' || dormant === true);
+        }
+
+        const ssel = xml.ssel;
+        if(ssel !== undefined) {
+            this._ssel = (ssel === 'true' || ssel === true);
+        }
+
+        return super.readXml(xml);
     }
 
     public get plot(): 'off' | 'line' | 'box' {
@@ -38,10 +70,6 @@ export class ScvdEventState {
 
     public set plot(value: 'off' | 'line' | 'box') {
         this._plot = value;
-    }
-
-    public get name(): string {
-        return this._name;
     }
 
     public get color(): 'blue' | 'red' | 'green' | 'black' {

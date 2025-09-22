@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import { ScvdBase } from './scvdBase';
+
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
 export enum EventLevel {
@@ -23,12 +25,14 @@ export enum EventLevel {
     EventLevelDetail = 3,  // Additional detailed information of operations
 }
 
-export class ScvdEventLevel {
+export class ScvdEventLevel extends ScvdBase {
     private _level: EventLevel | undefined;
 
     constructor(
+        parent: ScvdBase | undefined,
         level: string,
     ) {
+        super(parent);
         this._level = EventLevel[level as keyof typeof EventLevel];
     }
 

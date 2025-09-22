@@ -34,6 +34,7 @@ export class ScvdEvent extends ScvdBase {
     private _doc: string | undefined;
     private _handle: NumberType | undefined;
     private _hname: ScvdExpression | undefined;
+    private _stateName : string | undefined; // name of referenced state
     private _state: ScvdEventState | undefined; // reference
     private _tracking: ScvdEventTracking | undefined;
     private _print: ScvdPrint[] = [];
@@ -49,9 +50,68 @@ export class ScvdEvent extends ScvdBase {
             return false;
         }
 
-        //this.tag = xml.tag;
+        const id = xml.id;
+        if (id !== undefined) {
+            this._id = new ScvdEventId(this, id);
+        }
+
+        const level = xml.level;
+        if (level !== undefined) {
+            this._level = new ScvdEventLevel(this, level);
+        }
+
+        const property = xml.property;
+        if (property !== undefined) {
+            this._property = new ScvdValueOutput(this, property);
+        }
+
+        const value = xml.value;
+        if (value !== undefined) {
+            this._value = new ScvdValueOutput(this, value);
+        }
+
+        const doc = xml.doc;
+        if (typeof doc === 'string') {
+            this._doc = doc;
+        }
+
+        const handle = xml.handle;
+        if (handle !== undefined) {
+            this._handle = new NumberType(handle);
+        }
+
+        const hname = xml.hname;
+        if (hname !== undefined) {
+            this._hname = new ScvdExpression(this, hname);
+        }
+
+        const stateName = xml.state;
+        if (stateName !== undefined) {
+            this._stateName = stateName;
+        }
+
+        const tracking = xml.tracking;
+        if (tracking !== undefined) {
+            this._tracking = new ScvdEventTracking(this, tracking);
+        }
+
+        const print = xml.print;
+        if (print !== undefined) {
+            const printArray = Array.isArray(print) ? print : [print];
+            printArray.forEach( (v: Json) => {
+                const printItem = new ScvdPrint(this);
+                if (printItem.readXml(v)) {
+                    this._print.push(printItem);
+                }
+            });
+        }
 
         return super.readXml(xml);
+    }
+
+    public resolveAndLink(): boolean {
+        // TODO: this._state = this.findReference(ScvdEventState, this._state?.name);
+        return true;
     }
 
     public get id(): ScvdEventId | undefined {
@@ -106,9 +166,6 @@ export class ScvdEvent extends ScvdBase {
     public get state(): ScvdEventState | undefined {
         return this._state;
     }
-    public set state(value: string) {
-        this._state = new ScvdEventState(value);
-    }
 
     public get tracking(): ScvdEventTracking | undefined {
         return this._tracking;
@@ -126,5 +183,12 @@ export class ScvdEvent extends ScvdBase {
 
     public addPrint(entry: ScvdPrint): void {
         this._print.push(entry);
+    }
+
+    public get stateName(): string | undefined {
+        return this._stateName;
+    }
+    public set stateName(value: string | undefined) {
+        this._stateName = value;
     }
 }

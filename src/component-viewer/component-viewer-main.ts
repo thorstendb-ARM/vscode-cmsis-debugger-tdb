@@ -46,15 +46,21 @@ export class ComponentViewer {
     }
 
     protected async initScvdReader(filename: URI) {
-        // This is where you would initialize the SCVD reader
-        // For example, you might want to read the file and parse it
-        console.log(`Initializing SCVD reader with file: ${filename}`);
+        const startTime = Date.now();
+        console.log(`Reading SCVD file: ${filename}`);
         const buf = (await this.readFileToBuffer(filename)).toString('utf-8');
         const xml: Json = await this.parseXml(buf);
+        const parseTime = Date.now();
         this.model = new ScvdComonentViewer(undefined);
         this.model.readXml(xml);
+        const modelTime = Date.now();
 
+        this.model.map( (child, _index) => {
+            child.resolveAndLink();
+        });
+        const resolveAndLinkTime = Date.now();
 
+        console.log(`SCVD file read in ${Date.now() - startTime} ms (parse: ${parseTime - startTime} ms, model: ${modelTime - parseTime} ms, resolveAndLink: ${resolveAndLinkTime - modelTime} ms)`);
         console.log('Model: ', this.model);
     }
 
@@ -70,7 +76,7 @@ export class ComponentViewer {
     private async parseXml(text: string) {
         try {
             const json = await parseStringPromise(text, xmlOpts);
-            console.log(JSON.stringify(json, null, 2));
+            //console.log(JSON.stringify(json, null, 2));
             return json;
         } catch (err) {
             console.error('Error parsing XML:', err);

@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import { ScvdBase } from './scvdBase';
+
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
 /**
@@ -28,12 +30,14 @@ export enum ScvdEventTrackingMode {
     Reset = 'Reset',
 }
 
-export class ScvdEventTracking {
+export class ScvdEventTracking extends ScvdBase {
     private _mode: ScvdEventTrackingMode | undefined;
 
     constructor(
+        parent: ScvdBase | undefined,
         mode: string,
     ) {
+        super(parent);
         this._mode = ScvdEventTrackingMode[mode as keyof typeof ScvdEventTrackingMode];
     }
 

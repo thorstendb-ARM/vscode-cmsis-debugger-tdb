@@ -23,6 +23,7 @@ export type Json = Record<string, any>;
 
 export class ScvdBase {
     private _parent: ScvdBase | undefined;
+    private _children: ScvdBase[] = [];
 
     private _name: string | undefined;
     private _info: string | undefined;
@@ -35,6 +36,7 @@ export class ScvdBase {
         if (parent instanceof ScvdBase) {
             this._parent = parent;
         }
+        this._parent?._children.push(this);
     }
 
     public readXml(xml: Json): boolean {
@@ -52,9 +54,9 @@ export class ScvdBase {
      * @param callbackfn Function that produces an element of the new array, taking a child and its index.
      * @returns Array of mapped results.
      */
-    /*public map<T>(_callbackfn: (child: ScvdBase, index: number, array: ScvdBase[]) => T): T[] {
+    public map<T>(_callbackfn: (child: ScvdBase, index: number, array: ScvdBase[]) => T): T[] {
         return this._children.map(_callbackfn);
-    }*/
+    }
 
     // Member function available to all ScvdItems and derived classes
     public resolveAndLink(): boolean {

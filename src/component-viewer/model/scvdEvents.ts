@@ -43,14 +43,14 @@ export class ScvdEvents extends ScvdBase {
 
         const event = getArrayFromJson(events.event);
         event?.forEach( (v: Json) => {
-            const varItem = this.addEvent();
-            varItem.readXml(v);
+            const item = this.addEvent();
+            item.readXml(v);
         });
 
         const groups = getArrayFromJson(events.group);
         groups?.forEach( (v: Json) => {
-            const varItem = this.addGroup();
-            varItem.readXml(v);
+            const item = this.addGroup();
+            item.readXml(v);
         });
 
         return super.readXml(xml);
@@ -59,6 +59,7 @@ export class ScvdEvents extends ScvdBase {
     get event(): ScvdEvent[] {
         return this._event;
     }
+
     public addEvent(): ScvdEvent {
         const event = new ScvdEvent(this);
         this._event.push(event);

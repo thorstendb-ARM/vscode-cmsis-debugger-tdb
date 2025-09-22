@@ -17,16 +17,19 @@
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
 import { NumberType } from './numberType';
+import { ScvdBase } from './scvdBase';
 
-export class ScvdEventId {
+export class ScvdEventId extends ScvdBase {
     private _id: NumberType;
     private _messageNumber: NumberType;
     private _componentNumber: NumberType;
     private _level: NumberType;
 
     constructor(
+        parent: ScvdBase | undefined,
         id: string,
     ) {
+        super(parent);
         this._id = new NumberType(id);
         this._messageNumber = new NumberType(this._id.value & 0xFF);
         this._componentNumber = new NumberType((this._id.value >> 8) & 0xFF);

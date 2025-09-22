@@ -29,13 +29,13 @@ export class ScvdEnum extends ScvdBase {
         super(parent);
         const lastValue = lastEnum?.value;
         const valStr = lastValue ? `(${lastValue.expression}) + 1` : '0';
-        this._value = new ScvdExpression(valStr);
+        this._value = new ScvdExpression(this, valStr);
     }
 
     public get value(): ScvdExpression {
         return this._value;
     }
     public set value(value: string) {
-        this._value = new ScvdExpression(value);
+        this._value = new ScvdExpression(this, value);
     }
 }

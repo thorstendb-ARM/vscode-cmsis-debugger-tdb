@@ -16,14 +16,17 @@
 
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
+import { ScvdBase } from './scvdBase';
 import { ScvdFormatSpecifier } from './scvdFormatSpecifier';
 
-export class ScvdValueOutput {
+export class ScvdValueOutput extends ScvdBase {
     private _value: string | undefined;
 
     constructor(
+        parent: ScvdBase | undefined,
         value: string,
     ) {
+        super(parent);
         this._value = value;
     }
 

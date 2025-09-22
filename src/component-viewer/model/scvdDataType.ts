@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
+import { NumberType } from './numberType';
+import { ScvdBase } from './scvdBase';
+import { ScvdTypedef } from './scvdTypedef';
+
 // https://arm-software.github.io/CMSIS-View/main/data_type.html#scalar_data_type
 
-import { ScvdBase } from './scvdBase';
-
-const ScvdDataTypeMap: Record<string, [number, string]> = {
+const ScvdScalarDataTypeMap: Record<string, [number, string]> = {
     'uint8_t': [8, 'unsigned char'],
     'int8_t': [8, 'signed char'],
     'uint16_t': [16, 'unsigned short'],
@@ -32,20 +34,81 @@ const ScvdDataTypeMap: Record<string, [number, string]> = {
 };
 
 export class ScvdDataType extends ScvdBase {
+    private _type: ScvdScalarDataType | ScvdComplexDataType | undefined;
 
     constructor(
         parent: ScvdBase | undefined,
-        value: string | undefined
+        type: string | undefined
     ) {
         super(parent);
+        this.type = type;
+    }
 
-        if( value !== undefined && value !== '') {
-            this.name = value;
+    public get size(): NumberType | undefined {
+        return this._type?.size;
+    }
+
+    public set type(type: string | undefined) {
+        if (typeof type === 'string') {
+            Object.keys(ScvdScalarDataTypeMap).forEach(element => { // test, then create object
+                if (element === type) {
+                    this._type = new ScvdScalarDataType(this, type);
+                }
+            });
+            if( this._type === undefined) { // not a scalar type, create complex type
+                this._type = new ScvdComplexDataType(this, type);
+            }
+        }
+    }
+}
+
+export class ScvdComplexDataType extends ScvdBase{
+    private _typeName: string | undefined;
+    private _type: ScvdTypedef | undefined;
+
+    constructor(
+        parent: ScvdBase | undefined,
+        typeName: string | undefined
+    ) {
+        super(parent);
+        this._typeName = typeName;
+    }
+
+    public get typeName(): string | undefined {
+        return this._typeName;
+    }
+
+    public get size(): NumberType | undefined {
+        return this._type?.size;
+    }
+
+    public resolveAndLink(): boolean {
+        // Default implementation does nothing, can be overridden by subclasses
+        return true;
+    }
+}
+
+export class ScvdScalarDataType extends ScvdBase {
+    private type: string | undefined;
+
+    constructor(
+        parent: ScvdBase | undefined,
+        type: string | undefined
+    ) {
+        super(parent);
+        if (typeof type === 'string') {
+            Object.keys(ScvdScalarDataTypeMap).forEach(element => {
+                if (element === type) {
+                    this.type = type;
+                }
+            });
         }
     }
 
-    public get size(): number | undefined {
-        const info = this.name && ScvdDataTypeMap[this.name];
-        return info ? info[0] / 8 : undefined;
+    public get size(): NumberType | undefined {
+        const info = this.type && ScvdScalarDataTypeMap[this.type];
+        const value = info ? info[0] / 8 : undefined;
+        return value as NumberType | undefined;
     }
+
 }

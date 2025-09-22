@@ -50,22 +50,22 @@ export class ScvdList extends ScvdBase {
 
         const start = xml.start;
         if(start !== undefined) {
-            this._start = new ScvdExpression(start);
+            this._start = new ScvdExpression(this, start);
         }
 
         const limit = xml.limit;
         if(limit !== undefined) {
-            this._limit = new ScvdExpression(limit);
+            this._limit = new ScvdExpression(this, limit);
         }
 
         const whileAttr = xml.while;
         if(whileAttr !== undefined) {
-            this._while = new ScvdExpression(whileAttr);
+            this._while = new ScvdExpression(this, whileAttr);
         }
 
         const cond = xml.cond;
         if(cond !== undefined) {
-            this._cond = new ScvdExpression(cond);
+            this._cond = new ScvdExpression(this, cond);
         }
 
         const lists = getArrayFromJson(xml.list);
@@ -124,7 +124,7 @@ export class ScvdList extends ScvdBase {
     }
 
     set start(value: string) {
-        this._start = new ScvdExpression(value);
+        this._start = new ScvdExpression(this, value);
     }
 
     get limit(): ScvdExpression | undefined {
@@ -132,7 +132,7 @@ export class ScvdList extends ScvdBase {
     }
 
     set limit(value: string) {
-        this._limit = new ScvdExpression(value);
+        this._limit = new ScvdExpression(this, value);
     }
 
     get while(): ScvdExpression | undefined {
@@ -140,7 +140,7 @@ export class ScvdList extends ScvdBase {
     }
 
     set while(value: string) {
-        this._while = new ScvdExpression(value);
+        this._while = new ScvdExpression(this, value);
     }
 
     get cond(): ScvdExpression | undefined {
@@ -148,7 +148,7 @@ export class ScvdList extends ScvdBase {
     }
 
     set cond(value: string) {
-        this._cond = new ScvdExpression(value);
+        this._cond = new ScvdExpression(this, value);
     }
 
     public applyInit(): boolean {

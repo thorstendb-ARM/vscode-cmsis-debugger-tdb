@@ -15,9 +15,10 @@
  */
 
 import { NumberType } from './numberType';
+import { ScvdBase } from './scvdBase';
 
 
-export class ScvdDataBase {
+export class ScvdDataBase extends ScvdBase {
     private _valid: boolean = false;
 
     private _addr: NumberType | undefined = undefined;  // name[index]._addr — start address of the list item that was read from target memory.
@@ -25,7 +26,9 @@ export class ScvdDataBase {
     private _count: NumberType | undefined = undefined; // name._count — number of list items. Used as index limit, valid index values are: (0 .. number-1).
 
     constructor(
+        parent: ScvdBase | undefined,
     ) {
+        super(parent);
     }
 
     get addr(): NumberType | undefined {

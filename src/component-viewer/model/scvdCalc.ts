@@ -68,7 +68,7 @@ export class ScvdCalc extends ScvdBase {
 
     set cond(value: string | undefined) {
         if (value) {
-            this._cond = new ScvdCondition();
+            this._cond = new ScvdCondition(this);
             this._cond.expression = value;
         }
     }
@@ -78,7 +78,7 @@ export class ScvdCalc extends ScvdBase {
     }
 
     addExpression(value: string): void {
-        const expr = new ScvdExpression(value);
+        const expr = new ScvdExpression(this, value);
         this._expression.push(expr);
     }
 

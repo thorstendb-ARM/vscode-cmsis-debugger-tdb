@@ -15,6 +15,7 @@
  */
 
 import { NumberType } from './numberType';
+import { ScvdBase } from './scvdBase';
 import { ScvdDataBase } from './scvdDataBase';
 
 
@@ -22,8 +23,9 @@ export class ScvdDataDword extends ScvdDataBase {
     private _data: NumberType | undefined;
 
     constructor(
+        parent: ScvdBase | undefined,
     ) {
-        super();
+        super(parent);
     }
 
     public get data(): NumberType | undefined {

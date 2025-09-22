@@ -19,45 +19,71 @@
 import { ScvdExpression } from './scvdExpression';
 import { ScvdValueOutput } from './scvdValueOutput';
 import { ScvdCondition } from './scvdCondition';
+import { Json, ScvdBase } from './scvdBase';
 
-export class ScvdPrint {
-    private _cond: ScvdCondition;
-    private _property: ScvdValueOutput;
-    private _value: ScvdExpression;
-    private _bold: ScvdCondition;
-    private _alert: ScvdCondition;
+export class ScvdPrint extends ScvdBase {
+    private _cond: ScvdCondition | undefined;
+    private _property: ScvdValueOutput | undefined;
+    private _value: ScvdExpression | undefined;
+    private _bold: ScvdCondition = new ScvdCondition(this, '0');
+    private _alert: ScvdCondition = new ScvdCondition(this, '0');
 
     constructor(
-        cond: string,
-        property: string,
-        value: string,
-        bold: string = '0',
-        alert: string = '0',
+        parent: ScvdBase | undefined,
     ) {
-        this._cond = new ScvdCondition(cond);
-        this._property = new ScvdValueOutput(property);
-        this._value = new ScvdExpression(value);
-        this._bold = new ScvdCondition(bold);
-        this._alert = new ScvdCondition(alert);
+        super(parent);
     }
 
-    get property(): ScvdValueOutput {
+    public readXml(xml: Json): boolean {
+        if (xml === undefined ) {
+            return false;
+        }
+
+        const cond = xml.cond;
+        if(cond !== undefined) {
+            this._cond = new ScvdCondition(this, cond);
+        }
+
+        const property = xml.property;
+        if(property !== undefined) {
+            this._property = new ScvdValueOutput(this, property);
+        }
+
+        const value = xml.value;
+        if(value !== undefined) {
+            this._value = new ScvdExpression(this, value);
+        }
+
+        const bold = xml.bold;
+        if(bold !== undefined) {
+            this._bold = new ScvdCondition(this, bold);
+        }
+
+        const alert = xml.alert;
+        if(alert !== undefined) {
+            this._alert = new ScvdCondition(this, alert);
+        }
+
+        return super.readXml(xml);
+    }
+
+    get property(): ScvdValueOutput | undefined {
         return this._property;
     }
 
-    get value(): ScvdExpression {
+    get value(): ScvdExpression | undefined {
         return this._value;
     }
 
-    get cond(): ScvdCondition {
+    get cond(): ScvdCondition | undefined {
         return this._cond;
     }
 
-    get bold(): ScvdCondition {
+    get bold(): ScvdCondition | undefined {
         return this._bold;
     }
 
-    get alert(): ScvdCondition {
+    get alert(): ScvdCondition | undefined {
         return this._alert;
     }
 

@@ -14,18 +14,13 @@
  * limitations under the License.
  */
 
-// /component_viewer/events
-// https://arm-software.github.io/CMSIS-View/main/elem_events.html
+// https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
-import { NumberType } from './numberType';
 import { Json, ScvdBase } from './scvdBase';
-import { ScvdEventState } from './scvdEventState';
+import { ScvdComponent } from './scvdComponent';
 
 export class ScvdGroup extends ScvdBase {
-    private _brief: string | undefined;
-    private _no: NumberType | undefined;
-    private _prefix: string | undefined; // hyperlink
-    private _state: ScvdEventState[] = [];
+    private _component: ScvdComponent[] = [];
 
     constructor(
         parent: ScvdBase | undefined,
@@ -38,30 +33,29 @@ export class ScvdGroup extends ScvdBase {
             return false;
         }
 
-        this._brief = xml.brief;
-        this._no = new NumberType(xml.no);
-        this._prefix = xml.prefix;
+        const components = xml.component;
+        if(components !== undefined) {
+            if(Array.isArray(components)) {
+                components.forEach((component: Json) => {
+                    const newComponent = this.addComponent();
+                    newComponent.readXml(component);
+                });
+            } else {
+                const newComponent = this.addComponent();
+                newComponent.readXml(components);
+            }
+        }
 
-        return super.readXml(xml);
+        return true;
     }
 
-
-    public get brief(): string | undefined {
-        return this._brief;
+    public addComponent(): ScvdComponent {
+        const newComponent = new ScvdComponent(this);
+        this._component.push(newComponent);
+        return newComponent;
     }
 
-    public get no(): NumberType | undefined {
-        return this._no;
-    }
-
-    public get prefix(): string | undefined {
-        return this._prefix;
-    }
-
-    public get state(): ScvdEventState[] {
-        return this._state;
-    }
-    public addState(value: ScvdEventState) {
-        this._state.push(value);
+    public get components(): ScvdComponent[] {
+        return this._component;
     }
 }
