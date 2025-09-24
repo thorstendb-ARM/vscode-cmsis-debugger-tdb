@@ -36,21 +36,19 @@ export class ScvdEvents extends ScvdBase {
             return false;
         }
 
-        const events = xml;
-        if( events === undefined) {
-            return false;
-        }
+        const events = getArrayFromJson(xml);
+        events?.forEach( (v: Json) => {
+            const event = getArrayFromJson(v.event);
+            event?.forEach( (v: Json) => {
+                const item = this.addEvent();
+                item.readXml(v);
+            });
 
-        const event = getArrayFromJson(events.event);
-        event?.forEach( (v: Json) => {
-            const item = this.addEvent();
-            item.readXml(v);
-        });
-
-        const groups = getArrayFromJson(events.group);
-        groups?.forEach( (v: Json) => {
-            const item = this.addGroup();
-            item.readXml(v);
+            const groups = getArrayFromJson(v.group);
+            groups?.forEach( (v: Json) => {
+                const item = this.addGroup();
+                item.readXml(v);
+            });
         });
 
         return super.readXml(xml);

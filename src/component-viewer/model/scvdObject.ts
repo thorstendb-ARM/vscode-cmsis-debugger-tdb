@@ -49,10 +49,6 @@ export class ScvdObjects extends ScvdBase {
     }
 
     public addObject(): ScvdObject {
-        if(this._object !== undefined) {    // only one object supported
-            return this._object;
-        }
-
         const object = new ScvdObject(this);
         this._object = object;
         return object;
