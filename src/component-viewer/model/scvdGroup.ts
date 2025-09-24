@@ -18,6 +18,7 @@
 
 import { Json, ScvdBase } from './scvdBase';
 import { ScvdComponent } from './scvdComponent';
+import { getArrayFromJson } from './scvdUtils';
 
 export class ScvdGroup extends ScvdBase {
     private _component: ScvdComponent[] = [];
@@ -33,18 +34,11 @@ export class ScvdGroup extends ScvdBase {
             return false;
         }
 
-        const components = xml.component;
-        if(components !== undefined) {
-            if(Array.isArray(components)) {
-                components.forEach((component: Json) => {
-                    const newComponent = this.addComponent();
-                    newComponent.readXml(component);
-                });
-            } else {
-                const newComponent = this.addComponent();
-                newComponent.readXml(components);
-            }
-        }
+        const components = getArrayFromJson(xml.component);
+        components?.forEach( (component: Json) => {
+            const newComponent = this.addComponent();
+            newComponent.readXml(component);
+        });
 
         return true;
     }

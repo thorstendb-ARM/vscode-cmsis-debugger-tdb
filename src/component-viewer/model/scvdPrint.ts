@@ -20,6 +20,7 @@ import { ScvdExpression } from './scvdExpression';
 import { ScvdValueOutput } from './scvdValueOutput';
 import { ScvdCondition } from './scvdCondition';
 import { Json, ScvdBase } from './scvdBase';
+import { getStringFromJson } from './scvdUtils';
 
 export class ScvdPrint extends ScvdBase {
     private _cond: ScvdCondition | undefined;
@@ -39,52 +40,57 @@ export class ScvdPrint extends ScvdBase {
             return false;
         }
 
-        const cond = xml.cond;
-        if(cond !== undefined) {
-            this._cond = new ScvdCondition(this, cond);
-        }
-
-        const property = xml.property;
-        if(property !== undefined) {
-            this._property = new ScvdValueOutput(this, property);
-        }
-
-        const value = xml.value;
-        if(value !== undefined) {
-            this._value = new ScvdExpression(this, value);
-        }
-
-        const bold = xml.bold;
-        if(bold !== undefined) {
-            this._bold = new ScvdCondition(this, bold);
-        }
-
-        const alert = xml.alert;
-        if(alert !== undefined) {
-            this._alert = new ScvdCondition(this, alert);
-        }
+        this.cond = getStringFromJson(xml.cond);
+        this.property = getStringFromJson(xml.property);
+        this.value = getStringFromJson(xml.value);
+        this.bold = getStringFromJson(xml.bold);
+        this.alert = getStringFromJson(xml.alert);
 
         return super.readXml(xml);
     }
-
     get property(): ScvdValueOutput | undefined {
         return this._property;
+    }
+    set property(value: string | undefined) {
+        if (value !== undefined) {
+            this._property = new ScvdValueOutput(this, value);
+        }
     }
 
     get value(): ScvdExpression | undefined {
         return this._value;
     }
+    set value(value: string | undefined) {
+        if (value !== undefined) {
+            this._value = new ScvdExpression(this, value);
+        }
+    }
 
     get cond(): ScvdCondition | undefined {
         return this._cond;
+    }
+    set cond(value: string | undefined) {
+        if (value !== undefined) {
+            this._cond = new ScvdCondition(this, value);
+        }
     }
 
     get bold(): ScvdCondition | undefined {
         return this._bold;
     }
+    set bold(value: string | undefined) {
+        if (value !== undefined) {
+            this._bold = new ScvdCondition(this, value);
+        }
+    }
 
     get alert(): ScvdCondition | undefined {
         return this._alert;
+    }
+    set alert(value: string | undefined) {
+        if (value !== undefined) {
+            this._alert = new ScvdCondition(this, value);
+        }
     }
 
 }

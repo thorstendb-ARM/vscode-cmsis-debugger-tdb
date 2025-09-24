@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-// https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
+// https://arm-software.github.io/CMSIS-View/main/elem_member.html#elem_enum
 
 import { ScvdExpression } from './scvdExpression';
-import { ScvdBase } from './scvdBase';
+import { Json, ScvdBase } from './scvdBase';
+import { getStringFromJson } from './scvdUtils';
 
 export class ScvdEnum extends ScvdBase {
     private _value: ScvdExpression;
@@ -32,10 +33,22 @@ export class ScvdEnum extends ScvdBase {
         this._value = new ScvdExpression(this, valStr);
     }
 
+    public readXml(xml: Json): boolean {
+        if (xml === undefined ) {
+            return false;
+        }
+
+        this.value = getStringFromJson(xml.value);
+
+        return true;
+    }
+
     public get value(): ScvdExpression {
         return this._value;
     }
-    public set value(value: string) {
-        this._value = new ScvdExpression(this, value);
+    public set value(value: string | undefined) {
+        if (value !== undefined) {
+            this._value = new ScvdExpression(this, value);
+        }
     }
 }

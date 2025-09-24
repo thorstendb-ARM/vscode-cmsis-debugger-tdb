@@ -20,7 +20,8 @@ import { NumberType, NumberTypeInput } from './numberType';
 import { ScvdDataType } from './scvdDataType';
 import { ScvdEnum } from './scvdEnum';
 import { ScvdExpression } from './scvdExpression';
-import { ScvdBase } from './scvdBase';
+import { Json, ScvdBase } from './scvdBase';
+import { getArrayFromJson, getStringFromJson } from './scvdUtils';
 
 export class ScvdMember extends ScvdBase {
     private _type: ScvdDataType | undefined;
@@ -34,28 +35,52 @@ export class ScvdMember extends ScvdBase {
         super(parent);
     }
 
+    public readXml(xml: Json): boolean {
+        if (xml === undefined ) {
+            return false;
+        }
+
+        this.type = getStringFromJson(xml.type);
+        this.offset = getStringFromJson(xml.offset);
+        this.size = getStringFromJson(xml.size);
+
+        const enums = getArrayFromJson(xml.enum);
+        enums?.forEach(enumItem => {
+            const newEnum = this.addEnum();
+            newEnum.readXml(enumItem);
+        });
+
+        return true;
+    }
+
     get type(): ScvdDataType | undefined {
         return this._type;
     }
 
-    set type(value: string) {
-        this._type = new ScvdDataType(this, value);
+    set type(value: string | undefined) {
+        if (value !== undefined) {
+            this._type = new ScvdDataType(this, value);
+        }
     }
 
     get offset(): ScvdExpression | undefined {
         return this._offset;
     }
 
-    set offset(value: string) {
-        this._offset = new ScvdExpression(this, value);
+    set offset(value: string | undefined) {
+        if(value !== undefined) {
+            this._offset = new ScvdExpression(this, value);
+        }
     }
 
     get size(): NumberType | undefined {
         return this._size;
     }
 
-    set size(value: NumberTypeInput) {
-        this._size = new NumberType(value);
+    set size(value: NumberTypeInput | undefined) {
+        if(value !== undefined) {
+            this._size = new NumberType(value);
+        }
     }
 
     public addEnum(): ScvdEnum {

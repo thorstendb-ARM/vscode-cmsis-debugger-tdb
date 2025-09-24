@@ -22,7 +22,7 @@ import { Json, ScvdBase } from './scvdBase';
 import { ScvdRead } from './scvdRead';
 import { ScvdReadList } from './scvdReadList';
 import { ScvdVar } from './scvdVar';
-import { getArrayFromJson } from './scvdUtils';
+import { getArrayFromJson, getStringFromJson } from './scvdUtils';
 
 export class ScvdList extends ScvdBase {
     private _start: ScvdExpression | undefined = undefined;
@@ -48,65 +48,40 @@ export class ScvdList extends ScvdBase {
             return false;
         }
 
-        const start = xml.start;
-        if(start !== undefined) {
-            this._start = new ScvdExpression(this, start);
-        }
-
-        const limit = xml.limit;
-        if(limit !== undefined) {
-            this._limit = new ScvdExpression(this, limit);
-        }
-
-        const whileAttr = xml.while;
-        if(whileAttr !== undefined) {
-            this._while = new ScvdExpression(this, whileAttr);
-        }
-
-        const cond = xml.cond;
-        if(cond !== undefined) {
-            this._cond = new ScvdExpression(this, cond);
-        }
+        this.start = getStringFromJson(xml.start);
+        this.limit = getStringFromJson(xml.limit);
+        this.while = getStringFromJson(xml.while);
+        this.cond = getStringFromJson(xml.cond);
 
         const lists = getArrayFromJson(xml.list);
-        if(lists) {
-            lists.forEach(list => {
-                const listItem = this.addList();
-                listItem.readXml(list);
-            });
-        }
+        lists?.forEach(list => {
+            const listItem = this.addList();
+            listItem.readXml(list);
+        });
 
         const readLists = getArrayFromJson(xml.readlist);
-        if(readLists) {
-            readLists.forEach(readList => {
-                const readListItem = this.addReadList();
-                readListItem.readXml(readList);
-            });
-        }
+        readLists?.forEach(readList => {
+            const readListItem = this.addReadList();
+            readListItem.readXml(readList);
+        });
 
         const reads = getArrayFromJson(xml.read);
-        if(reads) {
-            reads.forEach(read => {
-                const readItem = this.addRead();
-                readItem.readXml(read);
-            });
-        }
+        reads?.forEach(read => {
+            const readItem = this.addRead();
+            readItem.readXml(read);
+        });
 
         const vars = getArrayFromJson(xml.var);
-        if(vars) {
-            vars.forEach(v => {
-                const varItem = this.addVar();
-                varItem.readXml(v);
-            });
-        }
+        vars?.forEach(v => {
+            const varItem = this.addVar();
+            varItem.readXml(v);
+        });
 
         const calcs = getArrayFromJson(xml.calc);
-        if(calcs) {
-            calcs.forEach(c => {
-                const calcItem = this.addCalc();
-                calcItem.readXml(c);
-            });
-        }
+        calcs?.forEach(c => {
+            const calcItem = this.addCalc();
+            calcItem.readXml(c);
+        });
 
         return super.readXml(xml);
     }
@@ -123,32 +98,40 @@ export class ScvdList extends ScvdBase {
         return this._start;
     }
 
-    set start(value: string) {
-        this._start = new ScvdExpression(this, value);
+    set start(value: string | undefined) {
+        if(value !== undefined) {
+            this._start = new ScvdExpression(this, value);
+        }
     }
 
     get limit(): ScvdExpression | undefined {
         return this._limit;
     }
 
-    set limit(value: string) {
-        this._limit = new ScvdExpression(this, value);
+    set limit(value: string | undefined) {
+        if(value !== undefined) {
+            this._limit = new ScvdExpression(this, value);
+        }
     }
 
     get while(): ScvdExpression | undefined {
         return this._while;
     }
 
-    set while(value: string) {
-        this._while = new ScvdExpression(this, value);
+    set while(value: string | undefined) {
+        if(value !== undefined) {
+            this._while = new ScvdExpression(this, value);
+        }
     }
 
     get cond(): ScvdExpression | undefined {
         return this._cond;
     }
 
-    set cond(value: string) {
-        this._cond = new ScvdExpression(this, value);
+    set cond(value: string | undefined) {
+        if(value !== undefined) {
+            this._cond = new ScvdExpression(this, value);
+        }
     }
 
     public applyInit(): boolean {

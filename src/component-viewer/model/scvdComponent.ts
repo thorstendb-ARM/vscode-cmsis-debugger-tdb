@@ -20,6 +20,7 @@
 import { NumberType } from './numberType';
 import { Json, ScvdBase } from './scvdBase';
 import { ScvdEventState } from './scvdEventState';
+import { getArrayFromJson, getStringFromJson } from './scvdUtils';
 
 export class ScvdComponent extends ScvdBase {
     private _brief: string | undefined;
@@ -38,39 +39,39 @@ export class ScvdComponent extends ScvdBase {
             return false;
         }
 
-        const brief = xml.brief;
-        if(brief !== undefined) {
-            this._brief = brief;
-        }
+        this.brief = getStringFromJson(xml.brief);
+        this.no = getStringFromJson(xml.no);
+        this.prefix = getStringFromJson(xml.prefix);
 
-        const no = xml.no;
-        if(no !== undefined) {
-            this._no = new NumberType(no);
-        }
-
-        const prefix = xml.prefix;
-        if(prefix !== undefined) {
-            this._prefix = prefix;
-        }
-
-        const states = xml.state;
-        if(states !== undefined && Array.isArray(states)) {
-            states.forEach((state: Json) => {
-                const newState = this.addState();
-                newState.readXml(state);
-            });
-        }
+        const states = getArrayFromJson(xml.state);
+        states?.forEach( (v: Json) => {
+            const newState = this.addState();
+            newState.readXml(v);
+        });
 
         return super.readXml(xml);
     }
 
+    public set brief(value: string | undefined) {
+        this._brief = value;
+    }
 
     public get brief(): string | undefined {
         return this._brief;
     }
 
+    public set no(value: string | undefined) {
+        if( value !== undefined) {
+            this._no = new NumberType(value);
+        }
+    }
+
     public get no(): NumberType | undefined {
         return this._no;
+    }
+
+    public set prefix(value: string | undefined) {
+        this._prefix = value;
     }
 
     public get prefix(): string | undefined {

@@ -18,6 +18,7 @@
 // https://arm-software.github.io/CMSIS-View/main/elem_component.html
 
 import { Json, ScvdBase } from './scvdBase';
+import { getStringFromJson } from './scvdUtils';
 
 export class ScvdComponentIdentifier extends ScvdBase {
     private _version: string | undefined;
@@ -34,8 +35,8 @@ export class ScvdComponentIdentifier extends ScvdBase {
             return false;
         }
 
-        this.version = xml.version;
-        this.shortName = xml.shortname;
+        this.version = getStringFromJson(xml.version);
+        this.shortName = getStringFromJson(xml.shortname);
 
         return super.readXml(xml);
     }
@@ -43,7 +44,7 @@ export class ScvdComponentIdentifier extends ScvdBase {
     public get version(): string | undefined {
         return this._version;
     }
-    public set version(version: string) {
+    public set version(version: string | undefined) {
         this._version = version;
     }
 

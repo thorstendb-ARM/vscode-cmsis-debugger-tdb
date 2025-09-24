@@ -21,7 +21,7 @@ import { ScvdEvents } from './scvdEvents';
 import { Json, ScvdBase } from './scvdBase';
 import { ScvdObjects } from './scvdObject';
 import { ScvdTypedefs } from './scvdTypedef';
-import { getArrayFromJson } from './scvdUtils';
+import { getArrayFromJson, getObjectFromJson } from './scvdUtils';
 
 export class ScvdComonentViewer extends ScvdBase {
     private _componentIdentifier: ScvdComponentIdentifier | undefined;
@@ -52,32 +52,32 @@ export class ScvdComonentViewer extends ScvdBase {
             return false;
         }
 
-        const componentViewer = xml.component_viewer;
+        const componentViewer: Json = getObjectFromJson(xml.component_viewer);
         if( componentViewer === undefined) {
             return false;
         }
 
-        const componentIdentifier = componentViewer?.component;
+        const componentIdentifier: Json = getObjectFromJson(componentViewer.component);
         if(componentIdentifier !== undefined) {
             this._componentIdentifier = new ScvdComponentIdentifier(this);
             this._componentIdentifier.readXml(componentIdentifier);
         }
 
-        const objectsContainer = componentViewer?.objects;
+        const objectsContainer: Json = getObjectFromJson(componentViewer.objects);
         const objects = getArrayFromJson(objectsContainer?.object);
         if(objects !== undefined) {
             this._objects = new ScvdObjects(this);
             this._objects.readXml(objects);
         }
 
-        const typedefsContainer = componentViewer?.typedefs;
+        const typedefsContainer: Json = getObjectFromJson(componentViewer.typedefs);
         const typedefs = getArrayFromJson(typedefsContainer?.typedef);
         if(typedefs !== undefined) {
             this._typedefs = new ScvdTypedefs(this);
             this._typedefs.readXml(typedefs);
         }
 
-        const events = componentViewer?.events;
+        const events = getArrayFromJson(componentViewer?.events);
         if(events !== undefined) {
             this._events = new ScvdEvents(this);
             this._events.readXml(events);

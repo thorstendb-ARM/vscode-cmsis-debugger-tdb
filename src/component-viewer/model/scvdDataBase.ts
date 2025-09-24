@@ -15,12 +15,15 @@
  */
 
 import { NumberType } from './numberType';
-import { ScvdBase } from './scvdBase';
-
+import { Json, ScvdBase } from './scvdBase';
+import { getStringFromJson } from './scvdUtils';
 
 export class ScvdDataBase extends ScvdBase {
-    private _valid: boolean = false;
 
+    /* The individual data type elements of the <readlist> are referenced using name[index].member.
+     * <readlist> manages two predefined member variables with the following names:
+     * https://arm-software.github.io/CMSIS-View/main/elem_readlist.html
+     */
     private _addr: NumberType | undefined = undefined;  // name[index]._addr — start address of the list item that was read from target memory.
     private _size: NumberType | undefined = undefined;  // name[index]._size — size of the list item that was read from target memory.
     private _count: NumberType | undefined = undefined; // name._count — number of list items. Used as index limit, valid index values are: (0 .. number-1).
@@ -31,39 +34,45 @@ export class ScvdDataBase extends ScvdBase {
         super(parent);
     }
 
+    public readXml(xml: Json): boolean {
+        if (xml === undefined ) {
+            return false;
+        }
+
+        this.addr = getStringFromJson(xml.addr);
+        this.size = getStringFromJson(xml.size);
+        this.count = getStringFromJson(xml.count);
+
+        return super.readXml(xml);
+    }
+
     get addr(): NumberType | undefined {
         return this._addr;
     }
 
-    set addr(value: NumberType | undefined) {
-        this._addr = value;
+    set addr(value: string | undefined) {
+        if( value !== undefined) {
+            this._addr = new NumberType(value);
+        }
     }
 
     get size(): NumberType | undefined {
         return this._size;
     }
 
-    set size(value: NumberType | undefined) {
-        this._size = value;
+    set size(value: string | undefined) {
+        if( value !== undefined) {
+            this._size = new NumberType(value);
+        }
     }
 
     get count(): NumberType | undefined {
         return this._count;
     }
 
-    set count(value: NumberType | undefined) {
-        this._count = value;
-    }
-
-    get valid(): boolean {
-        return this._valid;
-    }
-
-    set valid(value: boolean) {
-        this._valid = value;
-    }
-
-    public invalidate() {
-        this._valid = false;
+    set count(value: string | undefined) {
+        if( value !== undefined) {
+            this._count = new NumberType(value);
+        }
     }
 }

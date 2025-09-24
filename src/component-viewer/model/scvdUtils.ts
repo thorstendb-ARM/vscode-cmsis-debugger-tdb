@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import { Json } from './scvdBase';
+
 
 export function AddText(text: string, addText: string | string[]): string {
     if (Array.isArray(addText)) {
@@ -48,6 +50,34 @@ export function clearSignBit(num: number) {
     return num >>> 0;
 }
 
+export function getObjectFromJson<T>(xml: T | undefined): T | undefined {
+    return xml;
+}
+
+export function getStringFromJson(xml: Json): string | undefined {
+    if (typeof xml === 'string') {
+        return xml;
+    }
+
+    return undefined;
+}
+
 export function getArrayFromJson<T>(value: T | T[] | undefined): T[] | undefined {
     return value === undefined ? undefined : (Array.isArray(value) ? value : [value]);
+}
+
+// Extract raw text body (multiline) from the XML JSON object.
+// Depending on the XML-to-JSON converter, text may reside in '#text', '_', or 'text'.
+export function getTextBodyFromJson(xml: Json): string[] | undefined {
+    const text: string | undefined = typeof xml === 'string'
+        ? xml
+        : (xml?.['#text'] ?? xml?._ ?? xml?.text);
+
+    if (typeof text === 'string') {
+        return text
+            .split(/\r?\n/)
+            .map(l => l.trim())
+            .filter(l => l.length > 0);
+    }
+    return undefined;
 }

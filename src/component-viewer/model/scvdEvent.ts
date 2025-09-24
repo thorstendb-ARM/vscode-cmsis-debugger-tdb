@@ -24,6 +24,7 @@ import { ScvdEventState } from './scvdEventState';
 import { ScvdEventTracking } from './scvdEventTracking';
 import { ScvdExpression } from './scvdExpression';
 import { ScvdPrint } from './scvdPrint';
+import { getArrayFromJson, getStringFromJson } from './scvdUtils';
 import { ScvdValueOutput } from './scvdValueOutput';
 
 export class ScvdEvent extends ScvdBase {
@@ -50,62 +51,21 @@ export class ScvdEvent extends ScvdBase {
             return false;
         }
 
-        const id = xml.id;
-        if (id !== undefined) {
-            this._id = new ScvdEventId(this, id);
-        }
+        this.id = getStringFromJson(xml.id);
+        this.level = getStringFromJson(xml.level);
+        this.property = getStringFromJson(xml.property);
+        this.value = getStringFromJson(xml.value);
+        this.doc = getStringFromJson(xml.doc);
+        this.handle = getStringFromJson(xml.handle);
+        this.hname = getStringFromJson(xml.hname);
+        this.stateName = getStringFromJson(xml.state);
+        this.tracking = getStringFromJson(xml.tracking);
 
-        const level = xml.level;
-        if (level !== undefined) {
-            this._level = new ScvdEventLevel(this, level);
-        }
-
-        const property = xml.property;
-        if (property !== undefined) {
-            this._property = new ScvdValueOutput(this, property);
-        }
-
-        const value = xml.value;
-        if (value !== undefined) {
-            this._value = new ScvdValueOutput(this, value);
-        }
-
-        const doc = xml.doc;
-        if (typeof doc === 'string') {
-            this._doc = doc;
-        }
-
-        const handle = xml.handle;
-        if (handle !== undefined) {
-            this._handle = new NumberType(handle);
-        }
-
-        const hname = xml.hname;
-        if (hname !== undefined) {
-            this._hname = new ScvdExpression(this, hname);
-        }
-
-        const stateName = xml.state;
-        if (stateName !== undefined) {
-            this._stateName = stateName;
-        }
-
-        const tracking = xml.tracking;
-        if (tracking !== undefined) {
-            this._tracking = new ScvdEventTracking(this, tracking);
-        }
-
-        const print = xml.print;
-        if (print !== undefined) {
-            const printArray = Array.isArray(print) ? print : [print];
-            printArray.forEach( (v: Json) => {
-                const printItem = new ScvdPrint(this);
-                if (printItem.readXml(v)) {
-                    this._print.push(printItem);
-                }
-            });
-        }
-
+        const print = getArrayFromJson(xml.print);
+        print?.forEach( (v: Json) => {
+            const printItem = this.addPrint();
+            printItem.readXml(v);
+        });
         return super.readXml(xml);
     }
 
@@ -117,29 +77,37 @@ export class ScvdEvent extends ScvdBase {
     public get id(): ScvdEventId | undefined {
         return this._id;
     }
-    public set id(value: ScvdEventId) {
-        this._id = value;
+    public set id(value: string | undefined) {
+        if( value !== undefined ) {
+            this._id = new ScvdEventId(this, value);
+        }
     }
 
     public get level(): ScvdEventLevel | undefined {
         return this._level;
     }
-    public set level(value: ScvdEventLevel) {
-        this._level = value;
+    public set level(value: string | undefined) {
+        if( value !== undefined ) {
+            this._level = new ScvdEventLevel(this, value);
+        }
     }
 
     public get property(): ScvdValueOutput | undefined {
         return this._property;
     }
-    public set property(value: ScvdValueOutput) {
-        this._property = value;
+    public set property(value: string | undefined) {
+        if( value !== undefined ) {
+            this._property = new ScvdValueOutput(this, value);
+        }
     }
 
-    public get value() {
+    public get value(): ScvdValueOutput | undefined {
         return this._value;
     }
-    public set value(value: ScvdValueOutput | undefined) {
-        this._value = value;
+    public set value(value: string | undefined) {
+        if( value !== undefined ) {
+            this._value = new ScvdValueOutput(this, value);
+        }
     }
 
     public get doc(): string | undefined {
@@ -152,37 +120,47 @@ export class ScvdEvent extends ScvdBase {
     public get handle(): NumberType | undefined {
         return this._handle;
     }
-    public set handle(value: NumberType | undefined) {
-        this._handle = value;
+    public set handle(value: string | undefined) {
+        if( value !== undefined ) {
+            this._handle = new NumberType(value);
+        }
     }
 
     public get hname(): ScvdExpression | undefined {
         return this._hname;
     }
-    public set hname(value: ScvdExpression | undefined) {
-        this._hname = value;
+    public set hname(value: string | undefined) {
+        if( value !== undefined ) {
+            this._hname = new ScvdExpression(this, value);
+        }
     }
 
     public get state(): ScvdEventState | undefined {
         return this._state;
     }
 
+    // TODO, resolve and link
+    public set state(value: ScvdEventState | undefined) {
+        this._state = value;
+    }
+
     public get tracking(): ScvdEventTracking | undefined {
         return this._tracking;
     }
-    public set tracking(value: ScvdEventTracking | undefined) {
-        this._tracking = value;
+    public set tracking(value: string | undefined) {
+        if( value !== undefined ) {
+            this._tracking = new ScvdEventTracking(this, value);
+        }
     }
 
     public get print(): ScvdPrint[] {
         return this._print;
     }
-    public set print(value: ScvdPrint[]) {
-        this._print = value;
-    }
 
-    public addPrint(entry: ScvdPrint): void {
-        this._print.push(entry);
+    public addPrint(): ScvdPrint {
+        const item = new ScvdPrint(this);
+        this._print.push(item);
+        return item;
     }
 
     public get stateName(): string | undefined {

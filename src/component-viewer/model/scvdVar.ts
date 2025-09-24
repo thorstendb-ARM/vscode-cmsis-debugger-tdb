@@ -19,6 +19,7 @@
 import { ScvdDataType } from './scvdDataType';
 import { ScvdExpression } from './scvdExpression';
 import { Json, ScvdBase } from './scvdBase';
+import { getStringFromJson } from './scvdUtils';
 
 export class ScvdVar extends ScvdBase {
     private _value: ScvdExpression | undefined;
@@ -35,8 +36,8 @@ export class ScvdVar extends ScvdBase {
             return false;
         }
 
-        this.value = xml.value;
-        this.type = xml.type;
+        this.value = getStringFromJson(xml.value);
+        this.type = getStringFromJson(xml.type);
 
         return super.readXml(xml);
     }
@@ -44,15 +45,18 @@ export class ScvdVar extends ScvdBase {
     public get value(): ScvdExpression | undefined {
         return this._value;
     }
-    public set value(value: string) {
-        this._value = new ScvdExpression(this, value);
+    public set value(value: string | undefined) {
+        if (value !== undefined) {
+            this._value = new ScvdExpression(this, value);
+        }
     }
 
     get type(): ScvdDataType | undefined {
         return this._type;
     }
-    set type(value: string) {
-        this._type = new ScvdDataType(this, value);
+    set type(value: string | undefined) {
+        if (value !== undefined) {
+            this._type = new ScvdDataType(this, value);
+        }
     }
-
 }

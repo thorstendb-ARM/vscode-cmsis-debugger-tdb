@@ -15,6 +15,7 @@
  */
 
 import { NumberType } from './numberType';
+import { getStringFromJson } from './scvdUtils';
 
 // add linter exception for Json
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -29,6 +30,7 @@ export class ScvdBase {
     private _info: string | undefined;
 
     private _isModified: boolean = false;
+    private _valid: boolean = false;
 
     constructor(
         parent: ScvdBase | undefined,
@@ -44,9 +46,22 @@ export class ScvdBase {
             return false;
         }
 
-        this.name = xml.name;
-        this.info = xml.info;
+        this.name = getStringFromJson(xml.name);
+        this.info = getStringFromJson(xml.info);
+
         return true;
+    }
+
+    public set valid(value: boolean) {
+        this._valid = value;
+    }
+
+    public get valid(): boolean {
+        return this._valid;
+    }
+
+    public invalidate() {
+        this._valid = false;
     }
 
     /**
@@ -90,14 +105,14 @@ export class ScvdBase {
         return this._parent;
     }
 
-    public set name(name: string) {
+    public set name(name: string | undefined) {
         this._name = name;
     }
     public get name(): string | undefined {
         return this._name;
     }
 
-    public set info(text: string) {
+    public set info(text: string | undefined) {
         this._info = text;
     }
     public get info(): string | undefined {

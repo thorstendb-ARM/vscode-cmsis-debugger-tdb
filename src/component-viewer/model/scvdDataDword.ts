@@ -15,8 +15,9 @@
  */
 
 import { NumberType } from './numberType';
-import { ScvdBase } from './scvdBase';
+import { Json, ScvdBase } from './scvdBase';
 import { ScvdDataBase } from './scvdDataBase';
+import { getStringFromJson } from './scvdUtils';
 
 
 export class ScvdDataDword extends ScvdDataBase {
@@ -28,11 +29,22 @@ export class ScvdDataDword extends ScvdDataBase {
         super(parent);
     }
 
+    public readXml(xml: Json): boolean {
+        if (xml === undefined ) {
+            return false;
+        }
+
+        this.data = getStringFromJson(xml.data);
+
+        return super.readXml(xml);
+    }
+
     public get data(): NumberType | undefined {
         return this._data;
     }
-    public set data(value: NumberType | undefined) {
-        this._data = value;
-        this.valid = true;
+    public set data(value: string | undefined) {
+        if( value !== undefined) {
+            this._data = new NumberType(value);
+        }
     }
 }

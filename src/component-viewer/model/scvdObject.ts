@@ -39,11 +39,7 @@ export class ScvdObjects extends ScvdBase {
         if (xml === undefined ) {
             return false;
         }
-        const objects = xml;
-        if(objects.length > 1) {
-            return false;       // only one object supported
-        }
-
+        const objects = getArrayFromJson(xml);
         objects?.forEach( (v: Json) => {
             const object = this.addObject();
             object.readXml(v);
@@ -87,52 +83,40 @@ export class ScvdObject extends ScvdBase {
         }
 
         const vars = getArrayFromJson(xml?.var);
-        if(vars !== undefined) {
-            vars.forEach( (v: Json) => {
-                const varItem = this.addVar();
-                varItem.readXml(v);
-            });
-        }
+        vars?.forEach( (v: Json) => {
+            const varItem = this.addVar();
+            varItem.readXml(v);
+        });
 
         const calcs = getArrayFromJson(xml?.calc);
-        if(calcs !== undefined) {
-            calcs.forEach( (c: Json) => {
-                const calcItem = this.addCalc();
-                calcItem.readXml(c);
-            });
-        }
+        calcs?.forEach( (c: Json) => {
+            const calcItem = this.addCalc();
+            calcItem.readXml(c);
+        });
 
         const lists = getArrayFromJson(xml?.list);
-        if(lists !== undefined) {
-            lists.forEach( (l: Json) => {
-                const listItem = this.addList();
-                listItem.readXml(l);
-            });
-        }
+        lists?.forEach( (l: Json) => {
+            const listItem = this.addList();
+            listItem.readXml(l);
+        });
 
         const reads = getArrayFromJson(xml?.read);
-        if(reads !== undefined) {
-            reads.forEach( (r: Json) => {
-                const readItem = this.addRead();
-                readItem.readXml(r);
-            });
-        }
+        reads?.forEach( (r: Json) => {
+            const readItem = this.addRead();
+            readItem.readXml(r);
+        });
 
         const readLists = getArrayFromJson(xml?.readlist);
-        if(readLists !== undefined) {
-            readLists.forEach( (rl: Json) => {
-                const readListItem = this.addReadList();
-                readListItem.readXml(rl);
-            });
-        }
+        readLists?.forEach( (rl: Json) => {
+            const readListItem = this.addReadList();
+            readListItem.readXml(rl);
+        });
 
         const outs = getArrayFromJson(xml?.out);
-        if(outs !== undefined) {
-            outs.forEach( (o: Json) => {
-                const outItem = this.addOut();
-                outItem.readXml(o);
-            });
-        }
+        outs?.forEach( (o: Json) => {
+            const outItem = this.addOut();
+            outItem.readXml(o);
+        });
 
         return super.readXml(xml);
     }

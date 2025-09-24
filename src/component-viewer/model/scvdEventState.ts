@@ -15,6 +15,7 @@
  */
 
 import { Json, ScvdBase } from './scvdBase';
+import { getStringFromJson } from './scvdUtils';
 
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
@@ -36,30 +37,11 @@ export class ScvdEventState extends ScvdBase {
             return false;
         }
 
-        const plot = xml.plot;
-        if(plot !== undefined && (plot === 'off' || plot === 'line' || plot === 'box')) {
-            this._plot = plot;
-        }
-
-        const color = xml.color;
-        if(color !== undefined && (color === 'blue' || color === 'red' || color === 'green' || color === 'black')) {
-            this._color = color;
-        }
-
-        const unique = xml.unique;
-        if(unique !== undefined) {
-            this._unique = (unique === 'true' || unique === true);
-        }
-
-        const dormant = xml.dormant;
-        if(dormant !== undefined) {
-            this._dormant = (dormant === 'true' || dormant === true);
-        }
-
-        const ssel = xml.ssel;
-        if(ssel !== undefined) {
-            this._ssel = (ssel === 'true' || ssel === true);
-        }
+        this.plot = getStringFromJson(xml.plot);
+        this.color = getStringFromJson(xml.color);
+        this.unique = getStringFromJson(xml.unique);
+        this.dormant = getStringFromJson(xml.dormant);
+        this.ssel = getStringFromJson(xml.ssel);
 
         return super.readXml(xml);
     }
@@ -68,39 +50,49 @@ export class ScvdEventState extends ScvdBase {
         return this._plot;
     }
 
-    public set plot(value: 'off' | 'line' | 'box') {
-        this._plot = value;
+    public set plot(value: string | undefined) {
+        if (value !== undefined && (value === 'off' || value === 'line' || value === 'box')) {
+            this._plot = value;
+        }
     }
 
     public get color(): 'blue' | 'red' | 'green' | 'black' {
         return this._color;
     }
 
-    public set color(value: 'blue' | 'red' | 'green' | 'black') {
-        this._color = value;
+    public set color(value: string | undefined) {
+        if (value !== undefined && (value === 'blue' || value === 'red' || value === 'green' || value === 'black')) {
+            this._color = value;
+        }
     }
 
     public get unique(): boolean {
         return this._unique;
     }
 
-    public set unique(value: boolean) {
-        this._unique = value;
+    public set unique(value: string | boolean | undefined) {
+        if(value !== undefined) {
+            this._unique = (value === 'true' || value === true);
+        }
     }
 
     public get dormant(): boolean {
         return this._dormant;
     }
 
-    public set dormant(value: boolean) {
-        this._dormant = value;
+    public set dormant(value: string | boolean | undefined) {
+        if(value !== undefined) {
+            this._dormant = (value === 'true' || value === true);
+        }
     }
 
     public get ssel(): boolean {
         return this._ssel;
     }
 
-    public set ssel(value: boolean) {
-        this._ssel = value;
+    public set ssel(value: string | boolean | undefined) {
+        if(value !== undefined) {
+            this._ssel = (value === 'true' || value === true);
+        }
     }
 }

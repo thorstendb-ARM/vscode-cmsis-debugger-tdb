@@ -22,7 +22,7 @@ import { Json, ScvdBase } from './scvdBase';
 import { ScvdMember } from './scvdMember';
 import { ScvdSymbol } from './scvdSymbol';
 import { ScvdVar } from './scvdVar';
-import { getArrayFromJson } from './scvdUtils';
+import { getArrayFromJson, getStringFromJson } from './scvdUtils';
 
 // Container
 export class ScvdTypedefs extends ScvdBase {
@@ -38,12 +38,8 @@ export class ScvdTypedefs extends ScvdBase {
         if (xml === undefined ) {
             return false;
         }
-        const typedefs = xml;
-        if(typedefs.length > 1) {
-            return false;       // only one object supported
-        }
-
-        typedefs.forEach( (v: Json) => {
+        const typedefs = getArrayFromJson(xml);
+        typedefs?.forEach( (v: Json) => {
             const varItem = this.addTypedef();
             varItem.readXml(v);
         });
@@ -66,7 +62,6 @@ export class ScvdTypedefs extends ScvdBase {
 export class ScvdTypedef extends ScvdBase {
     private _size: ScvdExpression | undefined;
     private _import: ScvdSymbol | undefined;
-
     private _member: ScvdMember[] = [];
     private _var: ScvdVar[] = [];
 
@@ -81,24 +76,20 @@ export class ScvdTypedef extends ScvdBase {
             return false;
         }
 
-        this.size = xml.size;
-        this.import = xml.import;
+        this.size = getStringFromJson(xml.size);
+        this.import = getStringFromJson(xml.import);
 
-        const members = getArrayFromJson(xml?.member);
-        if(members !== undefined) {
-            members.forEach( (v: Json) => {
-                const memberItem = this.addMember();
-                memberItem.readXml(v);
-            });
-        }
+        const members = getArrayFromJson(xml.member);
+        members?.forEach( (v: Json) => {
+            const memberItem = this.addMember();
+            memberItem.readXml(v);
+        });
 
-        const vars = getArrayFromJson(xml?.var);
-        if(vars !== undefined) {
-            vars.forEach( (v: Json) => {
-                const varItem = this.addVar();
-                varItem.readXml(v);
-            });
-        }
+        const vars = getArrayFromJson(xml.var);
+        vars?.forEach( (v: Json) => {
+            const varItem = this.addVar();
+            varItem.readXml(v);
+        });
 
         return super.readXml(xml);
     }
@@ -106,12 +97,16 @@ export class ScvdTypedef extends ScvdBase {
     get size(): NumberType | undefined {
         return this._size?.value;
     }
-    set size(value: string) {
-        this._size = new ScvdExpression(this, value);
+    set size(value: string | undefined) {
+        if(value !== undefined) {
+            this._size = new ScvdExpression(this, value);
+        }
     }
 
-    set import(value: string) {
-        this._import = new ScvdSymbol(this, value);
+    set import(value: string | undefined) {
+        if(value !== undefined) {
+            this._import = new ScvdSymbol(this, value);
+        }
     }
     get import(): ScvdSymbol | undefined {
         return this._import;
@@ -134,5 +129,4 @@ export class ScvdTypedef extends ScvdBase {
     public get var(): ScvdVar[] {
         return this._var;
     }
-
 }

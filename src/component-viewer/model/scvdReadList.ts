@@ -21,6 +21,7 @@ import { ScvdExpression } from './scvdExpression';
 import { Json, ScvdBase } from './scvdBase';
 import { ScvdTypedef } from './scvdTypedef';
 import { ScvdRead } from './scvdRead';
+import { getStringFromJson } from './scvdUtils';
 
 export class ScvdReadList extends ScvdRead {
     private _count: ScvdExpression = new ScvdExpression(this, '1'); // default is 1
@@ -45,32 +46,19 @@ export class ScvdReadList extends ScvdRead {
             return false;
         }
 
-        const count = xml.count;
-        if(count !== undefined) {
-            this._count = new ScvdExpression(this, count);
-        }
-
-        const next = xml.next;
-        if(next !== undefined) {
-            this._next = next;
-        }
-
-        const init = xml.init;
-        if(init !== undefined) {
-            this._init = new NumberType(init);
-        }
-
-        const based = xml.based;
-        if(based !== undefined) {
-            this._based = new NumberType(based);
-        }
+        this.count = getStringFromJson(xml.count);
+        this.next = getStringFromJson(xml.next);
+        this.init = getStringFromJson(xml.init);
+        this.based = getStringFromJson(xml.based);
 
         return super.readXml(xml);
     }
 
 
-    set count(value: string ) {
-        this._count = new ScvdExpression(this, value);
+    set count(value: string | undefined) {
+        if(value !== undefined) {
+            this._count = new ScvdExpression(this, value);
+        }
     }
     get count(): ScvdExpression {
         return this._count;
@@ -83,15 +71,19 @@ export class ScvdReadList extends ScvdRead {
         return this._next;
     }
 
-    set init(value: NumberTypeInput) {
-        this._init = new NumberType(value);
+    set init(value: NumberTypeInput | undefined) {
+        if(value !== undefined) {
+            this._init = new NumberType(value);
+        }
     }
     get init(): NumberType {
         return this._init;
     }
 
-    set based(value: NumberTypeInput) {
-        this._based = new NumberType(value);
+    set based(value: NumberTypeInput | undefined) {
+        if(value !== undefined) {
+            this._based = new NumberType(value);
+        }
     }
     get based(): NumberType {
         return this._based;

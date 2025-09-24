@@ -24,6 +24,7 @@ import { ScvdCondition } from './scvdCondition';
 import { ScvdSymbol } from './scvdSymbol';
 import { ScvdTypedef } from './scvdTypedef';
 import { ScvdDataType } from './scvdDataType';
+import { getStringFromJson } from './scvdUtils';
 
 export class ScvdRead extends ScvdBase {
     private _type: ScvdDataType | undefined;
@@ -50,16 +51,24 @@ export class ScvdRead extends ScvdBase {
             return false;
         }
 
-        const type = xml.type;
-        if (typeof type === 'string') {
-            this._type = new ScvdDataType(this, type);
-        }
+        this.type = getStringFromJson(xml.type);
+        this.symbol = getStringFromJson(xml.symbol);
+        this.offset = getStringFromJson(xml.offset);
+        this.const = getStringFromJson(xml.const);
+        this.cond = getStringFromJson(xml.cond);
+        this.size = getStringFromJson(xml.size);
+        this.endian = getStringFromJson(xml.endian);
 
         return super.readXml(xml);
     }
 
-    public get type(): ScvdDataType | ScvdTypedef | undefined {
+    public get type(): ScvdDataType | undefined {
         return this._type;
+    }
+    public set type(value: string | undefined) {
+        if (value !== undefined) {
+            this._type = new ScvdDataType(this, value);
+        }
     }
 
     set symbol(name: string | undefined) {
@@ -69,27 +78,56 @@ export class ScvdRead extends ScvdBase {
         return this._symbol;
     }
 
-    set offset(value: string) {
-        this._offset = new ScvdExpression(this, value);
+    set offset(value: string | undefined) {
+        if(value !== undefined) {
+            this._offset = new ScvdExpression(this, value);
+        }
     }
+
     get offset(): ScvdExpression {
         return this._offset;
     }
 
-    set const(value: number) {
-        this._const = new NumberType(value);
+    set const(value: string | undefined) {
+        if(value !== undefined) {
+            this._const = new NumberType(value);
+        }
     }
+
     get const(): NumberType {
         return this._const;
     }
 
-    set cond(value: ScvdCondition) {
-        this._cond = value;
+    set cond(value: string | undefined) {
+        if(value !== undefined) {
+            this._cond = new ScvdCondition(this, value);
+        }
     }
+
     get cond(): ScvdCondition {
         return this._cond;
     }
 
+    get size(): ScvdExpression | undefined {
+        return this._size;
+    }
+    set size(value: string | undefined) {
+        if(value !== undefined) {
+            this._size = new ScvdExpression(this, value);
+        }
+    }
+
+    get endian(): ScvdEndian | undefined {
+        return this._endian;
+    }
+    set endian(value: string | undefined) {
+        if(value !== undefined) {
+            this._endian = new ScvdEndian(this, value);
+        }
+    }
+
+
+    // ----- Object links -----
     public set typeObj(type: ScvdTypedef | undefined) {
         this._typeObj = type;
     }
@@ -102,21 +140,6 @@ export class ScvdRead extends ScvdBase {
     }
     public get symbolObj(): ScvdSymbol | undefined {
         return this._symbolObj;
-    }
-
-    get size(): NumberType | undefined {
-        return this._size?.value;
-    }
-    set size(value: string) {
-        this._size = new ScvdExpression(this, value);
-    }
-
-    get endian(): ScvdEndian | undefined {
-        return this._endian;
-    }
-    set endian(value: string) {
-        this._endian = new ScvdEndian(this, value);
-        this.isModified = true;
     }
 
 

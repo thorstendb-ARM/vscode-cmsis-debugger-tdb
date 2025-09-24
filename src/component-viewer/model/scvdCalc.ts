@@ -19,6 +19,7 @@
 import { ScvdExpression } from './scvdExpression';
 import { Json, ScvdBase } from './scvdBase';
 import { ScvdCondition } from './scvdCondition';
+import { getStringFromJson, getTextBodyFromJson } from './scvdUtils';
 
 export class ScvdCalc extends ScvdBase {
     private _cond: ScvdCondition | undefined;
@@ -35,29 +36,12 @@ export class ScvdCalc extends ScvdBase {
             return false;
         }
 
-        const cond = xml.cond;
-        if( cond !== undefined) {
-            this._cond = new ScvdCondition(cond);
-        }
+        this.cond = getStringFromJson(xml.cond);
 
-        // Extract raw text body (multiline) from the XML JSON object.
-        // Depending on the XML-to-JSON converter, text may reside in '#text', '_', or 'text'.
-        let expressions: string[] = [];
-        const text: string | undefined = typeof xml === 'string'
-            ? xml
-            : (xml?.['#text'] ?? xml?._ ?? xml?.text);
-        if (typeof text === 'string') {
-            expressions = text
-                .split(/\r?\n/)
-                .map(l => l.trim())
-                .filter(l => l.length > 0);
-
-            if (expressions.length > 0) {
-                expressions.forEach( (v: string) => {
-                    this.addExpression(v);
-                });
-            }
-        }
+        const expressions = getTextBodyFromJson(xml);
+        expressions?.forEach((v: string) => {
+            this.addExpression(v);
+        });
 
         return super.readXml(xml);
     }
@@ -67,9 +51,8 @@ export class ScvdCalc extends ScvdBase {
     }
 
     set cond(value: string | undefined) {
-        if (value) {
-            this._cond = new ScvdCondition(this);
-            this._cond.expression = value;
+        if (value !== undefined) {
+            this._cond = new ScvdCondition(this, value);
         }
     }
 
@@ -77,9 +60,11 @@ export class ScvdCalc extends ScvdBase {
         return this._expression;
     }
 
-    addExpression(value: string): void {
-        const expr = new ScvdExpression(this, value);
-        this._expression.push(expr);
+    private addExpression(value: string | undefined): void {
+        if (value !== undefined) {
+            const expr = new ScvdExpression(this, value);
+            this._expression.push(expr);
+        }
     }
 
 }
