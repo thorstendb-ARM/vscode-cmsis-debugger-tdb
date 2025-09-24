@@ -18,13 +18,18 @@
 
 import { ScvdDataType } from './scvdDataType';
 import { ScvdExpression } from './scvdExpression';
-import { ScvdBase } from './scvdBase';
+import { Json, ScvdBase } from './scvdBase';
 import { ScvdCondition } from './scvdCondition';
+import { getArrayFromJson, getStringFromJson } from './scvdUtils';
+import { ScvdItem } from './scvdItem';
+import { ScvdList } from './scvdList';
 
 export class ScvdOut extends ScvdBase {
     private _value: ScvdExpression | undefined; // name._value — expression that evaluates to the value of the output.
     private _type: ScvdDataType | undefined;
     private _cond: ScvdCondition;
+    private _item: ScvdItem[] = [];
+    private _list: ScvdList[] = [];
 
     constructor(
         parent: ScvdBase | undefined,
@@ -33,14 +38,42 @@ export class ScvdOut extends ScvdBase {
         this._cond = new ScvdCondition(this);
     }
 
-    public set value(value: string) {
-        this._value = new ScvdExpression(this, value);
+    public readXml(xml: Json): boolean {
+        if (xml === undefined ) {
+            return false;
+        }
+
+        this.value = getStringFromJson(xml.value);
+        this.type = getStringFromJson(xml.type);
+        this.cond = getStringFromJson(xml.cond);
+
+        const item = getArrayFromJson(xml.item);
+        item?.forEach((it: Json) => {
+            const newItem = this.addItem();
+            newItem.readXml(it);
+        });
+
+        const list = getArrayFromJson(xml.list);
+        list?.forEach((it: Json) => {
+            const newList = this.addList();
+            newList.readXml(it);
+        });
+
+        return super.readXml(xml);
+    }
+
+    public set value(value: string | undefined) {
+        if (value !== undefined) {
+            this._value = new ScvdExpression(this, value);
+        }
     }
     public get value(): ScvdExpression | undefined {
         return this._value;
     }
-    public set type(value: string) {
-        this._type = new ScvdDataType(this, value);
+    public set type(value: string | undefined) {
+        if (value !== undefined) {
+            this._type = new ScvdDataType(this, value);
+        }
     }
     public get type(): ScvdDataType | undefined {
         return this._type;
@@ -49,7 +82,27 @@ export class ScvdOut extends ScvdBase {
     public get cond(): ScvdCondition {
         return this._cond;
     }
-    public set cond(value: string) {
-        this._cond.expression = value;
+    public set cond(value: string | undefined) {
+        if (value !== undefined) {
+            this._cond.expression = value;
+        }
+    }
+
+    public get item(): ScvdItem[] {
+        return this._item;
+    }
+    public addItem(): ScvdItem {
+        const newItem = new ScvdItem(this, '1');
+        this._item.push(newItem);
+        return newItem;
+    }
+
+    public get list(): ScvdList[] {
+        return this._list;
+    }
+    public addList(): ScvdList {
+        const list = new ScvdList(this);
+        this._list.push(list);
+        return list;
     }
 }

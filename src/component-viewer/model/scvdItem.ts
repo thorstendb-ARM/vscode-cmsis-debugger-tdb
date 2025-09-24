@@ -16,12 +16,13 @@
 
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
-import { ScvdBase } from './scvdBase';
+import { Json, ScvdBase } from './scvdBase';
 import { ScvdExpression } from './scvdExpression';
 import { ScvdList } from './scvdList';
 import { ScvdPrint } from './scvdPrint';
 import { ScvdValueOutput } from './scvdValueOutput';
 import { ScvdCondition } from './scvdCondition';
+import { getArrayFromJson, getStringFromJson } from './scvdUtils';
 
 export class ScvdItem extends ScvdBase {
     private _property: ScvdValueOutput | undefined;
@@ -36,7 +37,7 @@ export class ScvdItem extends ScvdBase {
 
     constructor(
         parent: ScvdBase | undefined,
-        cond: string,
+        cond: string = '1',
         bold: string = '0',
         alert: string = '0',
     ) {
@@ -46,6 +47,44 @@ export class ScvdItem extends ScvdBase {
         this._alert = new ScvdCondition(this, alert);
     }
 
+    public readXml(xml: Json): boolean {
+        if (xml === undefined ) {
+            return false;
+        }
+
+        this.property = getStringFromJson(xml.property);
+        this.value = getStringFromJson(xml.value);
+        this.cond = getStringFromJson(xml.cond);
+        this.bold = getStringFromJson(xml.bold);
+        this.alert = getStringFromJson(xml.alert);
+
+        const item = getArrayFromJson(xml.item);
+        item?.forEach( (v: Json) => {
+            const newItem = this.addItem();
+            newItem.readXml(v);
+        });
+
+        const list = getArrayFromJson(xml.list);
+        list?.forEach( (v: Json) => {
+            const newList = new ScvdList(this);
+            newList.readXml(v);
+            this.addList(newList);
+        });
+
+        const print = getArrayFromJson(xml.print);
+        print?.forEach( (v: Json) => {
+            const printItem = this.addPrint();
+            printItem.readXml(v);
+        });
+
+        return super.readXml(xml);
+    }
+
+    public set property(value: string | undefined) {
+        if (value !== undefined) {
+            this._property = new ScvdValueOutput(this, value);
+        }
+    }
     public get property(): ScvdValueOutput | undefined {
         return this._property;
     }
@@ -53,53 +92,65 @@ export class ScvdItem extends ScvdBase {
     public get value(): ScvdExpression | undefined {
         return this._value;
     }
-    public set value(value: string) {
+    public set value(value: string | undefined) {
         if (value !== undefined) {
             this._value = new ScvdExpression(this, value);
         }
-        this.isModified = true;
     }
 
     get cond(): ScvdCondition | undefined {
         return this._cond;
     }
 
-    set cond(value: string) {
-        this._cond = new ScvdCondition(this, value);
+    set cond(value: string | undefined) {
+        if (value !== undefined) {
+            this._cond = new ScvdCondition(this, value);
+        }
     }
 
     get bold(): ScvdCondition | undefined {
         return this._bold;
     }
 
-    set bold(value: string) {
-        this._bold = new ScvdCondition(this, value);
+    set bold(value: string | undefined) {
+        if (value !== undefined) {
+            this._bold = new ScvdCondition(this, value);
+        }
     }
 
     get alert(): ScvdCondition | undefined {
         return this._alert;
     }
 
-    set alert(value: string) {
-        this._alert = new ScvdCondition(this, value);
+    set alert(value: string | undefined) {
+        if (value !== undefined) {
+            this._alert = new ScvdCondition(this, value);
+        }
     }
 
-    public get item(): ScvdItem[] {
-        return this._item;
-    }
-    public addItem(item: ScvdItem) {
-        this._item.push(item);
-    }
     public get list(): ScvdList[] {
         return this._list;
     }
     public addList(list: ScvdList) {
         this._list.push(list);
     }
+
+    public get item(): ScvdItem[] {
+        return this._item;
+    }
+
+    public addItem(): ScvdItem {
+        const newItem = new ScvdItem(this, '1');
+        this._item.push(newItem);
+        return newItem;
+    }
+
     public get print(): ScvdPrint[] {
         return this._print;
     }
-    public addPrint(print: ScvdPrint) {
-        this._print.push(print);
+    public addPrint(): ScvdPrint {
+        const item = new ScvdPrint(this);
+        this._print.push(item);
+        return item;
     }
 }
