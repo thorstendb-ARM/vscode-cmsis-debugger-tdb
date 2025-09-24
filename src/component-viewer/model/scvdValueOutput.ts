@@ -37,7 +37,7 @@ export class ScvdValueOutput extends ScvdBase {
         this._value = value;
     }
 
-    public expand(): string {
+    public getValue(): string {
         if(!this._value) {
             return '';
         }

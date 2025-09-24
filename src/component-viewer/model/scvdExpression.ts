@@ -28,7 +28,7 @@ export class ScvdExpression extends ScvdBase {
         expression: string | undefined
     ) {
         super(parent);
-        this._expression = expression;
+        this.expression = expression;
     }
 
     public get expression(): string | undefined {

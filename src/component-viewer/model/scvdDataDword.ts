@@ -15,9 +15,8 @@
  */
 
 import { NumberType } from './numberType';
-import { Json, ScvdBase } from './scvdBase';
+import { ScvdBase } from './scvdBase';
 import { ScvdDataBase } from './scvdDataBase';
-import { getStringFromJson } from './scvdUtils';
 
 
 export class ScvdDataDword extends ScvdDataBase {
@@ -27,16 +26,6 @@ export class ScvdDataDword extends ScvdDataBase {
         parent: ScvdBase | undefined,
     ) {
         super(parent);
-    }
-
-    public readXml(xml: Json): boolean {
-        if (xml === undefined ) {
-            return false;
-        }
-
-        this.data = getStringFromJson(xml.data);
-
-        return super.readXml(xml);
     }
 
     public get data(): NumberType | undefined {

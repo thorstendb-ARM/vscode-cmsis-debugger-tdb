@@ -134,4 +134,9 @@ export class ScvdBase {
         return true;
     }
 
+    // expanded values
+    public getValue(): string {
+        return '';
+    }
+
 }

@@ -19,18 +19,26 @@
 import { ScvdBase } from './scvdBase';
 
 export class ScvdSymbol extends ScvdBase {
+    private _symbol: string | undefined;
 
     constructor(
         parent: ScvdBase | undefined,
-        value: string = '',
+        value: string,
     ) {
         super(parent);
-        this.name = value;
+        this.symbol = value;
+    }
+
+    public get symbol(): string | undefined {
+        return this._symbol;
+    }
+    public set symbol(value: string | undefined) {
+        this._symbol = value;
     }
 
     public fetch(): void {
-        const name = this.name;
-        // Placeholder for fetch logic, if needed
-        console.log('Fetching symbol data...', name);
+        const symbol = this.symbol;
+        // Todo: Placeholder for fetch logic, if needed
+        console.log('Fetching symbol data...', symbol);
     }
 }

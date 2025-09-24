@@ -33,15 +33,15 @@ export class ScvdEventLevel extends ScvdBase {
         level: string,
     ) {
         super(parent);
-        this._level = EventLevel[level as keyof typeof EventLevel];
+        this.level = level;
     }
 
     get level(): EventLevel | undefined {
         return this._level;
     }
 
-    set level(value: EventLevel | undefined) {
-        this._level = value;
+    set level(value: string | undefined) {
+        this._level = EventLevel[value as keyof typeof EventLevel];
     }
 
     public filter(level: EventLevel): boolean {

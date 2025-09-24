@@ -66,5 +66,4 @@ export class ScvdCalc extends ScvdBase {
             this._expression.push(expr);
         }
     }
-
 }

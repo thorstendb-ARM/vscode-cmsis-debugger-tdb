@@ -20,6 +20,8 @@ import { ScvdTypedef } from './scvdTypedef';
 
 // https://arm-software.github.io/CMSIS-View/main/data_type.html#scalar_data_type
 
+// The following scalar data types are supported and can be used in read, typedef, and var elements.
+// read and var also support arrays based on scalar data types.
 const ScvdScalarDataTypeMap: Record<string, [number, string]> = {
     'uint8_t': [8, 'unsigned char'],
     'int8_t': [8, 'signed char'],
