@@ -100,12 +100,6 @@ export class ScvdMember extends ScvdBase {
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
-        if (this._type) {
-            info.push(...this._type.getExplorerInfo());
-        }
-        if (this._offset) {
-            info.push(...this._offset.getExplorerInfo());
-        }
         if (this._size) {
             info.push({ name: 'Size', value: this._size.getDisplayText() });
         }

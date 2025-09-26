@@ -118,9 +118,6 @@ export class ScvdReadList extends ScvdRead {
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
-        if (this._count) {
-            info.push(...this._count.getExplorerInfo());
-        }
         if (this._next) {
             info.push({ name: 'Next', value: this._next });
         }

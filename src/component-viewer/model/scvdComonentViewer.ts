@@ -99,18 +99,6 @@ export class ScvdComonentViewer extends ScvdBase {
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
-        if (this.component) {
-            info.push(...this.component.getExplorerInfo());
-        }
-        if (this.typedefs) {
-            info.push(...this.typedefs.getExplorerInfo());
-        }
-        if (this.objects) {
-            info.push(...this.objects.getExplorerInfo());
-        }
-        if (this.events) {
-            info.push(...this.events.getExplorerInfo());
-        }
         info.push(...itemInfo);
         return super.getExplorerInfo(info);
     }

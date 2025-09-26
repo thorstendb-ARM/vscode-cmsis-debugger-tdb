@@ -65,9 +65,6 @@ export class ScvdDataType extends ScvdBase {
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
-        if (this._type !== undefined) {
-            info.push(...this._type.getExplorerInfo());
-        }
         info.push(...itemInfo);
         return super.getExplorerInfo(info);
     }
@@ -102,9 +99,6 @@ export class ScvdComplexDataType extends ScvdBase{
         const info: ExplorerInfo[] = [];
         if (this._typeName !== undefined) {
             info.push({ name: 'TypeName', value: this._typeName });
-        }
-        if (this._type !== undefined) {
-            info.push(...this._type.getExplorerInfo());
         }
         info.push(...itemInfo);
         return super.getExplorerInfo(info);

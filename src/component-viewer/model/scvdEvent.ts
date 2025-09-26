@@ -173,32 +173,14 @@ export class ScvdEvent extends ScvdBase {
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
-        if (this.id) {
-            info.push(...this.id.getExplorerInfo());
-        }
-        if (this.level) {
-            info.push(...this.level.getExplorerInfo());
-        }
-        if (this.property) {
-            info.push(...this.property.getExplorerInfo());
-        }
-        if (this.value) {
-            info.push(...this.value.getExplorerInfo());
-        }
         if (this.doc) {
             info.push({ name: 'Doc', value: this.doc });
         }
         if (this.handle) {
             info.push({ name: 'Handle', value: this.handle.getDisplayText() });
         }
-        if (this.hname) {
-            info.push(...this.hname.getExplorerInfo());
-        }
         if (this.stateName) {
             info.push({ name: 'State', value: this.stateName });
-        }
-        if (this.tracking) {
-            info.push(...this.tracking.getExplorerInfo());
         }
         info.push(...itemInfo);
         return super.getExplorerInfo(info);

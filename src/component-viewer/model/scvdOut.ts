@@ -108,15 +108,6 @@ export class ScvdOut extends ScvdBase {
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
-        if (this.value) {
-            info.push(...this.value.getExplorerInfo());
-        }
-        if (this.type) {
-            info.push(...this.type.getExplorerInfo());
-        }
-        if (this.cond) {
-            info.push(...this.cond.getExplorerInfo());
-        }
         info.push(...itemInfo);
         return super.getExplorerInfo(info);
     }

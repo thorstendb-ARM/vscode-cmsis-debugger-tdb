@@ -72,9 +72,6 @@ export class ScvdCalc extends ScvdBase {
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
-        if (this.cond) {
-            info.push(...this.cond.getExplorerInfo());
-        }
         info.push(...itemInfo);
         return super.getExplorerInfo(info);
     }
