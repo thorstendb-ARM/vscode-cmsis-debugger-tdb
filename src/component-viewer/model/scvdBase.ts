@@ -200,13 +200,7 @@ export class ScvdBase {
         if (this.info) {
             info.push({ name: 'Info', value: this.info });
         }
-
-        info.push(...itemInfo.filter(i =>
-            i.name !== undefined
-            && i.name !== 'Tag'
-            && i.name !== 'Name'
-            && i.name !== 'Info'
-        ));
+        info.push(...itemInfo);
         return info;
     }
 }

@@ -18,9 +18,10 @@
 
 import { NumberType } from './numberType';
 import { ExplorerInfo, ScvdBase } from './scvdBase';
+import { ScvdExpression } from './scvdExpression';
 
 export class ScvdEventId extends ScvdBase {
-    private _id: NumberType;
+    private _id: ScvdExpression;
     private _messageNumber: NumberType;
     private _componentNumber: NumberType;
     private _level: NumberType;
@@ -30,14 +31,14 @@ export class ScvdEventId extends ScvdBase {
         id: string,
     ) {
         super(parent);
-        this._id = new NumberType(id);
-        const value = this._id.value;
+        this._id = new ScvdExpression(this, id);
+        const value = this._id.value.value;
         this._messageNumber = new NumberType(value & 0xFF);
         this._componentNumber = new NumberType((value >> 8) & 0xFF);
         this._level = new NumberType((value >> 16) & 0x3);
     }
 
-    get id(): NumberType {
+    get id(): ScvdExpression {
         return this._id;
     }
 
@@ -55,7 +56,7 @@ export class ScvdEventId extends ScvdBase {
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
-        info.push({ name: 'ID', value: this._id.getDisplayText() });
+        info.push({ name: 'ID', value: this._id.expression ?? '' });
         info.push({ name: 'MessageNumber', value: this._messageNumber.getDisplayText() });
         info.push({ name: 'ComponentNumber', value: this._componentNumber.getDisplayText() });
         info.push({ name: 'Level', value: this._level.getDisplayText() });
