@@ -1,10 +1,5 @@
 /*********************************************************************
- * Copyright (c) 2025 Arm Ltd. and others
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
+ * Copyright (c) 2025 Arm Ltd.
  * SPDX-License-Identifier: EPL-2.0
  *********************************************************************/
 
@@ -12,15 +7,11 @@ import * as vscode from 'vscode';
 import { ScvdComonentViewer } from './model/scvdComonentViewer';
 import { ScvdBase } from './model/scvdBase';
 
-
 export class SidebarDebugView implements vscode.TreeDataProvider<vscode.TreeItem> {
-    private _onDidChangeTreeData = new vscode.EventEmitter<void>();
+    private readonly _onDidChangeTreeData = new vscode.EventEmitter<void>();
     readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
-    private model: ScvdComonentViewer | undefined;
 
-    constructor(model: ScvdComonentViewer | undefined) {
-        this.model = model;
-    }
+    constructor(private model: ScvdComonentViewer | undefined) {}
 
     public setModel(model: ScvdComonentViewer | undefined) {
         this.model = model;
@@ -35,74 +26,89 @@ export class SidebarDebugView implements vscode.TreeDataProvider<vscode.TreeItem
         return element;
     }
 
-    getNoDataInfo(): vscode.ProviderResult<vscode.TreeItem[]> {
-        const updatingItem = new vscode.TreeItem('Updating Component Viewer…');
-        updatingItem.description = 'Please wait';
-        updatingItem.iconPath = new vscode.ThemeIcon('sync');
-        updatingItem.contextValue = 'updating';
-        return [updatingItem];
+    private noData(): vscode.TreeItem[] {
+        const item = new vscode.TreeItem('Updating Component Viewer…');
+        item.description = 'Please wait';
+        item.iconPath = new vscode.ThemeIcon('sync');
+        item.contextValue = 'updating';
+        return [item];
     }
 
-    getChildInfo(child: ScvdBase): vscode.TreeItem {
-        const label = (child.tag ?? '') + ': ' + (child.name ?? '');
-        const node: vscode.TreeItem = new vscode.TreeItem(label);
-        node.id = child.nodeId;
-        node.description = `(${child.constructor?.name ?? 'UnknownClass'})`;
-        node.collapsibleState = (child.hasChildren() ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None);
-        node.contextValue = child.info ?? 'no info';
-        return node;
+    private makeModelNode(node: ScvdBase): vscode.TreeItem {
+        const label = `${node.tag ?? ''}: ${node.name ?? ''}`;
+        const ti = new vscode.TreeItem(label, vscode.TreeItemCollapsibleState.Collapsed);
+        ti.id = node.nodeId;
+        ti.description = `(${node.constructor?.name ?? 'Unknown'})`;
+        ti.contextValue = 'model-node';
+        return ti;
     }
 
-    getChildren(element?: vscode.TreeItem): vscode.ProviderResult<vscode.TreeItem[]> {
-        if (!this.model) {
-            return this.getNoDataInfo();
+    private makeDetailItem(label: string, value: string, icon: string = 'symbol-field'): vscode.TreeItem {
+        const item = new vscode.TreeItem(label, vscode.TreeItemCollapsibleState.None);
+        item.description = (value === undefined || value === null || value === '') ? '—' : String(value);
+        item.iconPath = new vscode.ThemeIcon(icon);
+        item.contextValue = 'detail-leaf';
+        return item;
+    }
+
+    private buildDetailChildren(target: ScvdBase): vscode.TreeItem[] {
+        const out: vscode.TreeItem[] = [];
+
+        const explorerInfo = target.getExplorerInfo();
+        if (explorerInfo.length === 0) {
+            out.push(this.makeDetailItem('info', 'No details'));
+            return out;
         }
 
-        if (element === undefined) {
-            // Root elements
-            const rootNodes: vscode.TreeItem[] = [];
-            this.model.map((child, _index) => {
-                const node = this.getChildInfo(child);
-                if (node) {
-                    rootNodes.push(node);
-                }
-            });
-            return rootNodes;
-        } else {
-            // Child elements
-            const parentId = element.id;
-            const parentNode = this.findNodeById(this.model, parentId);
-            if (parentNode) {
-                const childNodes: vscode.TreeItem[] = [];
-                parentNode.map((child, _index) => {
-                    const node = this.getChildInfo(child);
+        explorerInfo.forEach( info => {
+            out.push(this.makeDetailItem(info.name, info.value, info.icon));
+        });
 
-                    node.collapsibleState = (child.hasChildren() ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None);
-                    node.contextValue = 'context';
-                    childNodes.push(node);
-                });
-                return childNodes;
-            }
-        }
-
-        return [];
+        return out;
     }
 
-    // Recursively search the model tree for a node with the given id.
+    private makeInfoNode(target: ScvdBase): vscode.TreeItem {
+        const info = new vscode.TreeItem('Details', vscode.TreeItemCollapsibleState.Collapsed);
+        info.id = `${target.nodeId}:info`;
+        info.description = 'Static properties';
+        info.tooltip = 'Details for this node';
+        info.iconPath = new vscode.ThemeIcon('list-tree');
+        info.contextValue = 'info-node';
+        return info;
+    }
+
+    public getChildren = (element?: vscode.TreeItem): vscode.ProviderResult<vscode.TreeItem[]> => {
+        if (!this.model) return this.noData();
+
+        // Root
+        if (!element) {
+            const roots: vscode.TreeItem[] = [];
+            this.model.map(n => roots.push(this.makeModelNode(n)));
+            return roots;
+        }
+
+        // Info node expansion
+        if (element.id?.endsWith(':info')) {
+            const baseId = element.id.slice(0, -5);
+            const base = this.findNodeById(this.model, baseId);
+            return base ? this.buildDetailChildren(base) : [];
+        }
+
+        // Normal model node expansion
+        const modelNode = this.findNodeById(this.model, element.id);
+        if (!modelNode) return [];
+
+        const children: vscode.TreeItem[] = [this.makeInfoNode(modelNode)];
+        modelNode.map(child => children.push(this.makeModelNode(child)));
+        return children;
+    };
+
     private findNodeById(node: ScvdBase, id: string | undefined): ScvdBase | undefined {
-        if (!node || !id) {
-            return undefined;
-        }
-        if (node.nodeId === id) {
-            return node;
-        }
+        if (!node || !id) return undefined;
+        if (node.nodeId === id) return node;
         if (typeof node.map === 'function') {
             let found: ScvdBase | undefined;
-            node.map((child: ScvdBase, _index: number) => {
-                if (!found) {
-                    found = this.findNodeById(child, id);
-                }
-            });
+            node.map(child => { if (!found) found = this.findNodeById(child, id); });
             return found;
         }
         return undefined;

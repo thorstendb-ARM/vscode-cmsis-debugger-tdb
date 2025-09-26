@@ -23,6 +23,11 @@ export type Json = Record<string, any>;
 
 let g_idNext: number = 1;
 
+export type ExplorerInfo = {
+    name: string;
+    value: string;
+    icon?: string;
+};
 
 export class ScvdBase {
     private _parent: ScvdBase | undefined;
@@ -184,4 +189,20 @@ export class ScvdBase {
         return '';
     }
 
+    public getExplorerInfo(): ExplorerInfo[] {
+        const info: ExplorerInfo[] = [];
+        if (this.tag) {
+            info.push({ name: 'Tag', value: this.tag });
+        }
+        if (this.name) {
+            info.push({ name: 'Name', value: this.name });
+        }
+        if (this.nodeId) {
+            info.push({ name: 'ID', value: this.nodeId });
+        }
+        if (this.info) {
+            info.push({ name: 'Info', value: this.info });
+        }
+        return info;
+    }
 }
