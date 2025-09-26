@@ -16,7 +16,7 @@
 
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
-import { ScvdBase } from './scvdBase';
+import { ExplorerInfo, ScvdBase } from './scvdBase';
 
 export class ScvdSymbol extends ScvdBase {
     private _symbol: string | undefined;
@@ -40,5 +40,14 @@ export class ScvdSymbol extends ScvdBase {
         const symbol = this.symbol;
         // Todo: Placeholder for fetch logic, if needed
         console.log('Fetching symbol data...', symbol);
+    }
+
+    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
+        const info: ExplorerInfo[] = [];
+        if (this._symbol !== undefined) {
+            info.push({ name: 'Symbol', value: this._symbol });
+        }
+        info.push(...itemInfo);
+        return super.getExplorerInfo(info);
     }
 }

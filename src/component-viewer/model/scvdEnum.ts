@@ -17,7 +17,7 @@
 // https://arm-software.github.io/CMSIS-View/main/elem_member.html#elem_enum
 
 import { ScvdExpression } from './scvdExpression';
-import { Json, ScvdBase } from './scvdBase';
+import { ExplorerInfo, Json, ScvdBase } from './scvdBase';
 import { getStringFromJson } from './scvdUtils';
 
 export class ScvdEnum extends ScvdBase {
@@ -39,6 +39,7 @@ export class ScvdEnum extends ScvdBase {
         }
 
         this.value = getStringFromJson(xml.value);
+        this.value.readXml(xml.value);
 
         return super.readXml(xml);
     }
@@ -51,4 +52,15 @@ export class ScvdEnum extends ScvdBase {
             this._value = new ScvdExpression(this, value);
         }
     }
+
+    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
+        const info: ExplorerInfo[] = [];
+        if (this._value !== undefined) {
+            info.push({ name: 'Value', value: this._value.expression ?? '' });
+            info.push({ name: 'Result', value: this._value.value.getDisplayText() });
+        }
+        info.push(...itemInfo);
+        return super.getExplorerInfo(info);
+    }
+
 }

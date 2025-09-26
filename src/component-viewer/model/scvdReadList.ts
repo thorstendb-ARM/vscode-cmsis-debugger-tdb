@@ -18,7 +18,7 @@
 
 import { NumberType, NumberTypeInput } from './numberType';
 import { ScvdExpression } from './scvdExpression';
-import { Json, ScvdBase } from './scvdBase';
+import { ExplorerInfo, Json, ScvdBase } from './scvdBase';
 import { ScvdTypedef } from './scvdTypedef';
 import { ScvdRead } from './scvdRead';
 import { getStringFromJson } from './scvdUtils';
@@ -89,8 +89,6 @@ export class ScvdReadList extends ScvdRead {
         return this._based;
     }
 
-
-
     public set nextObj(next: ScvdTypedef | undefined) {
         this._nextObj = next;
     }
@@ -118,4 +116,24 @@ export class ScvdReadList extends ScvdRead {
         return true;
     }
 
+    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
+        const info: ExplorerInfo[] = [];
+        if (this._count) {
+            info.push(...this._count.getExplorerInfo());
+        }
+        if (this._next) {
+            info.push({ name: 'Next', value: this._next });
+        }
+        if (this._init) {
+            info.push({ name: 'Init', value: this._init.getDisplayText() });
+        }
+        if (this._based) {
+            info.push({ name: 'Based', value: this._based.getDisplayText() });
+        }
+        if (this._nextObj) {
+            info.push({ name: 'NextObj', value: this._nextObj.name ?? '' });
+        }
+        info.push(...itemInfo);
+        return super.getExplorerInfo(info);
+    }
 }

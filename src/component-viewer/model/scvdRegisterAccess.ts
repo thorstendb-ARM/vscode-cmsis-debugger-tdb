@@ -16,7 +16,7 @@
 
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
-import { ScvdBase } from './scvdBase';
+import { ExplorerInfo, ScvdBase } from './scvdBase';
 
 export class ScvdRegisterAccess extends ScvdBase {
 
@@ -26,4 +26,10 @@ export class ScvdRegisterAccess extends ScvdBase {
         super(parent);
     }
 
+    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
+        const info: ExplorerInfo[] = [];
+
+        info.push(...itemInfo);
+        return super.getExplorerInfo(info);
+    }
 }

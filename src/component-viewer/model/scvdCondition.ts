@@ -16,7 +16,7 @@
 
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
-import { ScvdBase } from './scvdBase';
+import { ExplorerInfo, ScvdBase } from './scvdBase';
 import { ScvdExpression } from './scvdExpression';
 
 export class ScvdCondition extends ScvdBase {
@@ -42,5 +42,15 @@ export class ScvdCondition extends ScvdBase {
         return this._expression
             ? this._expression.value ? true : false
             : true;
+    }
+
+    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
+        const info: ExplorerInfo[] = [];
+        if (this._expression !== undefined) {
+            info.push({ name: 'Expression', value: this._expression.expression ?? '' });
+            info.push({ name: 'Result', value: this.result ? 'true' : 'false' });
+        }
+        info.push(...itemInfo);
+        return super.getExplorerInfo(info);
     }
 }

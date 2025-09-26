@@ -17,7 +17,7 @@
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
 import { NumberType } from './numberType';
-import { ScvdBase } from './scvdBase';
+import { ExplorerInfo, ScvdBase } from './scvdBase';
 
 export class ScvdEventId extends ScvdBase {
     private _id: NumberType;
@@ -51,5 +51,15 @@ export class ScvdEventId extends ScvdBase {
 
     get level(): NumberType {
         return this._level;
+    }
+
+    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
+        const info: ExplorerInfo[] = [];
+        info.push({ name: 'ID', value: this._id.getDisplayText() });
+        info.push({ name: 'MessageNumber', value: this._messageNumber.getDisplayText() });
+        info.push({ name: 'ComponentNumber', value: this._componentNumber.getDisplayText() });
+        info.push({ name: 'Level', value: this._level.getDisplayText() });
+        info.push(...itemInfo);
+        return super.getExplorerInfo(info);
     }
 }

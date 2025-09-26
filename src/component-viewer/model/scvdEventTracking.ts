@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { ScvdBase } from './scvdBase';
+import { ExplorerInfo, ScvdBase } from './scvdBase';
 
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
@@ -49,4 +49,12 @@ export class ScvdEventTracking extends ScvdBase {
         this._mode = ScvdEventTrackingMode[value as keyof typeof ScvdEventTrackingMode];
     }
 
+    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
+        const info: ExplorerInfo[] = [];
+        if (this._mode !== undefined) {
+            info.push({ name: 'Mode', value: this._mode });
+        }
+        info.push(...itemInfo);
+        return super.getExplorerInfo(info);
+    }
 }

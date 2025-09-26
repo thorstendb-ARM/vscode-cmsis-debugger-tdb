@@ -79,10 +79,10 @@ export class ScvdBase {
         return true;
     }
 
-    set tag(value: string | undefined) {
+    public set tag(value: string | undefined) {
         this._tag = value;
     }
-    get tag(): string | undefined {
+    public get tag(): string | undefined {
         if(this._tag === undefined) {
             return 'InternalType';
         }
@@ -189,7 +189,7 @@ export class ScvdBase {
         return '';
     }
 
-    public getExplorerInfo(): ExplorerInfo[] {
+    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
         if (this.tag) {
             info.push({ name: 'Tag', value: this.tag });
@@ -197,12 +197,16 @@ export class ScvdBase {
         if (this.name) {
             info.push({ name: 'Name', value: this.name });
         }
-        if (this.nodeId) {
-            info.push({ name: 'ID', value: this.nodeId });
-        }
         if (this.info) {
             info.push({ name: 'Info', value: this.info });
         }
+
+        info.push(...itemInfo.filter(i =>
+            i.name !== undefined
+            && i.name !== 'Tag'
+            && i.name !== 'Name'
+            && i.name !== 'Info'
+        ));
         return info;
     }
 }

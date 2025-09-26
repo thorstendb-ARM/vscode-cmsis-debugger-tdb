@@ -16,7 +16,7 @@
 
 //
 
-import { Json, ScvdBase } from './scvdBase';
+import { ExplorerInfo, Json, ScvdBase } from './scvdBase';
 import { ScvdEvent } from './scvdEvent';
 import { ScvdGroup } from './scvdGroup';
 import { getArrayFromJson } from './scvdUtils';
@@ -71,5 +71,11 @@ export class ScvdEvents extends ScvdBase {
         const group = new ScvdGroup(this);
         this._group.push(group);
         return group;
+    }
+
+    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
+        const info: ExplorerInfo[] = [];
+        info.push(...itemInfo);
+        return super.getExplorerInfo(info);
     }
 }

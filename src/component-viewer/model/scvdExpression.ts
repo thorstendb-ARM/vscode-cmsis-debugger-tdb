@@ -17,7 +17,7 @@
 // https://arm-software.github.io/CMSIS-View/main/scvd_expression.html
 
 import { NumberType } from './numberType';
-import { ScvdBase } from './scvdBase';
+import { ExplorerInfo, ScvdBase } from './scvdBase';
 
 export class ScvdExpression extends ScvdBase {
     private _expression: string | undefined;
@@ -36,6 +36,10 @@ export class ScvdExpression extends ScvdBase {
     }
     public set expression(value: string | undefined) {
         this._expression = value;
+    }
+
+    public get result(): NumberType | undefined {
+        return this._result;
     }
 
     public get value(): NumberType {
@@ -69,5 +73,20 @@ export class ScvdExpression extends ScvdBase {
             console.error('Error evaluating expression:', error);
             return undefined;
         }
+    }
+
+    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
+        const info: ExplorerInfo[] = [];
+        if (this.expression) {
+            info.push({ name: 'Expression', value: this.expression });
+        }
+        if(this.result) {
+            info.push({ name: 'Result', value: this.result.getDisplayText() });
+        }
+        if (this.value) {
+            info.push({ name: 'Value', value: this.value.getDisplayText() });
+        }
+        info.push(...itemInfo);
+        return super.getExplorerInfo(info);
     }
 }

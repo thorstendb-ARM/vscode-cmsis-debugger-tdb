@@ -18,7 +18,7 @@
 
 import { NumberType } from './numberType';
 import { ScvdExpression } from './scvdExpression';
-import { Json, ScvdBase } from './scvdBase';
+import { ExplorerInfo, Json, ScvdBase } from './scvdBase';
 import { ScvdMember } from './scvdMember';
 import { ScvdSymbol } from './scvdSymbol';
 import { ScvdVar } from './scvdVar';
@@ -55,6 +55,13 @@ export class ScvdTypedefs extends ScvdBase {
         const typedefItem = new ScvdTypedef(this);
         this._typedef.push(typedefItem);
         return typedefItem;
+    }
+
+    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
+        const info: ExplorerInfo[] = [];
+
+        info.push(...itemInfo);
+        return super.getExplorerInfo(info);
     }
 }
 
@@ -129,4 +136,26 @@ export class ScvdTypedef extends ScvdBase {
     public get var(): ScvdVar[] {
         return this._var;
     }
+
+    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
+        const info: ExplorerInfo[] = [];
+        if (this._size !== undefined) {
+            info.push({ name: 'Size', value: this._size.expression ?? '' });
+            if (this._size.value !== undefined) {
+                info.push({ name: 'Size Value', value: this._size.value.getDisplayText() });
+            }
+        }
+        if (this._import !== undefined) {
+            info.push({ name: 'Import', value: this._import.name ?? '' });
+        }
+        if (this._member.length > 0) {
+            info.push({ name: 'Members', value: this._member.length.toString() });
+        }
+        if (this._var.length > 0) {
+            info.push({ name: 'Vars', value: this._var.length.toString() });
+        }
+        info.push(...itemInfo);
+        return super.getExplorerInfo(info);
+    }
+
 }

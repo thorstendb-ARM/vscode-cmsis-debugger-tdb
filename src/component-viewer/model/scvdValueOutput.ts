@@ -16,7 +16,7 @@
 
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
-import { ScvdBase } from './scvdBase';
+import { ExplorerInfo, ScvdBase } from './scvdBase';
 import { ScvdFormatSpecifier } from './scvdFormatSpecifier';
 
 export class ScvdValueOutput extends ScvdBase {
@@ -43,5 +43,14 @@ export class ScvdValueOutput extends ScvdBase {
         }
         const formatter = new ScvdFormatSpecifier();
         return formatter.expand(this._value) ?? '';
+    }
+
+    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
+        const info: ExplorerInfo[] = [];
+        if (this._value !== undefined) {
+            info.push({ name: 'Value', value: this._value });
+        }
+        info.push(...itemInfo);
+        return super.getExplorerInfo(info);
     }
 }

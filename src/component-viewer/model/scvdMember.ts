@@ -20,7 +20,7 @@ import { NumberType, NumberTypeInput } from './numberType';
 import { ScvdDataType } from './scvdDataType';
 import { ScvdEnum } from './scvdEnum';
 import { ScvdExpression } from './scvdExpression';
-import { Json, ScvdBase } from './scvdBase';
+import { ExplorerInfo, Json, ScvdBase } from './scvdBase';
 import { getArrayFromJson, getStringFromJson } from './scvdUtils';
 
 export class ScvdMember extends ScvdBase {
@@ -96,5 +96,20 @@ export class ScvdMember extends ScvdBase {
     public getEnum(index: NumberType): ScvdEnum | undefined {
         const enumItem = this._enum.find((item) => item.value?.value?.value === index.value);
         return enumItem;
+    }
+
+    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
+        const info: ExplorerInfo[] = [];
+        if (this._type) {
+            info.push(...this._type.getExplorerInfo());
+        }
+        if (this._offset) {
+            info.push(...this._offset.getExplorerInfo());
+        }
+        if (this._size) {
+            info.push({ name: 'Size', value: this._size.getDisplayText() });
+        }
+        info.push(...itemInfo);
+        return super.getExplorerInfo(info);
     }
 }

@@ -15,7 +15,7 @@
  */
 
 import { NumberType } from './numberType';
-import { ScvdBase } from './scvdBase';
+import { ExplorerInfo, ScvdBase } from './scvdBase';
 import { ScvdTypedef } from './scvdTypedef';
 
 // https://arm-software.github.io/CMSIS-View/main/data_type.html#scalar_data_type
@@ -62,6 +62,15 @@ export class ScvdDataType extends ScvdBase {
             }
         }
     }
+
+    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
+        const info: ExplorerInfo[] = [];
+        if (this._type !== undefined) {
+            info.push(...this._type.getExplorerInfo());
+        }
+        info.push(...itemInfo);
+        return super.getExplorerInfo(info);
+    }
 }
 
 export class ScvdComplexDataType extends ScvdBase{
@@ -88,6 +97,18 @@ export class ScvdComplexDataType extends ScvdBase{
         // Default implementation does nothing, can be overridden by subclasses
         return true;
     }
+
+    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
+        const info: ExplorerInfo[] = [];
+        if (this._typeName !== undefined) {
+            info.push({ name: 'TypeName', value: this._typeName });
+        }
+        if (this._type !== undefined) {
+            info.push(...this._type.getExplorerInfo());
+        }
+        info.push(...itemInfo);
+        return super.getExplorerInfo(info);
+    }
 }
 
 export class ScvdScalarDataType extends ScvdBase {
@@ -113,4 +134,13 @@ export class ScvdScalarDataType extends ScvdBase {
         return value as NumberType | undefined;
     }
 
+    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
+        const info: ExplorerInfo[] = [];
+        if (this.type !== undefined) {
+            info.push({ name: 'Type', value: this.type });
+            info.push({ name: 'Size', value: this.size?.toString() ?? '' });
+        }
+        info.push(...itemInfo);
+        return super.getExplorerInfo(info);
+    }
 }

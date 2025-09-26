@@ -16,7 +16,7 @@
 
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
-import { Json, ScvdBase } from './scvdBase';
+import { ExplorerInfo, Json, ScvdBase } from './scvdBase';
 import { ScvdComponent } from './scvdComponent';
 import { getArrayFromJson } from './scvdUtils';
 
@@ -51,5 +51,11 @@ export class ScvdGroup extends ScvdBase {
 
     public get components(): ScvdComponent[] {
         return this._component;
+    }
+
+    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
+        const info: ExplorerInfo[] = [];
+        info.push(...itemInfo);
+        return super.getExplorerInfo(info);
     }
 }

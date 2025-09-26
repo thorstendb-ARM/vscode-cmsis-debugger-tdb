@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import { ExplorerInfo } from './scvdBase';
+
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
 
@@ -179,5 +181,12 @@ export class ScvdFormatSpecifier {
             const formatted = this.formatValue(m, substrFromMatch);
             return formatted !== undefined ? formatted : m;
         });
+    }
+
+    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
+        const info: ExplorerInfo[] = [];
+
+        info.push(...itemInfo);
+        return info;
     }
 }

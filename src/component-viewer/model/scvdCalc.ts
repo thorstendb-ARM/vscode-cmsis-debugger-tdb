@@ -17,7 +17,7 @@
 // https://arm-software.github.io/CMSIS-View/main/elem_calc.html
 
 import { ScvdExpression } from './scvdExpression';
-import { Json, ScvdBase } from './scvdBase';
+import { ExplorerInfo, Json, ScvdBase } from './scvdBase';
 import { ScvdCondition } from './scvdCondition';
 import { getStringFromJson, getTextBodyFromJson } from './scvdUtils';
 
@@ -40,7 +40,8 @@ export class ScvdCalc extends ScvdBase {
 
         const expressions = getTextBodyFromJson(xml);
         expressions?.forEach((v: string) => {
-            this.addExpression(v);
+            const expr = this.addExpression(v);
+            expr?.readXml(xml);
         });
 
         return super.readXml(xml);
@@ -60,10 +61,21 @@ export class ScvdCalc extends ScvdBase {
         return this._expression;
     }
 
-    private addExpression(value: string | undefined): void {
+    private addExpression(value: string | undefined): ScvdExpression | undefined {
         if (value !== undefined) {
             const expr = new ScvdExpression(this, value);
             this._expression.push(expr);
+            return expr;
         }
+        return undefined;
+    }
+
+    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
+        const info: ExplorerInfo[] = [];
+        if (this.cond) {
+            info.push(...this.cond.getExplorerInfo());
+        }
+        info.push(...itemInfo);
+        return super.getExplorerInfo(info);
     }
 }

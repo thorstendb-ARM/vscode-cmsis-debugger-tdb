@@ -18,7 +18,7 @@
 
 import { ScvdDataType } from './scvdDataType';
 import { ScvdExpression } from './scvdExpression';
-import { Json, ScvdBase } from './scvdBase';
+import { ExplorerInfo, Json, ScvdBase } from './scvdBase';
 import { getStringFromJson } from './scvdUtils';
 
 export class ScvdVar extends ScvdBase {
@@ -58,5 +58,17 @@ export class ScvdVar extends ScvdBase {
         if (value !== undefined) {
             this._type = new ScvdDataType(this, value);
         }
+    }
+
+    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
+        const info: ExplorerInfo[] = [];
+        if (this._type !== undefined && this._type.type !== undefined) {
+            info.push({ name: 'Type', value: this._type.type });
+        }
+        if (this._value !== undefined && this._value.expression !== undefined) {
+            info.push({ name: 'Value', value: this._value.expression });
+        }
+        info.push(...itemInfo);
+        return super.getExplorerInfo(info);
     }
 }

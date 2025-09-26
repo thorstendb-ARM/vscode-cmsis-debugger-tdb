@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { Json, ScvdBase } from './scvdBase';
+import { ExplorerInfo, Json, ScvdBase } from './scvdBase';
 import { getStringFromJson } from './scvdUtils';
 
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
@@ -94,5 +94,16 @@ export class ScvdEventState extends ScvdBase {
         if(value !== undefined) {
             this._ssel = (value === 'true' || value === true);
         }
+    }
+
+    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
+        const info: ExplorerInfo[] = [];
+        info.push({ name: 'Plot', value: this._plot });
+        info.push({ name: 'Color', value: this._color });
+        info.push({ name: 'Unique', value: this._unique.toString() });
+        info.push({ name: 'Dormant', value: this._dormant.toString() });
+        info.push({ name: 'SSEL', value: this._ssel.toString() });
+        info.push(...itemInfo);
+        return super.getExplorerInfo(info);
     }
 }

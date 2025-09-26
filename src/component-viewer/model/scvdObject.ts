@@ -17,7 +17,7 @@
 // https://arm-software.github.io/CMSIS-View/main/elem_objects.html
 
 import { ScvdCalc } from './scvdCalc';
-import { Json, ScvdBase } from './scvdBase';
+import { ExplorerInfo, Json, ScvdBase } from './scvdBase';
 import { ScvdList } from './scvdList';
 import { ScvdOut } from './scvdOut';
 import { ScvdRead } from './scvdRead';
@@ -55,6 +55,12 @@ export class ScvdObjects extends ScvdBase {
 
     public get objects(): ScvdObject[] {
         return this._objects;
+    }
+
+    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
+        const info: ExplorerInfo[] = [];
+        info.push(...itemInfo);
+        return super.getExplorerInfo(info);
     }
 }
 
@@ -169,5 +175,11 @@ export class ScvdObject extends ScvdBase {
     }
     public get out(): ScvdOut[] {
         return this._out;
+    }
+
+    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
+        const info: ExplorerInfo[] = [];
+        info.push(...itemInfo);
+        return super.getExplorerInfo(info);
     }
 }

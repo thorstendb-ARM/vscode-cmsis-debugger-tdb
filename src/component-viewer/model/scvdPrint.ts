@@ -19,7 +19,7 @@
 import { ScvdExpression } from './scvdExpression';
 import { ScvdValueOutput } from './scvdValueOutput';
 import { ScvdCondition } from './scvdCondition';
-import { Json, ScvdBase } from './scvdBase';
+import { ExplorerInfo, Json, ScvdBase } from './scvdBase';
 import { getStringFromJson } from './scvdUtils';
 
 export class ScvdPrint extends ScvdBase {
@@ -93,4 +93,24 @@ export class ScvdPrint extends ScvdBase {
         }
     }
 
+    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
+        const info: ExplorerInfo[] = [];
+        if (this.property) {
+            info.push(...this.property.getExplorerInfo());
+        }
+        if (this.value) {
+            info.push(...this.value.getExplorerInfo());
+        }
+        if (this.cond) {
+            info.push(...this.cond.getExplorerInfo());
+        }
+        if (this.bold) {
+            info.push(...this.bold.getExplorerInfo());
+        }
+        if (this.alert) {
+            info.push(...this.alert.getExplorerInfo());
+        }
+        info.push(...itemInfo);
+        return super.getExplorerInfo(info);
+    }
 }

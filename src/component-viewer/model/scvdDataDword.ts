@@ -15,7 +15,7 @@
  */
 
 import { NumberType } from './numberType';
-import { ScvdBase } from './scvdBase';
+import { ExplorerInfo, ScvdBase } from './scvdBase';
 import { ScvdDataBase } from './scvdDataBase';
 
 
@@ -35,5 +35,14 @@ export class ScvdDataDword extends ScvdDataBase {
         if( value !== undefined) {
             this._data = new NumberType(value);
         }
+    }
+
+    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
+        const info: ExplorerInfo[] = [];
+        if (this._data !== undefined) {
+            info.push({ name: 'Data', value: this._data.getDisplayText() });
+        }
+        info.push(...itemInfo);
+        return super.getExplorerInfo(info);
     }
 }

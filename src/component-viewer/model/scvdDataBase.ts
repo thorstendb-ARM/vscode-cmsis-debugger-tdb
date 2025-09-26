@@ -15,7 +15,7 @@
  */
 
 import { NumberType } from './numberType';
-import { Json, ScvdBase } from './scvdBase';
+import { ExplorerInfo, Json, ScvdBase } from './scvdBase';
 import { getStringFromJson } from './scvdUtils';
 
 export class ScvdDataBase extends ScvdBase {
@@ -74,5 +74,20 @@ export class ScvdDataBase extends ScvdBase {
         if( value !== undefined) {
             this._count = new NumberType(value);
         }
+    }
+
+    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
+        const info: ExplorerInfo[] = [];
+        if (this._addr !== undefined) {
+            info.push({ name: 'Address', value: this._addr.getDisplayText() });
+        }
+        if (this._size !== undefined) {
+            info.push({ name: 'Size', value: this._size.getDisplayText() });
+        }
+        if (this._count !== undefined) {
+            info.push({ name: 'Count', value: this._count.getDisplayText() });
+        }
+        info.push(...itemInfo);
+        return super.getExplorerInfo(info);
     }
 }
