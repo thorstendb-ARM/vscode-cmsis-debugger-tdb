@@ -46,6 +46,30 @@
     "onStartupFinished"
   ],
   "contributes": {
+    "views": {
+      "cmsis": [
+        {
+          "id": "cmsis-scvd-explorer",
+          "name": "CMSIS SCVD Explorer"
+        }
+      ]
+        },
+        "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "cmsis",
+        "title": "CMSIS",
+        "icon": "$(preferences-open-settings)"
+        }
+
+      ]
+        },
+        "commands": [
+      {
+        "command": "cmsis-scvd-explorer.refreshEntry",
+        "title": "Refresh CMSIS SCVD Explorer"
+      }
+        ],
     "debuggers": [
       {
         "type": "*",

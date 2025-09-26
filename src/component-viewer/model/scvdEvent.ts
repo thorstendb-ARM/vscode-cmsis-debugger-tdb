@@ -48,7 +48,7 @@ export class ScvdEvent extends ScvdBase {
 
     public readXml(xml: Json): boolean {
         if (xml === undefined ) {
-            return false;
+            return super.readXml(xml);
         }
 
         this.id = getStringFromJson(xml.id);
@@ -66,6 +66,7 @@ export class ScvdEvent extends ScvdBase {
             const printItem = this.addPrint();
             printItem.readXml(v);
         });
+
         return super.readXml(xml);
     }
 

@@ -32,7 +32,7 @@ export class ScvdComponentIdentifier extends ScvdBase {
 
     public readXml(xml: Json): boolean {
         if (xml === undefined ) {
-            return false;
+            return super.readXml(xml);
         }
 
         this.version = getStringFromJson(xml.version);

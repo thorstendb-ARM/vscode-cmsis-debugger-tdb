@@ -36,9 +36,9 @@ export class ScvdTypedefs extends ScvdBase {
 
     public readXml(xml: Json): boolean {
         if (xml === undefined ) {
-            return false;
+            return super.readXml(xml);
         }
-        const typedefs = getArrayFromJson(xml);
+        const typedefs = getArrayFromJson(xml.typedef);
         typedefs?.forEach( (v: Json) => {
             const varItem = this.addTypedef();
             varItem.readXml(v);
@@ -73,7 +73,7 @@ export class ScvdTypedef extends ScvdBase {
 
     public readXml(xml: Json): boolean {
         if (xml === undefined ) {
-            return false;
+            return super.readXml(xml);
         }
 
         this.size = getStringFromJson(xml.size);

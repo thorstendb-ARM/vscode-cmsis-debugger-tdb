@@ -38,7 +38,7 @@ export class ScvdComonentViewer extends ScvdBase {
     /* template for readXml
     public readXml(xml: Json): boolean {
         if (xml === undefined ) {
-            return false;
+            return super.readXml(xml);
         }
 
         //this.tag = xml.tag;
@@ -49,7 +49,7 @@ export class ScvdComonentViewer extends ScvdBase {
 
     public readXml(xml: Json): boolean {
         if (xml === undefined ) {
-            return false;
+            return super.readXml(xml);
         }
 
         const componentViewer: Json = getObjectFromJson(xml.component_viewer);
@@ -64,17 +64,15 @@ export class ScvdComonentViewer extends ScvdBase {
         }
 
         const objectsContainer: Json = getObjectFromJson(componentViewer.objects);
-        const objects = getArrayFromJson(objectsContainer?.object);
-        if(objects !== undefined) {
+        if(objectsContainer !== undefined) {
             this._objects = new ScvdObjects(this);
-            this._objects.readXml(objects);
+            this._objects.readXml(objectsContainer);
         }
 
         const typedefsContainer: Json = getObjectFromJson(componentViewer.typedefs);
-        const typedefs = getArrayFromJson(typedefsContainer?.typedef);
-        if(typedefs !== undefined) {
+        if(typedefsContainer !== undefined) {
             this._typedefs = new ScvdTypedefs(this);
-            this._typedefs.readXml(typedefs);
+            this._typedefs.readXml(typedefsContainer);
         }
 
         const events = getArrayFromJson(componentViewer?.events);

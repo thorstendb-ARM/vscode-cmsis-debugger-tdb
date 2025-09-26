@@ -33,7 +33,7 @@ export class ScvdEvents extends ScvdBase {
 
     public readXml(xml: Json): boolean {
         if (xml === undefined ) {
-            return false;
+            return super.readXml(xml);
         }
 
         const events = getArrayFromJson(xml);

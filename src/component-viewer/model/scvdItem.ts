@@ -49,7 +49,7 @@ export class ScvdItem extends ScvdBase {
 
     public readXml(xml: Json): boolean {
         if (xml === undefined ) {
-            return false;
+            return super.readXml(xml);
         }
 
         this.property = getStringFromJson(xml.property);

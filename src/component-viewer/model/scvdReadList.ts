@@ -43,7 +43,7 @@ export class ScvdReadList extends ScvdRead {
 
     public readXml(xml: Json): boolean {
         if (xml === undefined ) {
-            return false;
+            return super.readXml(xml);
         }
 
         this.count = getStringFromJson(xml.count);

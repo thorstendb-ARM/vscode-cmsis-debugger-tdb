@@ -37,7 +37,7 @@ export class ScvdMember extends ScvdBase {
 
     public readXml(xml: Json): boolean {
         if (xml === undefined ) {
-            return false;
+            return super.readXml(xml);
         }
 
         this.type = getStringFromJson(xml.type);
@@ -50,7 +50,7 @@ export class ScvdMember extends ScvdBase {
             newEnum.readXml(enumItem);
         });
 
-        return true;
+        return super.readXml(xml);
     }
 
     get type(): ScvdDataType | undefined {

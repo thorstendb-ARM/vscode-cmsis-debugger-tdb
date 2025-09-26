@@ -26,20 +26,19 @@ import { ScvdVar } from './scvdVar';
 import { getArrayFromJson } from './scvdUtils';
 
 export class ScvdObjects extends ScvdBase {
-    private _object: ScvdObject;
+    private _objects: ScvdObject[] = [];
 
     constructor(
         parent: ScvdBase | undefined,
     ) {
         super(parent);
-        this._object = new ScvdObject(this);
     }
 
     public readXml(xml: Json): boolean {
         if (xml === undefined ) {
-            return false;
+            return super.readXml(xml);
         }
-        const objects = getArrayFromJson(xml);
+        const objects = getArrayFromJson(xml.object);
         objects?.forEach( (v: Json) => {
             const object = this.addObject();
             object.readXml(v);
@@ -50,12 +49,12 @@ export class ScvdObjects extends ScvdBase {
 
     public addObject(): ScvdObject {
         const object = new ScvdObject(this);
-        this._object = object;
+        this._objects.push(object);
         return object;
     }
 
-    public get object(): ScvdObject {
-        return this._object;
+    public get objects(): ScvdObject[] {
+        return this._objects;
     }
 }
 
@@ -75,7 +74,7 @@ export class ScvdObject extends ScvdBase {
 
     public readXml(xml: Json): boolean {
         if (xml === undefined ) {
-            return false;
+            return super.readXml(xml);
         }
 
         const vars = getArrayFromJson(xml?.var);

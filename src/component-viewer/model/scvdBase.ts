@@ -21,11 +21,15 @@ import { getStringFromJson } from './scvdUtils';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Json = Record<string, any>;
 
+let g_idNext: number = 1;
+
 
 export class ScvdBase {
     private _parent: ScvdBase | undefined;
     private _children: ScvdBase[] = [];
+    private _nodeId: number = 0;
 
+    private _tag: string | undefined;
     private _name: string | undefined;
     private _info: string | undefined;
 
@@ -35,6 +39,9 @@ export class ScvdBase {
     constructor(
         parent: ScvdBase | undefined,
     ) {
+        g_idNext += 1;
+        this._nodeId = g_idNext;
+
         if (parent instanceof ScvdBase) {
             this._parent = parent;
         }
@@ -43,13 +50,47 @@ export class ScvdBase {
 
     public readXml(xml: Json): boolean {
         if (xml === undefined ) {
+            this.tag = 'XML undefined';
             return false;
         }
-
+        const tag = getStringFromJson(xml['#Name'] ?? xml['#name'] ?? xml.tag);
+        if(tag === undefined) {
+            if(Array.isArray(xml)) {
+                const subTag = getStringFromJson(xml[0]?.['#Name'] ?? xml[0]?.['#name'] ?? xml[0]?.tag);
+                if(subTag !== undefined) {
+                    this.tag = subTag + '[]';
+                } else {
+                    this.tag = 'Array[]';
+                }
+            } else {
+                this.tag = 'unknown-tag';
+            }
+        } else {
+            this.tag = tag;
+        }
         this.name = getStringFromJson(xml.name);
         this.info = getStringFromJson(xml.info);
 
         return true;
+    }
+
+    set tag(value: string | undefined) {
+        this._tag = value;
+    }
+    get tag(): string | undefined {
+        if(this._tag === undefined) {
+            return 'InternalType';
+        }
+
+        return this._tag;
+    }
+
+    public get children(): ScvdBase[] {
+        return this._children;
+    }
+
+    get nodeId(): string {
+        return this.constructor.name + '_' + this._nodeId.toString();
     }
 
     public set valid(value: boolean) {
@@ -71,6 +112,10 @@ export class ScvdBase {
      */
     public map<T>(_callbackfn: (child: ScvdBase, index: number, array: ScvdBase[]) => T): T[] {
         return this._children.map(_callbackfn);
+    }
+
+    public hasChildren(): boolean {
+        return this._children.length > 0;
     }
 
     // Member function available to all ScvdItems and derived classes

@@ -35,12 +35,12 @@ export class ScvdEnum extends ScvdBase {
 
     public readXml(xml: Json): boolean {
         if (xml === undefined ) {
-            return false;
+            return super.readXml(xml);
         }
 
         this.value = getStringFromJson(xml.value);
 
-        return true;
+        return super.readXml(xml);
     }
 
     public get value(): ScvdExpression {

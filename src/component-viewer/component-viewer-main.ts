@@ -13,6 +13,7 @@ import { parseStringPromise, ParserOptions } from 'xml2js';
 import { parser } from './parser';
 import { ScvdComonentViewer } from './model/scvdComonentViewer';
 import { Json } from './model/scvdBase';
+import { SidebarDebugView } from './sidebarDebugView';
 
 
 const scvdFiles: string[] = [
@@ -32,12 +33,16 @@ const xmlOpts: ParserOptions = {
     explicitArray: false,
     mergeAttrs: true,
     explicitRoot: true,
-    trim: true
+    trim: true,
+    // Add child objects that carry their original tag name via '#name'
+    explicitChildren: true,
+    preserveChildrenOrder: true
 };
 
 export class ComponentViewer {
     protected scvdReader: parser;
     private model: ScvdComonentViewer | undefined;
+    private treeDataProvider: SidebarDebugView | undefined;
 
     public constructor(
     ) {
@@ -62,6 +67,8 @@ export class ComponentViewer {
 
         console.log(`SCVD file read in ${Date.now() - startTime} ms (parse: ${parseTime - startTime} ms, model: ${modelTime - parseTime} ms, resolveAndLink: ${resolveAndLinkTime - modelTime} ms)`);
         console.log('Model: ', this.model);
+
+        this.treeDataProvider?.setModel(this.model);
     }
 
     private async readFileToBuffer(filePath: URI): Promise<Buffer> {
@@ -133,5 +140,11 @@ export class ComponentViewer {
                 };
             }
         });
+
+        // debug side view
+        this.treeDataProvider = new SidebarDebugView(this.model);
+        const providerDisposable = vscode.window.registerTreeDataProvider('cmsis-scvd-explorer', this.treeDataProvider);
+        const cmdDisposable = vscode.commands.registerCommand('cmsis-scvd-explorer.refreshEntry', () => this.treeDataProvider?.refresh());
+        _ctx.subscriptions.push(providerDisposable, cmdDisposable);
     }
 }

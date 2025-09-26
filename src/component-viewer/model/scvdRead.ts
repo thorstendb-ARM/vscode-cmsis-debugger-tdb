@@ -48,7 +48,7 @@ export class ScvdRead extends ScvdBase {
 
     public readXml(xml: Json): boolean {
         if (xml === undefined ) {
-            return false;
+            return super.readXml(xml);
         }
 
         this.type = getStringFromJson(xml.type);

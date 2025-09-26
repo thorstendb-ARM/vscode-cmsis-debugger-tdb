@@ -31,7 +31,7 @@ export class ScvdGroup extends ScvdBase {
 
     public readXml(xml: Json): boolean {
         if (xml === undefined ) {
-            return false;
+            return super.readXml(xml);
         }
 
         const components = getArrayFromJson(xml.component);
@@ -40,7 +40,7 @@ export class ScvdGroup extends ScvdBase {
             newComponent.readXml(component);
         });
 
-        return true;
+        return super.readXml(xml);
     }
 
     public addComponent(): ScvdComponent {
