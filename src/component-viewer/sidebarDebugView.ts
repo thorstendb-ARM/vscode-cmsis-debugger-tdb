@@ -70,9 +70,9 @@ export class SidebarDebugView implements vscode.TreeDataProvider<vscode.TreeItem
     private makeInfoNode(target: ScvdBase): vscode.TreeItem {
         const info = new vscode.TreeItem('Details', vscode.TreeItemCollapsibleState.Collapsed);
         info.id = `${target.nodeId}:info`;
-        info.description = 'Static properties';
+        info.description = '';
         info.tooltip = 'Details for this node';
-        info.iconPath = new vscode.ThemeIcon('list-tree');
+        info.iconPath = new vscode.ThemeIcon('info');
         info.contextValue = 'info-node';
         return info;
     }
