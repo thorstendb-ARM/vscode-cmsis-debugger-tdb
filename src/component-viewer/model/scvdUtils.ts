@@ -81,3 +81,11 @@ export function getTextBodyFromJson(xml: Json): string[] | undefined {
     }
     return undefined;
 }
+
+export function getLineNumberFromJson(xml: Json): string | undefined {
+    const lineNo = xml?.['__line'];
+    if (typeof lineNo === 'string') {
+        return lineNo;
+    }
+    return undefined;
+}

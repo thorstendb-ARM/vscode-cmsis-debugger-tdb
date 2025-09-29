@@ -9,10 +9,9 @@
  *********************************************************************/
 import * as vscode from 'vscode';
 import { URI } from 'vscode-uri';
-import { parseStringPromise, ParserOptions } from 'xml2js';
+import { ParserOptions, Parser } from 'xml2js';
 import { parser } from './parser';
 import { ScvdComonentViewer } from './model/scvdComonentViewer';
-import { Json } from './model/scvdBase';
 import { SidebarDebugView } from './sidebarDebugView';
 
 
@@ -28,7 +27,27 @@ enum scvdExamples {
 
 const scvdFile = scvdFiles[scvdExamples.RTX5];
 
+class ParserWithLines extends Parser {
+    constructor(opts?: ParserOptions) {
+        super(opts);
+    }
 
+    async parseStringPromise(xml: string): Promise<unknown> {
+        const withLines = this.injectLineNumbers(xml);
+        return super.parseStringPromise(withLines);
+    }
+
+    private injectLineNumbers(xml: string): string {
+        const lines = xml.split(/\r?\n/);
+        for (let i = 0; i < lines.length; i++) {
+            lines[i] = lines[i].replace(
+                /<((?!\/|!|\?)([A-Za-z_][A-Za-z0-9._:-]*))/g,
+                `<$1 __line="${i + 1}"`
+            );
+        }
+        return lines.join('\n');
+    }
+}
 const xmlOpts: ParserOptions = {
     explicitArray: false,
     mergeAttrs: true,
@@ -50,26 +69,12 @@ export class ComponentViewer {
         this.scvdReader = new parser();
     }
 
-    private injectLineNumbers(xml: string): string {
-        const lines = xml.split(/\r?\n/);
-        const result: string[] = [];
-        for (let i = 0; i < lines.length; i++) {
-            result.push(lines[i].replace(
-                /<((?!\/|!|\?)([A-Za-z_][A-Za-z0-9._:-]*))/g,
-                `<$1 __line="${i + 1}"`
-            ));
-        }
-        return result.join('\n');
-    }
-
     protected async initScvdReader(filename: URI) {
         const startTime = Date.now();
         console.log(`Reading SCVD file: ${filename}`);
         const buf = (await this.readFileToBuffer(filename)).toString('utf-8');
-        const readTime = Date.now();
-        const bufLineNo = this.injectLineNumbers(buf);
-        const injectTime = Date.now();
-        const xml: Json = await this.parseXml(bufLineNo);
+        const xml = await this.parseXml(buf);
+
         const parseTime = Date.now();
         this.model = new ScvdComonentViewer(undefined);
         this.model.readXml(xml);
@@ -80,7 +85,7 @@ export class ComponentViewer {
         });
         const resolveAndLinkTime = Date.now();
 
-        console.log(`SCVD file read in ${Date.now() - startTime} ms (read: ${readTime - startTime} ms, inject: ${injectTime - readTime} ms, parse: ${parseTime - injectTime} ms, model: ${modelTime - parseTime} ms, resolveAndLink: ${resolveAndLinkTime - modelTime} ms)`);
+        console.log(`SCVD file read in ${Date.now() - startTime} ms (parse: ${parseTime - startTime} ms, model: ${modelTime - parseTime} ms, resolveAndLink: ${resolveAndLinkTime - modelTime} ms)`);
         console.log('Model: ', this.model);
 
         this.treeDataProvider?.setModel(this.model);
@@ -97,11 +102,13 @@ export class ComponentViewer {
     }
     private async parseXml(text: string) {
         try {
-            const json = await parseStringPromise(text, xmlOpts);
+            //const json = await parseStringPromise(text, xmlOpts);
+            const json = await new ParserWithLines(xmlOpts).parseStringPromise(text);
             //console.log(JSON.stringify(json, null, 2));
             return json;
         } catch (err) {
             console.error('Error parsing XML:', err);
+            throw err;
         }
     }
 

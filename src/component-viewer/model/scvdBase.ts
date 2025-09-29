@@ -15,7 +15,7 @@
  */
 
 import { NumberType } from './numberType';
-import { getStringFromJson } from './scvdUtils';
+import { getLineNumberFromJson, getStringFromJson } from './scvdUtils';
 
 // add linter exception for Json
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -35,6 +35,8 @@ export class ScvdBase {
     private _nodeId: number = 0;
 
     private _tag: string | undefined;
+    private _lineNo: string | undefined;
+
     private _name: string | undefined;
     private _info: string | undefined;
 
@@ -58,7 +60,8 @@ export class ScvdBase {
             this.tag = 'XML undefined';
             return false;
         }
-        const tag = getStringFromJson(xml['#Name'] ?? xml['#name'] ?? xml.tag);
+        this.lineNo = getLineNumberFromJson(xml);
+        const tag = getStringFromJson(xml['#Name'] ?? xml['#name']);
         if(tag === undefined) {
             if(Array.isArray(xml)) {
                 const subTag = getStringFromJson(xml[0]?.['#Name'] ?? xml[0]?.['#name'] ?? xml[0]?.tag);
@@ -89,6 +92,16 @@ export class ScvdBase {
 
         return this._tag;
     }
+
+    public get lineNo(): string | undefined {
+        return this._lineNo;
+    }
+    public set lineNo(value: string | undefined) {
+        if(value !== undefined) {
+            this._lineNo = value;
+        }
+    }
+
 
     public get children(): ScvdBase[] {
         return this._children;
@@ -189,10 +202,14 @@ export class ScvdBase {
         return '';
     }
 
+    // ---------- Explorer Info ------------
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
         if (this.tag) {
             info.push({ name: 'Tag', value: this.tag });
+        }
+        if (this.lineNo) {
+            info.push({ name: 'Line Number', value: this.lineNo });
         }
         if (this.name) {
             info.push({ name: 'Name', value: this.name });
@@ -203,4 +220,9 @@ export class ScvdBase {
         info.push(...itemInfo);
         return info;
     }
+
+    public getExplorerDisplayName(): string {
+        return this.name ?? this.info ?? '';
+    }
+
 }
