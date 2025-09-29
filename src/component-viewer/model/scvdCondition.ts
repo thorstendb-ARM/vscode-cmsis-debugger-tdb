@@ -27,7 +27,7 @@ export class ScvdCondition extends ScvdBase {
         expression: string = '1' // default condition is true
     ) {
         super(parent);
-        this._expression = new ScvdExpression(this, expression);
+        this._expression = new ScvdExpression(this, expression, 'expression');
     }
 
     public get expression(): ScvdExpression | undefined {
@@ -35,7 +35,11 @@ export class ScvdCondition extends ScvdBase {
     }
 
     public set expression(value: string) {
-        this._expression = new ScvdExpression(this, value);
+        if( this._expression === undefined) {
+            this._expression = new ScvdExpression(this, value, 'expression');
+            return;
+        }
+        this._expression.expression = value;
     }
 
     public get result(): boolean {
@@ -52,5 +56,10 @@ export class ScvdCondition extends ScvdBase {
         }
         info.push(...itemInfo);
         return super.getExplorerInfo(info);
+    }
+
+    public getExplorerDisplayName(): string {
+        const displayName = this._expression?.getExplorerDisplayName() ?? 'condition';
+        return displayName ?? super.getExplorerDisplayName();
     }
 }

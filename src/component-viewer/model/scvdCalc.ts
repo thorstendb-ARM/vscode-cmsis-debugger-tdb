@@ -63,7 +63,7 @@ export class ScvdCalc extends ScvdBase {
 
     private addExpression(value: string | undefined): ScvdExpression | undefined {
         if (value !== undefined) {
-            const expr = new ScvdExpression(this, value);
+            const expr = new ScvdExpression(this, value, 'expression');
             this._expression.push(expr);
             return expr;
         }

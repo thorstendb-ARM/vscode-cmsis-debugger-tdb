@@ -69,7 +69,7 @@ export class ScvdMember extends ScvdBase {
 
     set offset(value: string | undefined) {
         if(value !== undefined) {
-            this._offset = new ScvdExpression(this, value);
+            this._offset = new ScvdExpression(this, value, 'offset');
         }
     }
 

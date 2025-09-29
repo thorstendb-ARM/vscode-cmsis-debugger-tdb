@@ -100,7 +100,7 @@ export class ScvdList extends ScvdBase {
 
     set start(value: string | undefined) {
         if(value !== undefined) {
-            this._start = new ScvdExpression(this, value);
+            this._start = new ScvdExpression(this, value, 'start');
         }
     }
 
@@ -110,7 +110,7 @@ export class ScvdList extends ScvdBase {
 
     set limit(value: string | undefined) {
         if(value !== undefined) {
-            this._limit = new ScvdExpression(this, value);
+            this._limit = new ScvdExpression(this, value, 'limit');
         }
     }
 
@@ -120,7 +120,7 @@ export class ScvdList extends ScvdBase {
 
     set while(value: string | undefined) {
         if(value !== undefined) {
-            this._while = new ScvdExpression(this, value);
+            this._while = new ScvdExpression(this, value, 'while');
         }
     }
 
@@ -130,7 +130,7 @@ export class ScvdList extends ScvdBase {
 
     set cond(value: string | undefined) {
         if(value !== undefined) {
-            this._cond = new ScvdExpression(this, value);
+            this._cond = new ScvdExpression(this, value, 'cond');
         }
     }
 

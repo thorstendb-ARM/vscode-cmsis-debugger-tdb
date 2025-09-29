@@ -132,7 +132,7 @@ export class ScvdEvent extends ScvdBase {
     }
     public set hname(value: string | undefined) {
         if( value !== undefined ) {
-            this._hname = new ScvdExpression(this, value);
+            this._hname = new ScvdExpression(this, value, 'hname');
         }
     }
 

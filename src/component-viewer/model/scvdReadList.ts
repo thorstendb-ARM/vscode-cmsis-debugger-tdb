@@ -24,7 +24,7 @@ import { ScvdRead } from './scvdRead';
 import { getStringFromJson } from './scvdUtils';
 
 export class ScvdReadList extends ScvdRead {
-    private _count: ScvdExpression = new ScvdExpression(this, '1'); // default is 1
+    private _count: ScvdExpression = new ScvdExpression(this, '1', 'count'); // default is 1
     private _next: string | undefined;  // member name for the .next pointer
     private _init: NumberType = new NumberType(0); // discard prev. read objects? default is 0
     private _based: NumberType = new NumberType(0); // is attribute+offset a pointer? default is 0
@@ -57,7 +57,7 @@ export class ScvdReadList extends ScvdRead {
 
     set count(value: string | undefined) {
         if(value !== undefined) {
-            this._count = new ScvdExpression(this, value);
+            this._count.expression = value;
         }
     }
     get count(): ScvdExpression {

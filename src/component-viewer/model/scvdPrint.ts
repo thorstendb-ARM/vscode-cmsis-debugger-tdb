@@ -62,7 +62,7 @@ export class ScvdPrint extends ScvdBase {
     }
     set value(value: string | undefined) {
         if (value !== undefined) {
-            this._value = new ScvdExpression(this, value);
+            this._value = new ScvdExpression(this, value, 'value');
         }
     }
 

@@ -31,7 +31,7 @@ export class ScvdEventId extends ScvdBase {
         id: string,
     ) {
         super(parent);
-        this._id = new ScvdExpression(this, id);
+        this._id = new ScvdExpression(this, id, 'id');
         const value = this._id.value.value;
         this._messageNumber = new NumberType(value & 0xFF);
         this._componentNumber = new NumberType((value >> 8) & 0xFF);

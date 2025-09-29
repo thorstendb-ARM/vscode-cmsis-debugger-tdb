@@ -30,7 +30,7 @@ export class ScvdEnum extends ScvdBase {
         super(parent);
         const lastValue = lastEnum?.value;
         const valStr = lastValue ? `(${lastValue.expression}) + 1` : '0';
-        this._value = new ScvdExpression(this, valStr);
+        this._value = new ScvdExpression(this, valStr, 'value');
     }
 
     public readXml(xml: Json): boolean {
@@ -49,7 +49,7 @@ export class ScvdEnum extends ScvdBase {
     }
     public set value(value: string | undefined) {
         if (value !== undefined) {
-            this._value = new ScvdExpression(this, value);
+            this._value = new ScvdExpression(this, value, 'value');
         }
     }
 

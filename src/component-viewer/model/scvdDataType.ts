@@ -68,6 +68,11 @@ export class ScvdDataType extends ScvdBase {
         info.push(...itemInfo);
         return super.getExplorerInfo(info);
     }
+
+    public getExplorerDisplayName(): string {
+        return this._type?.getExplorerDisplayName() ?? 'data type';
+    }
+
 }
 
 export class ScvdComplexDataType extends ScvdBase{

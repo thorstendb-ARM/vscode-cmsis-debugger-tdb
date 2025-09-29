@@ -22,13 +22,16 @@ import { ExplorerInfo, ScvdBase } from './scvdBase';
 export class ScvdExpression extends ScvdBase {
     private _expression: string | undefined;
     private _result: NumberType | undefined;
+    private _scvdVarName: string | undefined;
 
     constructor(
         parent: ScvdBase | undefined,
-        expression: string | undefined
+        expression: string | undefined,
+        scvdVarName: string,
     ) {
         super(parent);
         this.expression = expression;
+        this.scvdVarName = scvdVarName;
     }
 
     public get expression(): string | undefined {
@@ -47,6 +50,13 @@ export class ScvdExpression extends ScvdBase {
             this._result = this.evaluate();
         }
         return this._result ?? new NumberType(1);
+    }
+
+    public get scvdVarName(): string | undefined {
+        return this._scvdVarName;
+    }
+    public set scvdVarName(value: string | undefined) {
+        this._scvdVarName = value;
     }
 
     public setMinMax(min: number | undefined, max: number | undefined) {
@@ -77,6 +87,9 @@ export class ScvdExpression extends ScvdBase {
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
+        if(this.scvdVarName) {
+            info.push({ name: 'Var', value: this.scvdVarName });
+        }
         if (this.expression) {
             info.push({ name: 'Expression', value: this.expression });
         }
@@ -91,17 +104,18 @@ export class ScvdExpression extends ScvdBase {
     }
 
     public getExplorerDisplayName(): string {
+        const scvdVarName = this.scvdVarName ?? '';
         const expression = this.expression ?? '';
         const firstIdx = [expression.indexOf('='), expression.indexOf('(')]
             .filter(i => i !== -1)
             .reduce((min, i) => (min === -1 || i < min ? i : min), -1);
         if (firstIdx !== -1) {
-            const exprStr = expression.substring(0, firstIdx + 1).trim();
+            const exprStr = expression.substring(0, firstIdx).trim();
             if (exprStr) {
-                return exprStr;
+                return scvdVarName + ': ' + exprStr;
             }
         }
-        return expression;
+        return scvdVarName + ': ' + expression;
     }
 
 }
