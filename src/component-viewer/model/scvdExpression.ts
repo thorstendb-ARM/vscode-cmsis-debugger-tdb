@@ -89,4 +89,19 @@ export class ScvdExpression extends ScvdBase {
         info.push(...itemInfo);
         return super.getExplorerInfo(info);
     }
+
+    public getExplorerDisplayName(): string {
+        const expression = this.expression ?? '';
+        const firstIdx = [expression.indexOf('='), expression.indexOf('(')]
+            .filter(i => i !== -1)
+            .reduce((min, i) => (min === -1 || i < min ? i : min), -1);
+        if (firstIdx !== -1) {
+            const exprStr = expression.substring(0, firstIdx + 1).trim();
+            if (exprStr) {
+                return exprStr;
+            }
+        }
+        return expression;
+    }
+
 }

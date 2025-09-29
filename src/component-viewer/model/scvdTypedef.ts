@@ -158,4 +158,7 @@ export class ScvdTypedef extends ScvdBase {
         return super.getExplorerInfo(info);
     }
 
+    public getExplorerDisplayName(): string {
+        return super.getExplorerDisplayName();
+    }
 }

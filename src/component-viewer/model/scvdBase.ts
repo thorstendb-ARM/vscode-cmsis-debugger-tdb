@@ -87,7 +87,7 @@ export class ScvdBase {
     }
     public get tag(): string | undefined {
         if(this._tag === undefined) {
-            return 'InternalType';
+            return 'Internal Object';
         }
 
         return this._tag;
@@ -223,6 +223,10 @@ export class ScvdBase {
 
     public getExplorerDisplayName(): string {
         return this.name ?? this.info ?? '';
+    }
+
+    public getExplorerDescription(): string {
+        return `(${this.constructor?.name ?? ''})`;
     }
 
 }

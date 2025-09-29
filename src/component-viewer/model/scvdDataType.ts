@@ -103,6 +103,11 @@ export class ScvdComplexDataType extends ScvdBase{
         info.push(...itemInfo);
         return super.getExplorerInfo(info);
     }
+
+    public getExplorerDisplayName(): string {
+        return this._typeName ?? 'unknown complex type';
+    }
+
 }
 
 export class ScvdScalarDataType extends ScvdBase {
@@ -136,5 +141,9 @@ export class ScvdScalarDataType extends ScvdBase {
         }
         info.push(...itemInfo);
         return super.getExplorerInfo(info);
+    }
+
+    public getExplorerDisplayName(): string {
+        return this.type ?? 'unknown scalar type';
     }
 }
