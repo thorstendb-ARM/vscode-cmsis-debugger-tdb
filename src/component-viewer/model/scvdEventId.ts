@@ -63,4 +63,9 @@ export class ScvdEventId extends ScvdBase {
         info.push(...itemInfo);
         return super.getExplorerInfo(info);
     }
+
+    public getExplorerDisplayName(): string {
+        return this.id.getExplorerDisplayName() ?? super.getExplorerDisplayName();
+    }
+
 }

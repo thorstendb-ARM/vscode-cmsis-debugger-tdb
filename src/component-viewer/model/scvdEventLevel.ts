@@ -50,10 +50,13 @@ export class ScvdEventLevel extends ScvdBase {
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
-        if (this._level !== undefined) {
-            info.push({ name: 'Level', value: EventLevel[this._level] });
-        }
+        info.push({ name: 'Level', value: this._level?.toString() ?? 'undefined' });
         info.push(...itemInfo);
         return super.getExplorerInfo(info);
     }
+
+    public getExplorerDisplayName(): string {
+        return this.level?.toString() ?? 'undefined';
+    }
+
 }
