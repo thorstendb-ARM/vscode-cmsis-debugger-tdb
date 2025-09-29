@@ -89,7 +89,11 @@ export class ScvdEvent extends ScvdBase {
     }
     public set level(value: string | undefined) {
         if( value !== undefined ) {
-            this._level = new ScvdEventLevel(this, value);
+            if( this._level === undefined ) {
+                this._level = new ScvdEventLevel(this, value);
+                return;
+            }
+            this._level.level = value;
         }
     }
 
@@ -98,7 +102,11 @@ export class ScvdEvent extends ScvdBase {
     }
     public set property(value: string | undefined) {
         if( value !== undefined ) {
-            this._property = new ScvdValueOutput(this, value);
+            if( this._property === undefined ) {
+                this._property = new ScvdValueOutput(this, value);
+                return;
+            }
+            this._property.value = value;
         }
     }
 
@@ -123,7 +131,11 @@ export class ScvdEvent extends ScvdBase {
     }
     public set handle(value: string | undefined) {
         if( value !== undefined ) {
-            this._handle = new NumberType(value);
+            if( this._handle === undefined ) {
+                this._handle = new NumberType(value);
+                return;
+            }
+            this._handle.value = value;
         }
     }
 
@@ -132,7 +144,11 @@ export class ScvdEvent extends ScvdBase {
     }
     public set hname(value: string | undefined) {
         if( value !== undefined ) {
-            this._hname = new ScvdExpression(this, value, 'hname');
+            if( this._hname === undefined ) {
+                this._hname = new ScvdExpression(this, value, 'hname');
+                return;
+            }
+            this._hname.expression = value;
         }
     }
 
@@ -150,7 +166,11 @@ export class ScvdEvent extends ScvdBase {
     }
     public set tracking(value: string | undefined) {
         if( value !== undefined ) {
-            this._tracking = new ScvdEventTracking(this, value);
+            if( this._tracking === undefined ) {
+                this._tracking = new ScvdEventTracking(this, value);
+                return;
+            }
+            this._tracking.mode = value;
         }
     }
 

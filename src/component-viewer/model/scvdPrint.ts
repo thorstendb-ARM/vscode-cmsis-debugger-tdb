@@ -53,7 +53,11 @@ export class ScvdPrint extends ScvdBase {
     }
     set property(value: string | undefined) {
         if (value !== undefined) {
-            this._property = new ScvdValueOutput(this, value);
+            if( this._property === undefined) {
+                this._property = new ScvdValueOutput(this, value);
+                return;
+            }
+            this._property.value = value;
         }
     }
 
@@ -62,7 +66,11 @@ export class ScvdPrint extends ScvdBase {
     }
     set value(value: string | undefined) {
         if (value !== undefined) {
-            this._value = new ScvdExpression(this, value, 'value');
+            if( this._value === undefined) {
+                this._value = new ScvdExpression(this, value, 'value');
+                return;
+            }
+            this._value.expression = value;
         }
     }
 
@@ -71,7 +79,11 @@ export class ScvdPrint extends ScvdBase {
     }
     set cond(value: string | undefined) {
         if (value !== undefined) {
-            this._cond = new ScvdCondition(this, value);
+            if( this._cond === undefined) {
+                this._cond = new ScvdCondition(this, value);
+                return;
+            }
+            this._cond.expression = value;
         }
     }
 
@@ -80,7 +92,11 @@ export class ScvdPrint extends ScvdBase {
     }
     set bold(value: string | undefined) {
         if (value !== undefined) {
-            this._bold = new ScvdCondition(this, value);
+            if( this._bold === undefined) {
+                this._bold = new ScvdCondition(this, value);
+                return;
+            }
+            this._bold.expression = value;
         }
     }
 
@@ -89,7 +105,11 @@ export class ScvdPrint extends ScvdBase {
     }
     set alert(value: string | undefined) {
         if (value !== undefined) {
-            this._alert = new ScvdCondition(this, value);
+            if( this._alert === undefined) {
+                this._alert = new ScvdCondition(this, value);
+                return;
+            }
+            this._alert.expression = value;
         }
     }
 
@@ -98,4 +118,9 @@ export class ScvdPrint extends ScvdBase {
         info.push(...itemInfo);
         return super.getExplorerInfo(info);
     }
+
+    public getExplorerDisplayName(): string {
+        return this.property?.getExplorerDisplayName() ?? super.getExplorerDisplayName();
+    }
+
 }

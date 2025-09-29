@@ -69,7 +69,11 @@ export class ScvdMember extends ScvdBase {
 
     set offset(value: string | undefined) {
         if(value !== undefined) {
-            this._offset = new ScvdExpression(this, value, 'offset');
+            if( this._offset === undefined) {
+                this._offset = new ScvdExpression(this, value, 'offset');
+                return;
+            }
+            this._offset.expression = value;
         }
     }
 
@@ -79,7 +83,11 @@ export class ScvdMember extends ScvdBase {
 
     set size(value: NumberTypeInput | undefined) {
         if(value !== undefined) {
-            this._size = new NumberType(value);
+            if( this._size === undefined) {
+                this._size = new NumberType(value);
+                return;
+            }
+            this._size.value = value;
         }
     }
 

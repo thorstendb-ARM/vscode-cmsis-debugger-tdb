@@ -64,7 +64,11 @@ export class ScvdOut extends ScvdBase {
 
     public set value(value: string | undefined) {
         if (value !== undefined) {
-            this._value = new ScvdExpression(this, value, 'value');
+            if( this._value === undefined) {
+                this._value = new ScvdExpression(this, value, 'value');
+                return;
+            }
+            this._value.expression = value;
         }
     }
     public get value(): ScvdExpression | undefined {
@@ -72,7 +76,11 @@ export class ScvdOut extends ScvdBase {
     }
     public set type(value: string | undefined) {
         if (value !== undefined) {
-            this._type = new ScvdDataType(this, value);
+            if( this._type === undefined) {
+                this._type = new ScvdDataType(this, value);
+                return;
+            }
+            this._type.type = value;
         }
     }
     public get type(): ScvdDataType | undefined {
@@ -84,6 +92,10 @@ export class ScvdOut extends ScvdBase {
     }
     public set cond(value: string | undefined) {
         if (value !== undefined) {
+            if( this._cond === undefined) {
+                this._cond = new ScvdCondition(this, value);
+                return;
+            }
             this._cond.expression = value;
         }
     }

@@ -80,7 +80,11 @@ export class ScvdRead extends ScvdBase {
 
     set offset(value: string | undefined) {
         if(value !== undefined) {
-            this._offset = new ScvdExpression(this, value, 'offset');
+            if( this._offset === undefined) {
+                this._offset = new ScvdExpression(this, value, 'offset');
+                return;
+            }
+            this._offset.expression = value;
         }
     }
 
@@ -90,7 +94,11 @@ export class ScvdRead extends ScvdBase {
 
     set const(value: string | undefined) {
         if(value !== undefined) {
-            this._const = new NumberType(value);
+            if( this._const === undefined) {
+                this._const = new NumberType(value);
+                return;
+            }
+            this._const.value = value;
         }
     }
 
@@ -100,7 +108,11 @@ export class ScvdRead extends ScvdBase {
 
     set cond(value: string | undefined) {
         if(value !== undefined) {
-            this._cond = new ScvdCondition(this, value);
+            if( this._cond === undefined) {
+                this._cond = new ScvdCondition(this, value);
+                return;
+            }
+            this._cond.expression = value;
         }
     }
 
@@ -113,7 +125,11 @@ export class ScvdRead extends ScvdBase {
     }
     set size(value: string | undefined) {
         if(value !== undefined) {
-            this._size = new ScvdExpression(this, value, 'size');
+            if( this._size === undefined) {
+                this._size = new ScvdExpression(this, value, 'size');
+                return;
+            }
+            this._size.expression = value;
         }
     }
 
@@ -122,7 +138,11 @@ export class ScvdRead extends ScvdBase {
     }
     set endian(value: string | undefined) {
         if(value !== undefined) {
-            this._endian = new ScvdEndian(this, value);
+            if( this._endian === undefined) {
+                this._endian = new ScvdEndian(this, value);
+                return;
+            }
+            this._endian.endian = value;
         }
     }
 

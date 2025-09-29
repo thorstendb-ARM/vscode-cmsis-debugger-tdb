@@ -46,7 +46,9 @@ export class ScvdEventTracking extends ScvdBase {
     }
 
     set mode(value: string | undefined) {
-        this._mode = ScvdEventTrackingMode[value as keyof typeof ScvdEventTrackingMode];
+        if(value !== undefined) {
+            this._mode = ScvdEventTrackingMode[value as keyof typeof ScvdEventTrackingMode];
+        }
     }
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {

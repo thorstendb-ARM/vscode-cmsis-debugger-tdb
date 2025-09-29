@@ -53,4 +53,8 @@ export class ScvdValueOutput extends ScvdBase {
         info.push(...itemInfo);
         return super.getExplorerInfo(info);
     }
+
+    public getExplorerDisplayName(): string {
+        return this._value ?? super.getExplorerDisplayName();
+    }
 }

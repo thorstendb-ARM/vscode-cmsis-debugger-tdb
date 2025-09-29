@@ -106,13 +106,21 @@ export class ScvdTypedef extends ScvdBase {
     }
     set size(value: string | undefined) {
         if(value !== undefined) {
-            this._size = new ScvdExpression(this, value, 'size');
+            if( this._size === undefined) {
+                this._size = new ScvdExpression(this, value, 'size');
+                return;
+            }
+            this._size.expression = value;
         }
     }
 
     set import(value: string | undefined) {
         if(value !== undefined) {
-            this._import = new ScvdSymbol(this, value);
+            if( this._import === undefined) {
+                this._import = new ScvdSymbol(this, value);
+                return;
+            }
+            this._import.name = value;
         }
     }
     get import(): ScvdSymbol | undefined {

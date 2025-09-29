@@ -53,7 +53,11 @@ export class ScvdCalc extends ScvdBase {
 
     set cond(value: string | undefined) {
         if (value !== undefined) {
-            this._cond = new ScvdCondition(this, value);
+            if( this._cond === undefined) {
+                this._cond = new ScvdCondition(this, value);
+                return;
+            }
+            this._cond.expression = value;
         }
     }
 
@@ -74,5 +78,9 @@ export class ScvdCalc extends ScvdBase {
         const info: ExplorerInfo[] = [];
         info.push(...itemInfo);
         return super.getExplorerInfo(info);
+    }
+
+    public getExplorerDisplayName(): string {
+        return super.getExplorerDisplayName();
     }
 }

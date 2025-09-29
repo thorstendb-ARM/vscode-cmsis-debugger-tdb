@@ -56,7 +56,11 @@ export class ScvdVar extends ScvdBase {
     }
     set type(value: string | undefined) {
         if (value !== undefined) {
-            this._type = new ScvdDataType(this, value);
+            if( this._type === undefined) {
+                this._type = new ScvdDataType(this, value);
+                return;
+            }
+            this._type.type = value;
         }
     }
 

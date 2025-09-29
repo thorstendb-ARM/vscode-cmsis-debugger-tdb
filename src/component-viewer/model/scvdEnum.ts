@@ -49,7 +49,11 @@ export class ScvdEnum extends ScvdBase {
     }
     public set value(value: string | undefined) {
         if (value !== undefined) {
-            this._value = new ScvdExpression(this, value, 'value');
+            if( this._value === undefined) {
+                this._value = new ScvdExpression(this, value, 'value');
+                return;
+            }
+            this._value.expression = value;
         }
     }
 

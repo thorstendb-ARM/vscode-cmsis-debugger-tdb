@@ -33,7 +33,11 @@ export class ScvdDataDword extends ScvdDataBase {
     }
     public set data(value: string | undefined) {
         if( value !== undefined) {
-            this._data = new NumberType(value);
+            if( this._data === undefined) {
+                this._data = new NumberType(value);
+                return;
+            }
+            this._data.value = value;
         }
     }
 

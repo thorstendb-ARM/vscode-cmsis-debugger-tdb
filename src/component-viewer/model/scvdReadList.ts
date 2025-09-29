@@ -73,7 +73,11 @@ export class ScvdReadList extends ScvdRead {
 
     set init(value: NumberTypeInput | undefined) {
         if(value !== undefined) {
-            this._init = new NumberType(value);
+            if( this._init === undefined) {
+                this._init = new NumberType(value);
+                return;
+            }
+            this._init.value = value;
         }
     }
     get init(): NumberType {
@@ -82,7 +86,11 @@ export class ScvdReadList extends ScvdRead {
 
     set based(value: NumberTypeInput | undefined) {
         if(value !== undefined) {
-            this._based = new NumberType(value);
+            if( this._based === undefined) {
+                this._based = new NumberType(value);
+                return;
+            }
+            this._based.value = value;
         }
     }
     get based(): NumberType {
