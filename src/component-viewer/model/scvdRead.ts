@@ -171,7 +171,7 @@ export class ScvdRead extends ScvdBase {
             }
         }
         if (this._symbol !== undefined) {
-            const foundSymbol = undefined; //this.findSymbolByName(this._symbol);
+            const foundSymbol = undefined; //this.findTargetSymbolByName(this._symbol);
             if (foundSymbol) {
                 this._symbolObj = foundSymbol;
             }

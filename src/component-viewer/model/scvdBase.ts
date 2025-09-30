@@ -132,6 +132,14 @@ export class ScvdBase {
         return this._children.map(_callbackfn);
     }
 
+    /**
+     * Executes a provided function once for each child.
+     * @param callbackfn Function to execute for each child.
+     */
+    public forEach(callbackfn: (child: ScvdBase, index: number, array: ScvdBase[]) => void): void {
+        this._children.forEach(callbackfn);
+    }
+
     public hasChildren(): boolean {
         return this._children.length > 0;
     }

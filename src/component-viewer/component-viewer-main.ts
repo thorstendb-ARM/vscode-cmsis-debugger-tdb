@@ -15,6 +15,7 @@ import { ScvdComonentViewer } from './model/scvdComonentViewer';
 import { Json } from './model/scvdBase';
 import { SidebarDebugView } from './sidebarDebugView';
 import path from 'path';
+import { Resolver } from './resolver';
 
 
 const scvdFiles: string[] = [
@@ -78,9 +79,8 @@ export class ComponentViewer {
         this.model.readXml(xml);
         const modelTime = Date.now();
 
-        this.model.map( (child, _index) => {
-            child.resolveAndLink();
-        });
+        const resolver = new Resolver(this.model);
+        resolver.resolve();
         const resolveAndLinkTime = Date.now();
 
         console.log(`SCVD file read in ${Date.now() - startTime} ms (read: ${readTime - startTime} ms, inject: ${injectTime - readTime} ms, parse: ${parseTime - injectTime} ms, model: ${modelTime - parseTime} ms, resolveAndLink: ${resolveAndLinkTime - modelTime} ms)`);
