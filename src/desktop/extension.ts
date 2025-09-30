@@ -29,7 +29,7 @@ const BUILTIN_TOOLS_PATHS = [
 export const activate = async (context: vscode.ExtensionContext): Promise<void> => {
     const gdbtargetDebugTracker = new GDBTargetDebugTracker();
     const gdbtargetConfigurationProvider = new GDBTargetConfigurationProvider();
-    const componentViewer = new ComponentViewer();
+    const componentViewer = new ComponentViewer(context);
 
     addToolsToPath(context, BUILTIN_TOOLS_PATHS);
     // Activate components

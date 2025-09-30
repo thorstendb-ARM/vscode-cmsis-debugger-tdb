@@ -14,11 +14,12 @@ import { parser } from './parser';
 import { ScvdComonentViewer } from './model/scvdComonentViewer';
 import { Json } from './model/scvdBase';
 import { SidebarDebugView } from './sidebarDebugView';
+import path from 'path';
 
 
 const scvdFiles: string[] = [
-    '/Users/thode01/work/ComponentViewer/Files/BaseExample.scvd',
-    '/Users/thode01/work/ComponentViewer/Files/RTX5.scvd',
+    'test-data/BaseExample.scvd',
+    'test-data/RTX5.scvd',
 ];
 
 enum scvdExamples {
@@ -45,8 +46,10 @@ export class ComponentViewer {
     private treeDataProvider: SidebarDebugView | undefined;
 
     public constructor(
+        context: vscode.ExtensionContext
     ) {
-        this.initScvdReader(URI.file(scvdFile));
+        const fullPath = context.extensionPath;
+        this.initScvdReader(URI.file(path.join(fullPath, scvdFile)));
         this.scvdReader = new parser();
     }
 
