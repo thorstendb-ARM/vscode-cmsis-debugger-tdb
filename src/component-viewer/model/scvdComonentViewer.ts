@@ -84,16 +84,16 @@ export class ScvdComonentViewer extends ScvdBase {
         return super.readXml(xml);
     }
 
-    get component(): ScvdComponentIdentifier | undefined {
+    public get component(): ScvdComponentIdentifier | undefined {
         return this._componentIdentifier;
     }
-    get typedefs(): ScvdTypedefs | undefined {
+    public get typedefs(): ScvdTypedefs | undefined {
         return this._typedefs;
     }
-    get objects(): ScvdObjects | undefined {
+    public get objects(): ScvdObjects | undefined {
         return this._objects;
     }
-    get events(): ScvdEvents | undefined {
+    public get events(): ScvdEvents | undefined {
         return this._events;
     }
 

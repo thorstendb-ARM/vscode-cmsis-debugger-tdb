@@ -16,10 +16,13 @@
 
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
+import { resolveType } from '../resolver';
 import { ExplorerInfo, ScvdBase } from './scvdBase';
+import { ScvdDebugTarget } from './scvdDebugTarget';
 
 export class ScvdSymbol extends ScvdBase {
     private _symbol: string | undefined;
+    private _debugTarget: ScvdDebugTarget | undefined;
 
     constructor(
         parent: ScvdBase | undefined,
@@ -36,10 +39,24 @@ export class ScvdSymbol extends ScvdBase {
         this._symbol = value;
     }
 
-    public fetch(): void {
-        const symbol = this.symbol;
-        // Todo: Placeholder for fetch logic, if needed
-        console.log('Fetching symbol data...', symbol);
+    public get debugTarget(): ScvdDebugTarget | undefined {
+        return this._debugTarget;
+    }
+    public set debugTarget(value: ScvdDebugTarget | undefined) {
+        this._debugTarget = value;
+    }
+
+    public resolveAndLink(resolveFunc: (name: string, type: resolveType) => ScvdBase | undefined): boolean {
+        if(this.symbol === undefined) {
+            return false;
+        }
+        console.log('Resolving target symbol:', this.symbol);
+
+        const item = resolveFunc(this.symbol, resolveType.target);
+        if(item === undefined ) {
+            return false;
+        }
+        return true;
     }
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
@@ -49,5 +66,13 @@ export class ScvdSymbol extends ScvdBase {
         }
         info.push(...itemInfo);
         return super.getExplorerInfo(info);
+    }
+
+    public getExplorerDisplayName(): string {
+        let name = 'Symbol';
+        if (this._symbol !== undefined) {
+            name += `: ${this._symbol}`;
+        }
+        return name;
     }
 }

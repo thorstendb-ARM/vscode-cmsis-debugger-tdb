@@ -14,49 +14,22 @@
  * limitations under the License.
  */
 
-import { ExplorerInfo, ScvdBase } from './scvdBase';
-
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
-export enum EventLevel {
-    EventLevelError = 0,   // Run-time error
-    EventLevelAPI = 1,     // API function call
-    EventLevelOp = 2,      // Internal operation
-    EventLevelDetail = 3,  // Additional detailed information of operations
-}
+import { ExplorerInfo, ScvdBase } from './scvdBase';
 
-export class ScvdEventLevel extends ScvdBase {
-    private _level: EventLevel | undefined;
+export class ScvdDebugTarget extends ScvdBase {
 
     constructor(
         parent: ScvdBase | undefined,
-        level: string,
     ) {
         super(parent);
-        this.level = level;
-    }
-
-    get level(): EventLevel | undefined {
-        return this._level;
-    }
-
-    set level(value: string | undefined) {
-        this._level = EventLevel[value as keyof typeof EventLevel];
-    }
-
-    public filterLevel(level: EventLevel): boolean {
-        return this._level !== undefined ? this._level <= level : true;
     }
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
-        info.push({ name: 'Level', value: this._level?.toString() ?? 'undefined' });
+
         info.push(...itemInfo);
         return super.getExplorerInfo(info);
     }
-
-    public getExplorerDisplayName(): string {
-        return this.level?.toString() ?? 'undefined';
-    }
-
 }

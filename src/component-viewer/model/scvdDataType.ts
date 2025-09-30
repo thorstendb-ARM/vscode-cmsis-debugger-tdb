@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import { resolveType } from '../resolver';
 import { NumberType } from './numberType';
 import { ExplorerInfo, ScvdBase } from './scvdBase';
 import { ScvdTypedef } from './scvdTypedef';
@@ -65,6 +66,13 @@ export class ScvdDataType extends ScvdBase {
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
+
+        if (this._type !== undefined) {
+            info.push({ name: 'Type', value: this._type.getExplorerDisplayName() });
+            info.push({ name: 'Size', value: this.size?.toString() ?? '' });
+        } else {
+            info.push({ name: 'Type', value: 'undefined' });
+        }
         info.push(...itemInfo);
         return super.getExplorerInfo(info);
     }
@@ -75,45 +83,6 @@ export class ScvdDataType extends ScvdBase {
 
 }
 
-export class ScvdComplexDataType extends ScvdBase{
-    private _typeName: string | undefined;
-    private _type: ScvdTypedef | undefined;
-
-    constructor(
-        parent: ScvdBase | undefined,
-        typeName: string | undefined
-    ) {
-        super(parent);
-        this._typeName = typeName;
-    }
-
-    public get typeName(): string | undefined {
-        return this._typeName;
-    }
-
-    public get size(): NumberType | undefined {
-        return this._type?.size;
-    }
-
-    public resolveAndLink(): boolean {
-        // Default implementation does nothing, can be overridden by subclasses
-        return true;
-    }
-
-    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
-        const info: ExplorerInfo[] = [];
-        if (this._typeName !== undefined) {
-            info.push({ name: 'TypeName', value: this._typeName });
-        }
-        info.push(...itemInfo);
-        return super.getExplorerInfo(info);
-    }
-
-    public getExplorerDisplayName(): string {
-        return this._typeName ?? 'unknown complex type';
-    }
-
-}
 
 export class ScvdScalarDataType extends ScvdBase {
     private type: string | undefined;
@@ -151,4 +120,57 @@ export class ScvdScalarDataType extends ScvdBase {
     public getExplorerDisplayName(): string {
         return this.type ?? 'unknown scalar type';
     }
+}
+
+export class ScvdComplexDataType extends ScvdBase{
+    private _typeName: string | undefined;
+    private _type: ScvdTypedef | undefined;
+
+    constructor(
+        parent: ScvdBase | undefined,
+        typeName: string | undefined
+    ) {
+        super(parent);
+        this.typeName = typeName;
+    }
+
+    private set typeName(value: string | undefined) {
+        this._typeName = value;
+    }
+
+    public get typeName(): string | undefined {
+        return this._typeName;
+    }
+
+    public get size(): NumberType | undefined {
+        return this._type?.size;
+    }
+
+    public resolveAndLink(resolveFunc: (name: string, type: resolveType) => ScvdBase | undefined): boolean {
+        const item = this.typeName && resolveFunc(this.typeName, resolveType.local);
+        if(item === undefined || !(item instanceof ScvdTypedef)) {
+            return false;
+        }
+        this._type = item;
+        return true;
+    }
+
+    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
+        const info: ExplorerInfo[] = [];
+        if (this._typeName !== undefined) {
+            info.push({ name: 'TypeName', value: this._typeName });
+        }
+        if( this._type !== undefined) {
+            info.push({ name: 'Resolved Type', value: this._type.getExplorerDisplayName() });
+        } else {
+            info.push({ name: 'Resolved Type', value: 'not resolved' });
+        }
+        info.push(...itemInfo);
+        return super.getExplorerInfo(info);
+    }
+
+    public getExplorerDisplayName(): string {
+        return this._typeName ?? 'unknown complex type';
+    }
+
 }

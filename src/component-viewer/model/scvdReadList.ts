@@ -22,6 +22,11 @@ import { ExplorerInfo, Json, ScvdBase } from './scvdBase';
 import { ScvdTypedef } from './scvdTypedef';
 import { ScvdRead } from './scvdRead';
 import { getStringFromJson } from './scvdUtils';
+import { resolveType } from '../resolver';
+
+
+// readlist defines a list of variables or arrays. The first instance of <readlist name="var"> will define 'var',
+// the following use of <readlist name="var"> will use the definition.
 
 export class ScvdReadList extends ScvdRead {
     private _count: ScvdExpression = new ScvdExpression(this, '1', 'count'); // default is 1
@@ -104,15 +109,14 @@ export class ScvdReadList extends ScvdRead {
         return this._nextObj;
     }
 
-    public resolveAndLink(): boolean {
+    public resolveAndLink(_resolveFunc: (name: string, type: resolveType) => ScvdBase | undefined): boolean {
         if (this._next !== undefined) {
             const foundNext = undefined; //this.findTypedefByName(this._next);
             if (foundNext) {
                 this._nextObj = foundNext;
             }
         }
-        super.resolveAndLink();
-        return true;
+        return super.resolveAndLink(_resolveFunc);
     }
 
     public applyInit(): boolean {

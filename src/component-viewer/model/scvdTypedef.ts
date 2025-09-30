@@ -69,8 +69,8 @@ export class ScvdTypedefs extends ScvdBase {
 export class ScvdTypedef extends ScvdBase {
     private _size: ScvdExpression | undefined;
     private _import: ScvdSymbol | undefined;
-    private _member: ScvdMember[] = [];
-    private _var: ScvdVar[] = [];
+    private _member: ScvdMember[] = [];     // target system variable
+    private _var: ScvdVar[] = [];       // local SCVD variable
 
     constructor(
         parent: ScvdBase | undefined,

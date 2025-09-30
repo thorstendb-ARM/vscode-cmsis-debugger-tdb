@@ -15,35 +15,107 @@
  */
 
 import { ScvdBase } from './model/scvdBase';
+import { ScvdComonentViewer } from './model/scvdComonentViewer';
+import { ScvdTypedef } from './model/scvdTypedef';
+import { ScvdTypesCache } from './scvdTypesCache';
 
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
 
+export enum resolveType {
+    local = 'local',
+    target = 'target',
+}
+
 export class Resolver {
-    private _model: ScvdBase | undefined;
+    private _model: ScvdComonentViewer | undefined;
+    private _typesCache: ScvdTypesCache | undefined;
 
     constructor(
-        model: ScvdBase,
+        model: ScvdComonentViewer,
     ) {
         this.model = model;
     }
 
-    protected getModel(): ScvdBase | undefined {
+    protected get model(): ScvdComonentViewer | undefined {
         return this._model;
     }
-    private set model(value: ScvdBase | undefined) {
+    private set model(value: ScvdComonentViewer | undefined) {
         this._model = value;
     }
 
+    get typesCache(): ScvdTypesCache | undefined {
+        return this._typesCache;
+    }
+
+    private createTypesCache() {
+        if(this.model === undefined) {
+            return;
+        }
+        this._typesCache = new ScvdTypesCache(this.model);
+        this._typesCache.createCache();
+    }
+
+    private resolveLocalSymbol(name: string): ScvdBase | undefined {
+        const typeItem = this.typesCache?.findTypeByName(name);
+        if(typeItem !== undefined && typeItem instanceof ScvdTypedef) {
+            return typeItem;
+        }
+        return undefined;
+    }
+
+    private resolveTargetSymbol(_name: string): ScvdBase | undefined {
+        // resolve using debugger interface
+        return undefined;
+    }
+
+    public resolveSymbolCb(name: string, type: resolveType) : ScvdBase | undefined {
+        switch(type) {
+            case resolveType.local: {
+                return this.resolveLocalSymbol(name);
+            }
+            case resolveType.target: {
+                return this.resolveTargetSymbol(name);
+            }
+            default: {
+                return undefined;
+            }
+        }
+    }
+
+    private resolveRecursive(item: ScvdBase, resolveFunc: (name: string, type: resolveType) => ScvdBase | undefined): boolean {
+        if(item.resolveAndLink(resolveFunc)) {
+            console.log('Resolved item:', item.getExplorerDisplayName());
+        }
+
+        item.forEach(child => {
+            this.resolveRecursive(child, resolveFunc);
+        }
+        );
+
+        return true;
+    }
+
+    private resolveTypes(): boolean {
+        const model = this.model;
+        const typesCache = this.typesCache;
+        if (model === undefined || typesCache === undefined) {
+            return false;
+        }
+
+        this.resolveRecursive(model, this.resolveSymbolCb.bind(this));
+
+        return true;
+    }
+
     public resolve(): boolean {
-        const model = this.getModel();
+        const model = this.model;
         if( model === undefined) {
             return false;
         }
 
-        model.map( (child, _index) => {
-            child.resolveAndLink();
-        });
+        this.createTypesCache();
+        this.resolveTypes();
 
         return true;
     }

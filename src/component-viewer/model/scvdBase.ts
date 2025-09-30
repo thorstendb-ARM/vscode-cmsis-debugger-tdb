@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import { resolveType } from '../resolver';
 import { NumberType } from './numberType';
 import { getLineNumberFromJson, getStringFromJson } from './scvdUtils';
 
@@ -140,14 +141,22 @@ export class ScvdBase {
         this._children.forEach(callbackfn);
     }
 
+    /**
+     * Returns a new array with all children that pass the test implemented by the provided function.
+     * @param predicate Function to test each child. Return true to keep the child, false otherwise.
+     */
+    public filter(predicate: (child: ScvdBase, index: number, array: ScvdBase[]) => boolean): ScvdBase[] {
+        return this._children.filter(predicate);
+    }
+
     public hasChildren(): boolean {
         return this._children.length > 0;
     }
 
     // Member function available to all ScvdItems and derived classes
-    public resolveAndLink(): boolean {
+    public resolveAndLink(_resolveFunc: (name: string, type: resolveType) => ScvdBase | undefined): boolean {
         // Default implementation does nothing, can be overridden by subclasses
-        return true;
+        return false;
     }
 
     public applyInit(): boolean {

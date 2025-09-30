@@ -22,21 +22,18 @@ import { ScvdEndian } from './scvdEndian';
 import { ScvdExpression } from './scvdExpression';
 import { ScvdCondition } from './scvdCondition';
 import { ScvdSymbol } from './scvdSymbol';
-import { ScvdTypedef } from './scvdTypedef';
 import { ScvdDataType } from './scvdDataType';
 import { getStringFromJson } from './scvdUtils';
 
 export class ScvdRead extends ScvdBase {
     private _type: ScvdDataType | undefined;
-    private _symbol: string | undefined;
+    private _symbol: ScvdSymbol | undefined;
     private _offset: ScvdExpression = new ScvdExpression(this, '0', 'offset'); // default is 0
     private _const: NumberType = new NumberType(0); // default is 0
     private _cond: ScvdCondition = new ScvdCondition(this);
     private _size: ScvdExpression;
     private _endian: ScvdEndian | undefined;
 
-    private _typeObj: ScvdTypedef | undefined;
-    private _symbolObj: ScvdSymbol | undefined;
 
     constructor(
         parent: ScvdBase | undefined,
@@ -72,9 +69,13 @@ export class ScvdRead extends ScvdBase {
     }
 
     set symbol(name: string | undefined) {
-        this._symbol = name;
+        if(this._symbol === undefined && name !== undefined) {
+            this._symbol = new ScvdSymbol(this, name);
+            return;
+        }
     }
-    get symbol(): string | undefined {
+
+    get symbol(): ScvdSymbol | undefined {
         return this._symbol;
     }
 
@@ -147,43 +148,10 @@ export class ScvdRead extends ScvdBase {
     }
 
 
-    // ----- Object links -----
-    public set typeObj(type: ScvdTypedef | undefined) {
-        this._typeObj = type;
-    }
-    public get typeObj(): ScvdTypedef | undefined {
-        return this._typeObj;
-    }
-
-    public set symbolObj(symbol: ScvdSymbol | undefined) {
-        this._symbolObj = symbol;
-    }
-    public get symbolObj(): ScvdSymbol | undefined {
-        return this._symbolObj;
-    }
-
-
-    public resolveAndLink(): boolean {
-        if (this._type !== undefined) {
-            const foundType = undefined; //this.findTypeByName(this._typeName);
-            if (foundType) {
-                this._type = foundType;
-            }
-        }
-        if (this._symbol !== undefined) {
-            const foundSymbol = undefined; //this.findTargetSymbolByName(this._symbol);
-            if (foundSymbol) {
-                this._symbolObj = foundSymbol;
-            }
-        }
-
-        return true;
-    }
-
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
         if (this.symbol) {
-            info.push({ name: 'Symbol', value: this.symbol });
+            info.push({ name: 'Symbol', value: this.symbol.getExplorerDisplayName() });
         }
         if (this.const) {
             info.push({ name: 'Const', value: this.const.getDisplayText() });
