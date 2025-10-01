@@ -46,7 +46,29 @@
     "onStartupFinished"
   ],
   "contributes": {
+    "views": {
+      "cmsis": [
+        {
+          "id": "cmsis-scvd-explorer",
+          "name": "CMSIS SCVD Explorer",
+          "icon": "$(preferences-open-settings)"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "cmsis",
+          "title": "CMSIS",
+          "icon": "$(preferences-open-settings)"
+        }
+      ]
+    },
     "commands": [
+      {
+        "command": "cmsis-scvd-explorer.refreshEntry",
+        "title": "Refresh CMSIS SCVD Explorer"
+      },
       {
         "title": "CPU Time",
         "shortTitle": "CPU Time",
@@ -88,6 +110,14 @@
                   "cbuildRunFile": {
                     "type": "string",
                     "description": "Path to *.cbuild-run.yml debug configuration file generated with CMSIS-Toolbox."
+                  },
+                  "componentViewer": {
+                    "type": "array",
+                    "description": "List of Component Viewer (SVCD) files.",
+                    "items": {
+                      "type": "string"
+                    },
+                    "default": []
                   }
                 }
               }
@@ -134,7 +164,8 @@
     "baseContentUrl": "https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/blob/main/README.md"
   },
   "dependencies": {
-    "yaml": "^2.8.1"
+    "yaml": "^2.8.1",
+    "xml2js": "^0.6.2"
   },
   "devDependencies": {
     "@open-cmsis-pack/vsce-helper": "^0.1.1",
@@ -143,7 +174,9 @@
     "@types/minimist": "^1.2.5",
     "@types/node": "^20.19.13",
     "@types/node-fetch": "^2.6.13",
+    "@types/sax": "^1.2.7",
     "@types/vscode": "^1.63.0",
+    "@types/xml2js": "^0.4.14",
     "@types/yargs": "^17.0.33",
     "@types/yarnpkg__lockfile": "^1.1.9",
     "@typescript-eslint/eslint-plugin": "^8.42.0",

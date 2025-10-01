@@ -22,6 +22,7 @@ import { addToolsToPath } from './add-to-path';
 import { CpuStatesStatusBarItem } from '../features/cpu-states/cpu-states-statusbar-item';
 import { CpuStates } from '../features/cpu-states/cpu-states';
 import { CpuStatesCommands } from '../features/cpu-states/cpu-states-commands';
+import { ComponentViewer } from '../component-viewer/component-viewer-main';
 
 const BUILTIN_TOOLS_PATHS = [
     'tools/pyocd/pyocd',
@@ -34,6 +35,7 @@ export const activate = async (context: vscode.ExtensionContext): Promise<void> 
     const cpuStates = new CpuStates();
     const cpuStatesCommands = new CpuStatesCommands();
     const cpuStatesStatusBarItem = new CpuStatesStatusBarItem();
+    const componentViewer = new ComponentViewer(context);
 
     addToolsToPath(context, BUILTIN_TOOLS_PATHS);
     // Activate components
@@ -43,6 +45,7 @@ export const activate = async (context: vscode.ExtensionContext): Promise<void> 
     cpuStates.activate(gdbtargetDebugTracker);
     cpuStatesCommands.activate(context, cpuStates);
     cpuStatesStatusBarItem.activate(context, cpuStates);
+    componentViewer.activate(context);
 
     logger.debug('Extension Pack activated');
 };
