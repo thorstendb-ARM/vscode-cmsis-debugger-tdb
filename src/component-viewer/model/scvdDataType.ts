@@ -125,6 +125,7 @@ export class ScvdScalarDataType extends ScvdBase {
 export class ScvdComplexDataType extends ScvdBase{
     private _typeName: string | undefined;
     private _type: ScvdTypedef | undefined;
+    private _isPointer: boolean = false;
 
     constructor(
         parent: ScvdBase | undefined,
@@ -146,8 +147,24 @@ export class ScvdComplexDataType extends ScvdBase{
         return this._type?.size;
     }
 
+    public get isPointer(): boolean {
+        return this._isPointer;
+    }
+    private set isPointer(value: boolean) {
+        this._isPointer = value;
+    }
+
     public resolveAndLink(resolveFunc: (name: string, type: resolveType) => ScvdBase | undefined): boolean {
-        const item = this.typeName && resolveFunc(this.typeName, resolveType.local);
+        const typeName = this.typeName?.replace(/\*/g, '').trim();
+        if(typeName === undefined) {
+            return false;
+        }
+        const isPointer = (this.typeName?.indexOf('*') === 0);
+        if(isPointer) {
+            this.isPointer = true;
+        }
+
+        const item =  resolveFunc(typeName, resolveType.local);
         if(item === undefined || !(item instanceof ScvdTypedef)) {
             return false;
         }
@@ -164,6 +181,9 @@ export class ScvdComplexDataType extends ScvdBase{
             info.push({ name: 'Resolved Type', value: this._type.getExplorerDisplayName() });
         } else {
             info.push({ name: 'Resolved Type', value: 'not resolved' });
+        }
+        if( this.isPointer) {
+            info.push({ name: 'Pointer', value: 'true' });
         }
         info.push(...itemInfo);
         return super.getExplorerInfo(info);
