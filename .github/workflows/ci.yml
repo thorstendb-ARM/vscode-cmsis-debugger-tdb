@@ -6,11 +6,17 @@ on:
       - main
     paths-ignore:
       - '**/*.md'
+      - '.github/workflows/markdown.yml'
+      - '.github/markdownlint.json'
+      - '.github/markdownlint.jsonc'
   pull_request:
     branches:
       - main
     paths-ignore:
       - '**/*.md'
+      - '.github/workflows/markdown.yml'
+      - '.github/markdownlint.json'
+      - '.github/markdownlint.jsonc'
   workflow_dispatch:
   merge_group:
   release:
@@ -36,6 +42,8 @@ jobs:
           - platform: macos-14
             target: darwin
     runs-on: ${{ matrix.platform }}
+    permissions:
+      packages: read
     name: 'Build and test (${{ matrix.target }})'
 
     steps:
@@ -45,12 +53,14 @@ jobs:
           egress-policy: audit
 
       - run: git config --global core.autocrlf false
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         with:
           fetch-depth: 0
           submodules: true
 
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           node-version-file: package.json
           registry-url: https://npm.pkg.github.com
@@ -143,7 +153,7 @@ jobs:
 
       - name: Publish coverage report to QLTY
         if: github.repository_owner == 'Open-CMSIS-Pack' && runner.os == 'Linux'
-        uses: qltysh/qlty-action/coverage@f13b3559771beedd11e68b03d49512f3c21a75ba # v1
+        uses: qltysh/qlty-action/coverage@a19242102d17e497f437d7466aa01b528537e899 # v1
         with:
           token: ${{ secrets.QLTY_COVERAGE_TOKEN }}
           files: coverage/lcov.info
@@ -161,15 +171,19 @@ jobs:
           - linux-x64
           - linux-arm64
           - darwin-arm64
+    permissions:
+      packages: read
     steps:
       - name: Harden the runner (Audit all outbound calls)
         uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911 # v2.13.0
         with:
           egress-policy: audit
 
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
 
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           node-version-file: package.json
           registry-url: https://npm.pkg.github.com
@@ -183,7 +197,7 @@ jobs:
           path: .
 
       - name: Cache tools
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.6
+        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.6
         with:
           path: tools
           key: tools-${{ matrix.target }}-${{ github.head_ref || github.ref_name }}
@@ -244,7 +258,7 @@ jobs:
         working-directory: test-coverage
          
       - name: Attach packages
-        uses: softprops/action-gh-release@72f2c25fcb47643c292f7107632f7a47c1df5cd8 # v2.3.2
+        uses: softprops/action-gh-release@6cbd405e2c4e67a21c47fa9e383d020e4e28b836 # v2.3.3
         with:
           files: |
             **/*.vsix
