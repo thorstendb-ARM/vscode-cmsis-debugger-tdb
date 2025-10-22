@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import { EvalContext } from '../evaluator';
 import { resolveType } from '../resolver';
 import { NumberType } from './numberType';
 import { getLineNumberFromJson, getStringFromJson } from './scvdUtils';
@@ -43,6 +44,9 @@ export class ScvdBase {
 
     private _isModified: boolean = false;
     private _valid: boolean = false;
+
+    private _evalContext: EvalContext | undefined;
+
 
     constructor(
         parent: ScvdBase | undefined,
@@ -82,6 +86,15 @@ export class ScvdBase {
 
         return true;
     }
+
+    set evalContext(ctx: EvalContext) {
+        this._evalContext = ctx;
+    }
+
+    get evalContext(): EvalContext | undefined {
+        return this._evalContext;
+    }
+
 
     public set tag(value: string | undefined) {
         this._tag = value;

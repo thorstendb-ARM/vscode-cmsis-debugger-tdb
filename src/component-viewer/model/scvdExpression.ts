@@ -17,7 +17,7 @@
 // https://arm-software.github.io/CMSIS-View/main/scvd_expression.html
 
 
-import { defaultParser } from '../parser';
+import { defaultParser, ParseResult } from '../parser';
 import { EvalContext, evaluateParseResult } from '../evaluator';
 
 import { NumberType } from './numberType';
@@ -29,7 +29,7 @@ export class ScvdExpression extends ScvdBase {
     private _expression: string | undefined;
     private _result: NumberType | undefined;
     private _scvdVarName: string | undefined;
-    private _evalContext: EvalContext | undefined;
+    private _expressionAst: ParseResult | undefined;
 
     constructor(
         parent: ScvdBase | undefined,
@@ -42,31 +42,39 @@ export class ScvdExpression extends ScvdBase {
         this.scvdVarName = scvdVarName;
     }
 
-    set evalContext(ctx: EvalContext) {
-        this._evalContext = ctx;
+    public get expressionAst(): ParseResult | undefined {
+        return this._expressionAst;
     }
-
-    get evalContext(): EvalContext | undefined {
-        return this._evalContext;
+    public set expressionAst(ast: ParseResult | undefined) {
+        this._expressionAst = ast;
     }
 
     public get expression(): string | undefined {
         return this._expression;
     }
     public set expression(expression: string | undefined) {
-        if (expression == undefined || expression === '' || this.evalContext === undefined) {
-            console.log('Expr.: ', expression, '\nResult: undefined');
+        if (expression == undefined || expression === '') {
             return;
         }
         this._expression = expression;
-        const result = this.evaluateExpression(expression, this.evalContext);
+        this.expressionAst = defaultParser.parse(expression);
 
-        console.log('Expr.: ', this.expression, '\nResult:', result);
+        if(this.expressionAst !== undefined) {
+            if(this.expressionAst.constValue === undefined) {
+                const result = this.evaluateExpression();
+                console.log('Expr.: ', this.expression, '\nResult:', result);
+            } else {
+                const result = this.expressionAst.constValue;
+                console.log('Const: ', this.expression, '\nResult:', result);
+            }
+        }
     }
 
-    public evaluateExpression(expression: string, ctx: EvalContext): any {
-        const pr = defaultParser.parse(expression);
-        return evaluateParseResult(pr, ctx);
+    public evaluateExpression(): any {
+        if(this.expressionAst !== undefined && this.evalContext !== undefined) {
+            return evaluateParseResult(this.expressionAst, this.evalContext);
+        }
+        return undefined;
     }
 
     public get result(): NumberType | undefined {
