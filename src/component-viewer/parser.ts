@@ -7,6 +7,7 @@
  *      __CalcMemUsed, __FindSymbol, __GetRegVal, __Offset_of, __size_of, __Symbol_exists
  *  - Constant folding (assignment expression value = RHS const value when foldable)
  *  - External symbol collection
+ *  - NEW: Colon selector operators `typedef_name:member` and `typedef_name:member:enum`
  *
  * Intended to be instantiated once and reused: `const parser = new Parser();`
  */
@@ -39,6 +40,13 @@ export interface UpdateExpression extends BaseNode {
   prefix: boolean;
 }
 
+/** NEW: Colon selector for `typedef_name:member` and `typedef_name:member:enum` */
+export interface ColonPath extends BaseNode {
+  kind:'ColonPath';
+  /** e.g. ["MyType","field"] or ["MyType","field","EnumVal"] */
+  parts: string[];
+}
+
 export type IntrinsicName = '__CalcMemUsed'|'__FindSymbol'|'__GetRegVal'|'__Offset_of'|'__size_of'|'__Symbol_exists';
 export interface CallExpression extends BaseNode { kind:'CallExpression'; callee:ASTNode; args:ASTNode[]; intrinsic?: undefined; }
 export interface EvalPointCall extends BaseNode { kind:'EvalPointCall'; callee:ASTNode; args:ASTNode[]; intrinsic:IntrinsicName; }
@@ -51,6 +59,7 @@ export interface ErrorNode extends BaseNode { kind:'ErrorNode'; message:string; 
 export type ASTNode =
   | NumberLiteral | StringLiteral | Identifier | MemberAccess | ArrayIndex
   | UnaryExpression | BinaryExpression | ConditionalExpression | AssignmentExpression | UpdateExpression
+  | ColonPath
   | CallExpression | EvalPointCall | PrintfExpression | TextSegment | FormatSegment | ErrorNode;
 
 export interface Diagnostic { type: 'error'|'warning'|'info'; message: string; start: number; end: number; }
@@ -327,7 +336,7 @@ export class Parser {
         if (this.cur.kind === 'PUNCT' && this.cur.value === '?') {
             this.eat('PUNCT','?');
             const cons = this.parseExpression();
-            if (!this.tryEat('PUNCT',':')) this.error('Expected \':\' in conditional expression', this.cur.start, this.cur.end);
+            if (!this.tryEat('PUNCT',':')) this.error('Expected ":" in conditional expression', this.cur.start, this.cur.end);
             const alt = this.parseExpression();
             node = { kind:'ConditionalExpression', test:node, consequent:cons, alternate:alt, ...span((node as any).start, (alt as any).end) };
         }
@@ -335,11 +344,17 @@ export class Parser {
     }
 
     private static PREC: Record<string, number> = {
-        '||':1,'&&':2,'|':3,'^':4,'&':5,
+        // Keep C-like precedence ordering; higher number = tighter binding
+        '||':1,
+        '&&':2,
+        '|':3,
+        '^':4,
+        '&':5,
         '==':6,'!=':6,
         '<':7,'>':7,'<=':7,'>=':7,
         '>>':8,'<<':8,'>>>':8,
-        '+':9,'-':9,'*':10,'/':10,'%':10
+        '+':9,'-':9,
+        '*':10,'/':10,'%':10
     };
 
     private parseAssignment(): ASTNode {
@@ -400,6 +415,43 @@ export class Parser {
     private parsePostfix(): ASTNode {
         let node = this.parsePrimary();
         while (true) {
+            // colon-type/member/enum selector chain: typedef_name:member[:enum]
+            if (this.tryEat('PUNCT', ':')) {
+                if (node.kind !== 'Identifier' && node.kind !== 'ColonPath') {
+                    this.error('Expected identifier before ":"', (node as any).start, (node as any).end);
+                } else {
+                    let parts: string[];
+                    const startPos = (node as any).start;
+                    let lastEnd = (node as any).end;
+                    if (node.kind === 'Identifier') {
+                        this.externals.delete((node as Identifier).name);
+                        parts = [(node as Identifier).name];
+                    } else {
+                        parts = [...(node as ColonPath).parts];
+                    }
+                    // after the first ':' we require an identifier
+                    if (this.cur.kind !== 'IDENT') {
+                        this.error('Expected identifier after ":"', this.cur.start, this.cur.end);
+                    } else {
+                        const first = this.eat('IDENT');
+                        parts.push(first.value);
+                        lastEnd = first.end;
+                        // Consume any further ":name" segments
+                        while (this.tryEat('PUNCT', ':')) {
+                            if (this.cur.kind !== 'IDENT') {
+                                this.error('Expected identifier after ":"', this.cur.start, this.cur.end);
+                                break;
+                            }
+                            const idt = this.eat('IDENT');
+                            parts.push(idt.value);
+                            lastEnd = idt.end;
+                        }
+                    }
+                    node = { kind:'ColonPath', parts, valueType:'unknown', ...span(startPos, lastEnd) };
+                }
+                continue;
+            }
+
             // function call
             if (this.tryEat('PUNCT','(')) {
                 const args: ASTNode[] = [];
@@ -410,7 +462,7 @@ export class Parser {
                         break;
                     }
                 }
-                if (!this.tryEat('PUNCT',')')) this.error('Expected \')\'', this.cur.start, this.cur.end);
+                if (!this.tryEat('PUNCT',')')) this.error('Expected ")"', this.cur.start, this.cur.end);
                 const callee = node as ASTNode;
                 const isIntrinsic = (callee as any).kind === 'Identifier' && INTRINSICS.has((callee as any).name);
                 node = {
@@ -427,14 +479,14 @@ export class Parser {
                     const prop = this.cur.value; const idt = this.eat('IDENT');
                     node = { kind:'MemberAccess', object:node, property:prop, ...span((node as any).start, idt.end) };
                 } else {
-                    this.error('Expected identifier after \'.\'', this.cur.start, this.cur.end);
+                    this.error('Expected identifier after "."', this.cur.start, this.cur.end);
                 }
                 continue;
             }
             // index access
             if (this.tryEat('PUNCT','[')) {
                 const index = this.parseExpression();
-                if (!this.tryEat('PUNCT',']')) this.error('Expected \']\'', this.cur.start, this.cur.end);
+                if (!this.tryEat('PUNCT',']')) this.error('Expected "]"', this.cur.start, this.cur.end);
                 node = { kind:'ArrayIndex', array:node, index, ...span((node as any).start, (index as any).end) };
                 continue;
             }
@@ -474,7 +526,7 @@ export class Parser {
         if (t.kind === 'PUNCT' && t.value === '(') {
             this.eat('PUNCT','(');
             const expr = this.parseExpression();
-            if (!this.tryEat('PUNCT',')')) this.error('Expected \')\'', this.cur.start, this.cur.end);
+            if (!this.tryEat('PUNCT',')')) this.error('Expected ")"', this.cur.start, this.cur.end);
             return expr;
         }
         this.error(`Unexpected token ${t.kind} ${JSON.stringify(t.value)}`, t.start, t.end);
@@ -492,6 +544,9 @@ export class Parser {
         }
         if (k === 'Identifier') {
             return node; // unknown
+        }
+        if (k === 'ColonPath') {
+            return node; // symbolic; evaluation handled elsewhere
         }
         if (k === 'MemberAccess') {
             return { ...node, object: this.fold((node as MemberAccess).object) };

@@ -9,6 +9,7 @@
  *   - Member access (obj.prop) and array indexing (arr[idx])
  *   - Function calls (normal) and intrinsic evaluation-point calls
  *   - Printf-like expressions
+ *   - NEW: Colon selector values (`typedef_name:member` and `typedef_name:member:enum`) via ColonPath nodes
  *
  * Notes
  * -----
@@ -43,8 +44,9 @@ import type {
     PrintfExpression,
     FormatSegment,
     TextSegment,
-    IntrinsicName,
     ParseResult,
+    // NEW
+    ColonPath,
 } from './parser';
 
 /* =============================================================================
@@ -103,7 +105,7 @@ export class EvalContext {
 
 export function createDefaultIntrinsicHost(): IntrinsicHost {
     return {
-        __CalcMemUsed(ctx: EvalContext): any {
+        __CalcMemUsed(ctx: EvalContext, _args: any[]): any {
             // Dummy: count entries and estimate a tiny size per entry
             const entries = ctx.memory.size;
             return entries * 16; // bytes-ish; adapt as needed
@@ -116,13 +118,21 @@ export function createDefaultIntrinsicHost(): IntrinsicHost {
             ctx.memory.set(name, 0);
             return 0;
         },
-        __GetRegVal(_ctx: EvalContext, args: any[]): any {
+        __GetRegVal(_ctx: EvalContext, _args: any[]): any {
             // Dummy: pretend all registers read as 0
             // e.g., args[0] could be a string register name
             return 0;
         },
-        __Offset_of(_ctx: EvalContext, _args: any[]): any {
-            // Dummy: no type model; return 0
+        __Offset_of(_ctx: EvalContext, args: any[]): any {
+            // Expect a symbolic ColonPath value as first argument, but we don't
+            // have a real type system here; return 0 as a deterministic stub.
+            // Example accepted shapes:
+            //  - { __colonPath: ["MyType","field"] }
+            //  - { __colonPath: ["MyType","field","EnumVal"] }
+            const [ref] = args;
+            if (ref && typeof ref === 'object' && Array.isArray((ref as any).__colonPath)) {
+                return 0;
+            }
             return 0;
         },
         __size_of(_ctx: EvalContext, _args: any[]): any {
@@ -147,9 +157,6 @@ function isObjectLike(v: any): v is Record<string, any> {
     return typeof v === 'object' && v !== null;
 }
 
-function toInt32(x: any): number {
-    return (x | 0) >>> 0; // returns uint32; caller decides signed/unsigned usage
-}
 
 function truthy(x: any): boolean {
     return !!x;
@@ -235,8 +242,8 @@ function lref(node: ASTNode, ctx: EvalContext): Ref {
 function lrefable(node: ASTNode): boolean {
     return (
         node.kind === 'Identifier' ||
-    node.kind === 'MemberAccess' ||
-    node.kind === 'ArrayIndex'
+        node.kind === 'MemberAccess' ||
+        node.kind === 'ArrayIndex'
     );
 }
 
@@ -265,6 +272,12 @@ export function evalNode(node: ASTNode, ctx: EvalContext): any {
             if (!isObjectLike(base)) return 0;
             const v = (base as any)[key as any];
             return v === undefined ? 0 : v;
+        }
+        case 'ColonPath': {
+            const cp = node as ColonPath;
+            // Return a symbolic value that intrinsics (e.g., __Offset_of) can interpret.
+            // If user code treats it as a plain value elsewhere, coerce to 0 as needed.
+            return { __colonPath: cp.parts.slice() };
         }
         case 'UnaryExpression': {
             const u = node as UnaryExpression;
@@ -379,8 +392,6 @@ export function evalNode(node: ASTNode, ctx: EvalContext): any {
         case 'ErrorNode':
             throw new Error('Cannot evaluate an ErrorNode.');
         default:
-            // Exhaustiveness guard
-            const _never: never = node as never;
             throw new Error(`Unhandled node kind: ${(node as any).kind}`);
     }
 }
@@ -530,5 +541,6 @@ export function evaluateParseResult(pr: ParseResult, ctx = new EvalContext()): a
 // const r2 = evaluateExpression("++x", ctx);    // 16 (x now 16)
 // const r3 = evaluateExpression("obj.a += obj.arr[0]", ctx); // 8
 // const r4 = evaluateExpression("%d[ x ] and %x[ 255 ]", ctx); // printf-like → "16 and ff"
+// const r5 = evaluateExpression("__Offset_of(T:field)", ctx); // uses ColonPath symbolic arg → 0 (stub)
 //
-// console.log({ r1, r2, r3, r4, mem: Object.fromEntries(ctx.memory) });
+// console.log({ r1, r2, r3, r4, r5, mem: Object.fromEntries(ctx.memory) });

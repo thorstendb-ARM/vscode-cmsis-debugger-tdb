@@ -17,7 +17,7 @@
 // https://arm-software.github.io/CMSIS-View/main/scvd_expression.html
 
 
-import { defaultParser, parseExpression, ParseResult } from '../parser';
+import { defaultParser } from '../parser';
 import { EvalContext, evaluateParseResult } from '../evaluator';
 
 import { NumberType } from './numberType';
@@ -108,7 +108,7 @@ export class ScvdExpression extends ScvdBase {
             this._result = new NumberType(42); //eval(this._expression);
             return this._result;
         } catch (error) {
-            console.error('Error evaluating expression:', error);
+            console.log('>>> Error evaluating expression:', error);
             return undefined;
         }
     }
