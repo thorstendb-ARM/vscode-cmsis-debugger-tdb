@@ -59,6 +59,9 @@ import type {
 /** Symbol table / memory. Unknown identifiers are auto-created with value 0. */
 export type Memory = Map<string, any>;
 
+// Result type for evaluation helpers
+export type EvaluateResult = number | string | undefined;
+
 export type CTypeName =
   | 'uint8_t' | 'int8_t'
   | 'uint16_t' | 'int16_t'
@@ -596,10 +599,18 @@ function formatValue(spec: FormatSegment['spec'], v: any): string {
  * ============================================================================= */
 
 /** Evaluate a ParseResult from the parser. */
-export function evaluateParseResult(pr: ParseResult, ctx = new EvalContext()): any {
+function normalizeEvaluateResult(v: any): EvaluateResult {
+    if (v === undefined || v === null) return undefined;
+    if (typeof v === 'number' || typeof v === 'string') return v;
+    if (typeof v === 'bigint') return v.toString(10);
+    if (typeof v === 'boolean') return v ? 1 : 0;
+    return undefined; // objects, arrays, etc.
+}
+
+export function evaluateParseResult(pr: ParseResult, ctx = new EvalContext()): EvaluateResult {
     try {
-        if (pr.isPrintf) { return evalNode(pr.ast, ctx); }
-        return evalNode(pr.ast, ctx);
+        const v = evalNode(pr.ast, ctx);
+        return normalizeEvaluateResult(v);
     } catch (e) {
         console.error('Expression AST Evaluation error:', e);
         return undefined;
