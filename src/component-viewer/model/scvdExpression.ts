@@ -18,7 +18,7 @@
 
 
 import { defaultParser, ParseResult } from '../parser';
-import { EvalContext, evaluateParseResult } from '../evaluator';
+import { EvalContext, evaluateParseResult, EvaluateResult } from '../evaluator';
 
 import { NumberType } from './numberType';
 import { ExplorerInfo, ScvdBase } from './scvdBase';
@@ -70,11 +70,11 @@ export class ScvdExpression extends ScvdBase {
         }
     }
 
-    public evaluateExpression(): any {
-        if(this.expressionAst !== undefined && this.evalContext !== undefined) {
-            return evaluateParseResult(this.expressionAst, this.evalContext);
+    public evaluateExpression(): EvaluateResult {
+        if(this.expressionAst === undefined || this.evalContext === undefined) {
+            return undefined;
         }
-        return undefined;
+        return evaluateParseResult(this.expressionAst, this.evalContext);
     }
 
     public get result(): NumberType | undefined {
