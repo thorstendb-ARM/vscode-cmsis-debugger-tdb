@@ -10,7 +10,6 @@
 import * as vscode from 'vscode';
 import { URI } from 'vscode-uri';
 import { parseStringPromise, ParserOptions } from 'xml2js';
-import { parser } from './parser';
 import { ScvdComonentViewer } from './model/scvdComonentViewer';
 import { Json } from './model/scvdBase';
 import { SidebarDebugView } from './sidebarDebugView';
@@ -42,7 +41,6 @@ const xmlOpts: ParserOptions = {
 };
 
 export class ComponentViewer {
-    protected scvdReader: parser;
     private model: ScvdComonentViewer | undefined;
     private treeDataProvider: SidebarDebugView | undefined;
 
@@ -51,7 +49,6 @@ export class ComponentViewer {
     ) {
         const fullPath = context.extensionPath;
         this.initScvdReader(URI.file(path.join(fullPath, scvdFile)));
-        this.scvdReader = new parser();
     }
 
     private injectLineNumbers(xml: string): string {

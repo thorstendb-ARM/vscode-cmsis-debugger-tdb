@@ -16,13 +16,20 @@
 
 // https://arm-software.github.io/CMSIS-View/main/scvd_expression.html
 
+
+import { defaultParser, parseExpression, ParseResult } from '../parser';
+import { EvalContext, evaluateParseResult } from '../evaluator';
+
 import { NumberType } from './numberType';
 import { ExplorerInfo, ScvdBase } from './scvdBase';
+
+
 
 export class ScvdExpression extends ScvdBase {
     private _expression: string | undefined;
     private _result: NumberType | undefined;
     private _scvdVarName: string | undefined;
+    private _evalContext: EvalContext | undefined;
 
     constructor(
         parent: ScvdBase | undefined,
@@ -30,15 +37,36 @@ export class ScvdExpression extends ScvdBase {
         scvdVarName: string,
     ) {
         super(parent);
+        this.evalContext = new EvalContext();
         this.expression = expression;
         this.scvdVarName = scvdVarName;
+    }
+
+    set evalContext(ctx: EvalContext) {
+        this._evalContext = ctx;
+    }
+
+    get evalContext(): EvalContext | undefined {
+        return this._evalContext;
     }
 
     public get expression(): string | undefined {
         return this._expression;
     }
-    public set expression(value: string | undefined) {
-        this._expression = value;
+    public set expression(expression: string | undefined) {
+        if (expression == undefined || expression === '' || this.evalContext === undefined) {
+            console.log('Expr.: ', expression, '\nResult: undefined');
+            return;
+        }
+        this._expression = expression;
+        const result = this.evaluateExpression(expression, this.evalContext);
+
+        console.log('Expr.: ', this.expression, '\nResult:', result);
+    }
+
+    public evaluateExpression(expression: string, ctx: EvalContext): any {
+        const pr = defaultParser.parse(expression);
+        return evaluateParseResult(pr, ctx);
     }
 
     public get result(): NumberType | undefined {
