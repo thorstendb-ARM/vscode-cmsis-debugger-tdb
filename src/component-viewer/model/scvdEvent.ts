@@ -107,7 +107,7 @@ export class ScvdEvent extends ScvdBase {
                 this._property = new ScvdValueOutput(this, value);
                 return;
             }
-            this._property.value = value;
+            this._property.expression = value;
         }
     }
 

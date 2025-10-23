@@ -17,7 +17,7 @@
 // https://arm-software.github.io/CMSIS-View/main/scvd_expression.html
 
 
-import { defaultParser, ParseResult } from '../parser';
+import { parseExpression, ParseResult } from '../parser';
 import { EvalContext, evaluateParseResult, EvaluateResult } from '../evaluator';
 
 import { NumberType } from './numberType';
@@ -31,17 +31,22 @@ export class ScvdExpression extends ScvdBase {
     private _resultText: string | undefined;
     private _scvdVarName: string | undefined;
     private _expressionAst: ParseResult | undefined;
+    private _isPrintExpression: boolean = false;
 
     constructor(
         parent: ScvdBase | undefined,
         expression: string | undefined,
         scvdVarName: string,
+        printfHook?: any,
     ) {
         super(parent);
-        this.evalContext = new EvalContext();
+        this.evalContext = new EvalContext(printfHook);
         this.expression = expression;
         this.scvdVarName = scvdVarName;
         this.tag = scvdVarName;
+        if(printfHook !== undefined) {
+            this._isPrintExpression = true;
+        }
     }
 
     public get expressionAst(): ParseResult | undefined {
@@ -51,11 +56,15 @@ export class ScvdExpression extends ScvdBase {
         this._expressionAst = ast;
     }
 
+    public get isPrintExpression(): boolean {
+        return this._isPrintExpression;
+    }
+
     public get expression(): string | undefined {
         return this._expression;
     }
     public set expression(expression: string | undefined) {
-        if (expression == undefined || expression === '') {
+        if (expression == undefined) {
             return;
         }
 
@@ -124,7 +133,7 @@ export class ScvdExpression extends ScvdBase {
             return false;
         }
 
-        const expressionAst = defaultParser.parse(expression);
+        const expressionAst = parseExpression(expression, this.isPrintExpression);
         if(expressionAst !== undefined && expressionAst.diagnostics.length === 0) {
             this.expressionAst = expressionAst;
         }

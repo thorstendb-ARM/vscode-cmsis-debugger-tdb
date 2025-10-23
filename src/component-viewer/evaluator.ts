@@ -85,12 +85,21 @@ export interface EvalContextInit {
   memory?: Memory;
   intrinsics?: IntrinsicHost;
   functions?: ExternalFunctions;
+  /** Optional hook to customize printf (%C %E %I %J %N %M %S %T %U) formatting. */
+  printf?: {
+    /**
+     * If you return a string, it is used as the formatted value.
+     * Return undefined to fall back to the evaluator’s default formatting.
+     */
+    format?: (spec: FormatSegment['spec'], value: any, ctx: EvalContext) => string | undefined;
+  };
 }
 
 export class EvalContext {
     readonly memory: Memory;
     readonly intrinsics: IntrinsicHost;
     readonly functions: ExternalFunctions;
+    readonly printf: NonNullable<EvalContextInit['printf']>;
 
     /** Optional per-symbol type map. */
     readonly types = new Map<string, CTypeName>();
@@ -99,6 +108,7 @@ export class EvalContext {
         this.memory = init.memory ?? new Map<string, any>();
         this.intrinsics = init.intrinsics ?? createDefaultIntrinsicHost();
         this.functions = init.functions ?? Object.create(null);
+        this.printf = init.printf ?? {};
     }
 
     /** Define or change a variable's type (does not change existing value). */
@@ -504,7 +514,11 @@ export function evalNode(node: ASTNode, ctx: EvalContext): any {
         case 'TextSegment':
             return (node as TextSegment).text;
         case 'FormatSegment':
-            return formatValue((node as FormatSegment).spec, evalNode((node as FormatSegment).value, ctx));
+            return formatValue(
+                (node as FormatSegment).spec,
+                evalNode((node as FormatSegment).value, ctx),
+                ctx
+            );
         case 'ErrorNode':
             throw new Error('Cannot evaluate an ErrorNode.');
         default:
@@ -562,13 +576,18 @@ function evalPrintf(node: PrintfExpression, _ctx: EvalContext): string {
         } else {
             const fs = seg as FormatSegment;
             const v = evalNode(fs.value as any, _ctx as any);
-            out += formatValue(fs.spec, v);
+            out += formatValue(fs.spec, v, _ctx);
         }
     }
     return out;
 }
 
-function formatValue(spec: FormatSegment['spec'], v: any): string {
+function formatValue(spec: FormatSegment['spec'], v: any, ctx?: EvalContext): string {
+    // Allow host to override any spec (commonly the domain-specific ones).
+    if (ctx?.printf?.format) {
+        const override = ctx.printf.format(spec, v, ctx);
+        if (typeof override === 'string') return override;
+    }
     switch (spec) {
         case 'd': // signed decimal
             if (typeof v === 'bigint') return v.toString(10);

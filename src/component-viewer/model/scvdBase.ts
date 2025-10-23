@@ -239,8 +239,8 @@ export class ScvdBase {
     }
 
     // expanded values
-    public getValue(): string {
-        return '';
+    public getValue(): string | undefined {
+        return undefined;
     }
 
     private getLineNoInfo(item: ScvdBase | undefined): string | undefined {

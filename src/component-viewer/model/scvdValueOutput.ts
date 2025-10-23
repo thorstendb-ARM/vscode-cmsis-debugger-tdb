@@ -17,44 +17,50 @@
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
 import { ExplorerInfo, ScvdBase } from './scvdBase';
-import { ScvdFormatSpecifier } from './scvdFormatSpecifier';
+import { ScvdPrintExpression } from './scvdPrintExpression';
 
 export class ScvdValueOutput extends ScvdBase {
-    private _value: string | undefined;
+    private _expression: ScvdPrintExpression | undefined;
 
     constructor(
         parent: ScvdBase | undefined,
-        value: string,
+        expression: string,
     ) {
         super(parent);
-        this._value = value;
+        this._expression = new ScvdPrintExpression(this, expression, 'printExpression');
     }
 
-    public get value(): string | undefined {
-        return this._value;
-    }
-    public set value(value: string | undefined) {
-        this._value = value;
+    public get expression(): ScvdPrintExpression | undefined {
+        return this._expression;
     }
 
-    public getValue(): string {
-        if(!this._value) {
-            return '';
+    public set expression(value: string) {
+        if( this._expression === undefined) {
+            this._expression = new ScvdPrintExpression(this, value, 'printExpression');
+            return;
         }
-        const formatter = new ScvdFormatSpecifier();
-        return formatter.expand(this._value) ?? '';
+        this._expression.expression = value;
+    }
+
+
+    public getValue(): string | undefined {
+        if(!this.expression) {
+            return undefined;
+        }
+        return this.expression.resultText;
     }
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
-        if (this._value !== undefined) {
-            info.push({ name: 'Value', value: this._value });
+        const value = this.getValue();
+        if (value !== undefined) {
+            info.push({ name: 'Value', value });
         }
         info.push(...itemInfo);
         return super.getExplorerInfo(info);
     }
 
     public getExplorerDisplayName(): string {
-        return this._value ?? super.getExplorerDisplayName();
+        return this.getValue() ?? super.getExplorerDisplayName();
     }
 }

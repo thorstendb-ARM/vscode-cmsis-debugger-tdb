@@ -230,12 +230,12 @@ export class Parser {
     private diagnostics: Diagnostic[] = [];
     private externals: Set<string> = new Set();
 
-    parse(input: string): ParseResult {
+    parse(input: string, isPrintExpression: boolean): ParseResult {
         this.reset(input);
         const isPrintf = this.looksLikePrintf(input);
         let ast: ASTNode;
 
-        if (isPrintf) {
+        if (isPrintf || isPrintExpression) {
             // Parse printf-style template directly from the raw string.
             ast = this.parsePrintfExpression();
 
@@ -686,4 +686,4 @@ export class Parser {
 /* -------- Convenience singleton and API -------- */
 
 export const defaultParser = new Parser();
-export function parseExpression(expr: string): ParseResult { return defaultParser.parse(expr); }
+export function parseExpression(expr: string, isPrintExpression: boolean): ParseResult { return defaultParser.parse(expr, isPrintExpression); }
