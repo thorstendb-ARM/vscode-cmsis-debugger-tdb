@@ -267,15 +267,18 @@ export class ScvdBase {
         return lineInfo;
     }
 
+    public getLineNoStr(): string {
+        const lineNo = this.getLineNoInfo(this);
+        return lineNo !== undefined ? lineNo : '';
+    }
+
     // ---------- Explorer Info ------------
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
         if (this.tag) {
             info.push({ name: 'Tag', value: this.tag });
         }
-        if (this.lineNo) {
-            info.push({ name: 'Line Number', value: this.getLineInfoStr() });
-        }
+        info.push({ name: 'Line Number', value: this.getLineNoStr() });
         if (this.name) {
             info.push({ name: 'Name', value: this.name });
         }

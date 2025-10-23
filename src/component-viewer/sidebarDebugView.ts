@@ -36,7 +36,10 @@ export class SidebarDebugView implements vscode.TreeDataProvider<vscode.TreeItem
 
     private makeModelNode(node: ScvdBase): vscode.TreeItem {
         const tagString = node.tag ? `${node.tag}: ` : '';
-        const label = `${tagString}${node.getExplorerDisplayName()}`;
+        const dispName = node.getExplorerDisplayName();
+        const label = dispName.startsWith(tagString)
+            ? dispName
+            : `${tagString}${dispName}`;
         const ti = new vscode.TreeItem(label, vscode.TreeItemCollapsibleState.Collapsed);
         ti.id = node.nodeId;
         ti.description = node.getExplorerDescription() ?? 'Unknown';

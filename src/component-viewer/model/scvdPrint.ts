@@ -16,7 +16,6 @@
 
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
-import { ScvdExpression } from './scvdExpression';
 import { ScvdValueOutput } from './scvdValueOutput';
 import { ScvdCondition } from './scvdCondition';
 import { ExplorerInfo, Json, ScvdBase } from './scvdBase';
@@ -25,7 +24,7 @@ import { getStringFromJson } from './scvdUtils';
 export class ScvdPrint extends ScvdBase {
     private _cond: ScvdCondition | undefined;
     private _property: ScvdValueOutput | undefined;
-    private _value: ScvdExpression | undefined;
+    private _value: ScvdValueOutput | undefined;
     private _bold: ScvdCondition = new ScvdCondition(this, '0');
     private _alert: ScvdCondition = new ScvdCondition(this, '0');
 
@@ -54,20 +53,20 @@ export class ScvdPrint extends ScvdBase {
     set property(value: string | undefined) {
         if (value !== undefined) {
             if( this._property === undefined) {
-                this._property = new ScvdValueOutput(this, value);
+                this._property = new ScvdValueOutput(this, value, 'property');
                 return;
             }
             this._property.expression = value;
         }
     }
 
-    get value(): ScvdExpression | undefined {
+    get value(): ScvdValueOutput | undefined {
         return this._value;
     }
     set value(value: string | undefined) {
         if (value !== undefined) {
             if( this._value === undefined) {
-                this._value = new ScvdExpression(this, value, 'value');
+                this._value = new ScvdValueOutput(this, value, 'value');
                 return;
             }
             this._value.expression = value;

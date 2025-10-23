@@ -82,7 +82,7 @@ export class ScvdItem extends ScvdBase {
     public set property(value: string | undefined) {
         if (value !== undefined) {
             if( this._property === undefined) {
-                this._property = new ScvdValueOutput(this, value);
+                this._property = new ScvdValueOutput(this, value, 'property');
                 return;
             }
             this._property.expression = value;
@@ -98,7 +98,7 @@ export class ScvdItem extends ScvdBase {
     public set value(value: string | undefined) {
         if (value !== undefined) {
             if( this._value === undefined) {
-                this._value = new ScvdValueOutput(this, value);
+                this._value = new ScvdValueOutput(this, value, 'value');
                 return;
             }
             this._value.expression = value;

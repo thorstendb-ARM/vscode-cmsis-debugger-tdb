@@ -21,13 +21,16 @@ import { ScvdPrintExpression } from './scvdPrintExpression';
 
 export class ScvdValueOutput extends ScvdBase {
     private _expression: ScvdPrintExpression | undefined;
+    private _scvdVarName: string = 'valueOutput';
 
     constructor(
         parent: ScvdBase | undefined,
         expression: string,
+        scvdVarName: string,
     ) {
         super(parent);
-        this._expression = new ScvdPrintExpression(this, expression, 'printExpression');
+        this._expression = new ScvdPrintExpression(this, expression, scvdVarName);
+        this._scvdVarName = scvdVarName;
     }
 
     public get expression(): ScvdPrintExpression | undefined {
@@ -36,7 +39,7 @@ export class ScvdValueOutput extends ScvdBase {
 
     public set expression(value: string) {
         if( this._expression === undefined) {
-            this._expression = new ScvdPrintExpression(this, value, 'printExpression');
+            this._expression = new ScvdPrintExpression(this, value, this._scvdVarName);
             return;
         }
         this._expression.expression = value;
