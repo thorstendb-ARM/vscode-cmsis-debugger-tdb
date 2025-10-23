@@ -22,9 +22,9 @@ import { ScvdExpression } from './scvdExpression';
 
 export class ScvdEventId extends ScvdBase {
     private _id: ScvdExpression;
-    private _messageNumber: NumberType;
-    private _componentNumber: NumberType;
-    private _level: NumberType;
+    private _messageNumber: NumberType | undefined;
+    private _componentNumber: NumberType | undefined;
+    private _level: NumberType | undefined;
 
     constructor(
         parent: ScvdBase | undefined,
@@ -32,34 +32,36 @@ export class ScvdEventId extends ScvdBase {
     ) {
         super(parent);
         this._id = new ScvdExpression(this, id, 'id');
-        const value = this._id.value.value;
-        this._messageNumber = new NumberType(value & 0xFF);
-        this._componentNumber = new NumberType((value >> 8) & 0xFF);
-        this._level = new NumberType((value >> 16) & 0x3);
+        const value = this._id.value?.value;
+        if( value !== undefined ) {
+            this._messageNumber = new NumberType(value & 0xFF);
+            this._componentNumber = new NumberType((value >> 8) & 0xFF);
+            this._level = new NumberType((value >> 16) & 0x3);
+        }
     }
 
     get id(): ScvdExpression {
         return this._id;
     }
 
-    get messageNumber(): NumberType {
+    get messageNumber(): NumberType | undefined {
         return this._messageNumber;
     }
 
-    get componentNumber(): NumberType {
+    get componentNumber(): NumberType | undefined {
         return this._componentNumber;
     }
 
-    get level(): NumberType {
+    get level(): NumberType | undefined {
         return this._level;
     }
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
         info.push({ name: 'ID', value: this._id.expression ?? '' });
-        info.push({ name: 'MessageNumber', value: this._messageNumber.getDisplayText() });
-        info.push({ name: 'ComponentNumber', value: this._componentNumber.getDisplayText() });
-        info.push({ name: 'Level', value: this._level.getDisplayText() });
+        info.push({ name: 'MessageNumber', value: this._messageNumber?.getDisplayText() ?? 'undefined' });
+        info.push({ name: 'ComponentNumber', value: this._componentNumber?.getDisplayText() ?? 'undefined' });
+        info.push({ name: 'Level', value: this._level?.getDisplayText() ?? 'undefined' });
         info.push(...itemInfo);
         return super.getExplorerInfo(info);
     }

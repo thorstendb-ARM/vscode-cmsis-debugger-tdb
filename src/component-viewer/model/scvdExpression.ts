@@ -77,11 +77,11 @@ export class ScvdExpression extends ScvdBase {
         return this._resultText;
     }
 
-    public get value(): NumberType {
+    public get value(): NumberType | undefined {
         if( this._result === undefined) {
             this.evaluate();
         }
-        return this._result ?? new NumberType(0);
+        return this._result;
     }
 
     public get scvdVarName(): string | undefined {
@@ -135,7 +135,7 @@ export class ScvdExpression extends ScvdBase {
     public validate(prevResult: boolean): boolean {
         const expression = this.expression;
         if (expression === undefined) {
-            console.error('Expression is undefined');
+            console.error(this.getLineInfoStr(), 'Expression is empty.');
             return super.validate(false);
         }
 
@@ -154,7 +154,7 @@ export class ScvdExpression extends ScvdBase {
 
     public debug(): boolean {
         this.evaluate();
-        console.log(this.getLineInfoStr(), 'Expr.: ', this.expression, '\nResult:', this.result?.getDisplayText() ?? this._resultText);
+        console.log(this.getLineInfoStr(), 'Expr:', this.expression, '\nResult:', this.result?.getDisplayText() ?? this._resultText);
 
         return super.debug();
     }
