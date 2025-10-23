@@ -17,58 +17,17 @@
 import { EvalContextInit } from '../evaluator';
 import { ExplorerInfo, ScvdBase } from './scvdBase';
 import { ScvdExpression } from './scvdExpression';
+import { ScvdFormatSpecifier } from './scvdFormatSpecifier';
 
 // https://arm-software.github.io/CMSIS-View/main/scvd_expression.html
 
 
+const formatSpecifier = new ScvdFormatSpecifier();
+
 export const printfHook: EvalContextInit = {
     printf: {
         format(spec, value, _ctx) {
-            switch (spec) {
-                // IPv4 — accepts a uint32 (network order) or a 4-byte array
-                case 'I': {
-                    if (typeof value === 'number' && Number.isFinite(value)) {
-                        const n = value >>> 0;
-                        return `${(n >>> 24) & 255}.${(n >>> 16) & 255}.${(n >>> 8) & 255}.${n & 255}`;
-                    }
-                    if (Array.isArray(value) && value.length === 4) {
-                        const oct = value.map(x => (Number(x) & 255));
-                        return `${oct[0]}.${oct[1]}.${oct[2]}.${oct[3]}`;
-                    }
-                    return undefined;
-                }
-
-                // MAC — accepts BigInt/number (low 48 bits) or a 6-byte array
-                case 'M': {
-                    const toHex2 = (x: number) => (x & 255).toString(16).padStart(2, '0').toUpperCase();
-
-                    if (Array.isArray(value) && value.length === 6) {
-                        const b = value.map(x => Number(x) & 255);
-                        return `${b[0]|0}-${b[1]|0}-${b[2]|0}-${b[3]|0}-${b[4]|0}-${b[5]|0}`
-                            .replace(/(?<=^|-)\\d+(?=-|$)/g, m => toHex2(+m)); // ensure hex formatting
-                    }
-
-                    if (typeof value === 'bigint') {
-                        const bytes = Array.from({ length: 6 }, (_, i) =>
-                            Number((value >> BigInt((5 - i) * 8)) & 0xFFn)
-                        );
-                        return bytes.map(toHex2).join('-');
-                    }
-
-                    if (typeof value === 'number' && Number.isFinite(value)) {
-                        const n = Math.trunc(value);
-                        const bytes = Array.from({ length: 6 }, (_, i) => (n >>> ((5 - i) * 8)) & 0xFF);
-                        return bytes.map(toHex2).join('-');
-                    }
-
-                    return undefined;
-                }
-
-                // Extend: case 'C': case 'E': case 'J': case 'N': case 'S': case 'T': case 'U': ...
-
-                default:
-                    return undefined; // fall back to evaluator's default
-            }
+            return formatSpecifier.formatValue(spec, value);
         },
     },
 };

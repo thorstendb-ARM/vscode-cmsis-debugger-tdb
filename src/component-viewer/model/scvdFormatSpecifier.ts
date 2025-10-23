@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-import { ExplorerInfo } from './scvdBase';
-
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
 
@@ -37,13 +35,10 @@ export class ScvdFormatSpecifier {
     }
 
     private format_t(value: number | string): string {
-        if (typeof value === 'number') {
-            if (Number.isInteger(value) && value >= 0 && value <= 0x10FFFF) {
-                try { return String.fromCodePoint(value); } catch { /* fallthrough */ }
-            }
-            return value.toString();
+        if (typeof value === 'number' && Number.isInteger(value)) {
+            return `Reading string from: 0x${value.toString(16)}`;
         }
-        return value;
+        return `Error reading string from: 0x${value.toString(16)}`;
     }
 
     private format_x(value: number | string): string {
@@ -54,7 +49,7 @@ export class ScvdFormatSpecifier {
 
     private resolveSymbol(_addr: number): string | undefined {
         // TODO: implement symbol resolution
-        return undefined;
+        return `symbol: 0x${_addr.toString(16)}`;
     }
 
     private format_address_like(value: number | string, fallbackHex: boolean): string {
@@ -132,7 +127,7 @@ export class ScvdFormatSpecifier {
 
     private format_U(value: number | string): string {
         // Placeholder for USB descriptor formatting
-        return `${value}`;
+        return `USB descriptor: ${value}`;
     }
 
     private format_percent(): string {
@@ -159,34 +154,5 @@ export class ScvdFormatSpecifier {
     public formatValue(specifier: string, value: string): string | undefined {
         const fn = this.formatterMap.get(specifier);
         return fn ? fn(value) : undefined;
-    }
-
-    /**
-     * Expand the property template by replacing format specifiers with provided values.
-     * Values are consumed left-to-right for each non-escaped specifier.
-     * Unknown specifiers are left unchanged.
-     */
-    public expand(text: string | undefined): string {
-        if (text === undefined) return '';
-
-        const pattern = /%[A-Za-z%]/g;
-
-        return text.replace(pattern, (m: string): string => {
-            const start = pattern.lastIndex - m.length;
-            const substrFromMatch = text.slice(start);
-            if (m === '%%') {
-                return this.formatValue('%%', '') ?? '%';
-            }
-
-            const formatted = this.formatValue(m, substrFromMatch);
-            return formatted !== undefined ? formatted : m;
-        });
-    }
-
-    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
-        const info: ExplorerInfo[] = [];
-
-        info.push(...itemInfo);
-        return info;
     }
 }
