@@ -26,8 +26,8 @@ const formatSpecifier = new ScvdFormatSpecifier();
 
 export const printfHook: EvalContextInit = {
     printf: {
-        format(spec, value, _ctx) {
-            return formatSpecifier.formatValue(spec, value);
+        format(spec, value, ctx) {
+            return formatSpecifier.formatValue(spec, value, ctx);
         },
     },
 };

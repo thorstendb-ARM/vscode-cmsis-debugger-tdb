@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import { EvalContext } from '../evaluator';
+
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
 
@@ -23,39 +25,39 @@ export class ScvdFormatSpecifier {
     ) {
     }
 
-    private format_d(value: number | string): string {
+    private format_d(value: number | string, _ctx: EvalContext): string {
         const n = Number(value);
         return Number.isFinite(n) ? n.toString(10) : `${value}`;
     }
 
-    private format_u(value: number | string): string {
+    private format_u(value: number | string, _ctx: EvalContext): string {
         const n = Number(value);
         if (!Number.isFinite(n)) return `${value}`;
         return (n >>> 0).toString(10);
     }
 
-    private format_t(value: number | string): string {
+    private format_t(value: number | string, _ctx: EvalContext): string {
         if (typeof value === 'number' && Number.isInteger(value)) {
             return `Reading string from: 0x${value.toString(16)}`;
         }
         return `Error reading string from: 0x${value.toString(16)}`;
     }
 
-    private format_x(value: number | string): string {
+    private format_x(value: number | string, _ctx: EvalContext): string {
         const n = Number(value);
         if (!Number.isFinite(n)) return `${value}`;
         return '0x' + (n >>> 0).toString(16);
     }
 
-    private resolveSymbol(_addr: number): string | undefined {
+    private resolveSymbol(_addr: number, _ctx: EvalContext): string | undefined {
         // TODO: implement symbol resolution
         return `symbol: 0x${_addr.toString(16)}`;
     }
 
-    private format_address_like(value: number | string, fallbackHex: boolean): string {
+    private format_address_like(value: number | string, fallbackHex: boolean, ctx: EvalContext): string {
         const n = Number(value);
         if (Number.isFinite(n)) {
-            const sym = this.resolveSymbol(n);
+            const sym = this.resolveSymbol(n, ctx);
             if (sym) return sym;
             if (fallbackHex) return '0x' + n.toString(16);
             return n.toString(10);
@@ -63,20 +65,20 @@ export class ScvdFormatSpecifier {
         return `${value}`;
     }
 
-    private format_C(value: number | string): string {
-        return this.format_address_like(value, true);
+    private format_C(value: number | string, ctx: EvalContext): string {
+        return this.format_address_like(value, true, ctx);
     }
 
-    private format_S(value: number | string): string {
-        return this.format_address_like(value, true);
+    private format_S(value: number | string, ctx: EvalContext): string {
+        return this.format_address_like(value, true, ctx);
     }
 
-    private format_E(value: number | string): string {
+    private format_E(value: number | string, ctx: EvalContext): string {
         // Placeholder: attempt symbolic enumerator resolution (not implemented)
-        return this.format_d(value);
+        return this.format_d(value, ctx);
     }
 
-    private format_I(value: number | string): string {
+    private format_I(value: number | string, _ctx: EvalContext): string {
         if (typeof value === 'string') return value;
         const n = Number(value);
         if (!Number.isFinite(n)) return `${value}`;
@@ -87,18 +89,18 @@ export class ScvdFormatSpecifier {
         return `${b0}.${b1}.${b2}.${b3}`;
     }
 
-    private format_J(value: number | string): string {
+    private format_J(value: number | string, ctx: EvalContext): string {
         // If already a string, assume formatted IPv6
         if (typeof value === 'string') return value;
         // Cannot reliably format numeric IPv6 (needs 128-bit); fallback to hex
-        return this.format_x(value);
+        return this.format_x(value, ctx);
     }
 
-    private format_N(value: number | string): string {
+    private format_N(value: number | string, _ctx: EvalContext): string {
         return `${value}`;
     }
 
-    private format_M(value: number | string): string {
+    private format_M(value: number | string, _ctx: EvalContext): string {
         if (typeof value === 'string') {
             const cleaned = value.replace(/[^0-9a-fA-F]/g, '').slice(0, 12).padStart(12, '0');
             return cleaned.match(/.{1,2}/g)?.join('-').toUpperCase() ?? value;
@@ -112,20 +114,20 @@ export class ScvdFormatSpecifier {
         return parts.join('-').toUpperCase();
     }
 
-    private format_T(value: number | string): string {
+    private format_T(value: number | string, ctx: EvalContext): string {
         if (typeof value === 'number') {
-            if (Number.isInteger(value)) return this.format_x(value);
+            if (Number.isInteger(value)) return this.format_x(value, ctx);
             return value.toString();
         }
         const n = Number(value);
         if (Number.isFinite(n)) {
-            if (Number.isInteger(n)) return this.format_x(n);
+            if (Number.isInteger(n)) return this.format_x(n, ctx);
             return n.toString();
         }
         return `${value}`;
     }
 
-    private format_U(value: number | string): string {
+    private format_U(value: number | string, _ctx: EvalContext): string {
         // Placeholder for USB descriptor formatting
         return `USB descriptor: ${value}`;
     }
@@ -134,25 +136,25 @@ export class ScvdFormatSpecifier {
         return '%';
     }
 
-    private readonly formatterMap: Map<string, (value: number | string) => string> = new Map([
-        ['%d', (value) => this.format_d(value)],
-        ['%u', (value) => this.format_u(value)],
-        ['%t', (value) => this.format_t(value)],
-        ['%x', (value) => this.format_x(value)],
-        ['%C', (value) => this.format_C(value)],
-        ['%E', (value) => this.format_E(value)],
-        ['%I', (value) => this.format_I(value)],
-        ['%J', (value) => this.format_J(value)],
-        ['%N', (value) => this.format_N(value)],
-        ['%M', (value) => this.format_M(value)],
-        ['%S', (value) => this.format_S(value)],
-        ['%T', (value) => this.format_T(value)],
-        ['%U', (value) => this.format_U(value)],
-        ['%%', () => this.format_percent()],
+    private readonly formatterMap: Map<string, (value: number | string, ctx: EvalContext) => string> = new Map([
+        ['d', (value, ctx) => this.format_d(value, ctx)],
+        ['u', (value, ctx) => this.format_u(value, ctx)],
+        ['t', (value, ctx) => this.format_t(value, ctx)],
+        ['x', (value, ctx) => this.format_x(value, ctx)],
+        ['C', (value, ctx) => this.format_C(value, ctx)],
+        ['E', (value, ctx) => this.format_E(value, ctx)],
+        ['I', (value, ctx) => this.format_I(value, ctx)],
+        ['J', (value, ctx) => this.format_J(value, ctx)],
+        ['N', (value, ctx) => this.format_N(value, ctx)],
+        ['M', (value, ctx) => this.format_M(value, ctx)],
+        ['S', (value, ctx) => this.format_S(value, ctx)],
+        ['T', (value, ctx) => this.format_T(value, ctx)],
+        ['U', (value, ctx) => this.format_U(value, ctx)],
+        ['%', () => this.format_percent()],
     ]);
 
-    public formatValue(specifier: string, value: string): string | undefined {
+    public formatValue(specifier: string, value: string, ctx: EvalContext): string | undefined {
         const fn = this.formatterMap.get(specifier);
-        return fn ? fn(value) : undefined;
+        return fn ? fn(value, ctx) : undefined;
     }
 }
