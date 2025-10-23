@@ -76,7 +76,9 @@ export class ScvdBase {
                     this.tag = 'Array[]';
                 }
             } else {
-                this.tag = 'unknown-tag';
+                if(this.tag === undefined ) {
+                    this.tag = 'unknown-tag';
+                }
             }
         } else {
             this.tag = tag;
@@ -223,6 +225,15 @@ export class ScvdBase {
     public configure(): boolean {
         return true;
     }
+    public validate(prevResult: boolean): boolean {
+        this.valid = prevResult;
+        return prevResult;
+    }
+    public debug(): boolean {
+        return true;
+    }
+
+
     public reset(): boolean {
         return true;
     }
@@ -230,6 +241,30 @@ export class ScvdBase {
     // expanded values
     public getValue(): string {
         return '';
+    }
+
+    private getLineNoInfo(item: ScvdBase | undefined): string | undefined {
+        if(item === undefined) {
+            return undefined;
+        }
+        const lineNo = item.lineNo;
+        if(lineNo === undefined) {
+            return this.getLineNoInfo(item.parent);
+        }
+        return lineNo;
+    }
+
+    public getLineInfoStr(): string {
+        let lineInfo = '[';
+        const lineNo = this.getLineNoInfo(this);
+        if(lineNo !== undefined) {
+            lineInfo += `Line: ${lineNo} `;
+        }
+        if(this.tag !== undefined) {
+            lineInfo += `Tag: ${this.tag} `;
+        }
+        lineInfo += ']';
+        return lineInfo;
     }
 
     // ---------- Explorer Info ------------

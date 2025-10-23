@@ -28,6 +28,7 @@ import { ExplorerInfo, ScvdBase } from './scvdBase';
 export class ScvdExpression extends ScvdBase {
     private _expression: string | undefined;
     private _result: NumberType | undefined;
+    private _resultText: string | undefined;
     private _scvdVarName: string | undefined;
     private _expressionAst: ParseResult | undefined;
 
@@ -40,6 +41,7 @@ export class ScvdExpression extends ScvdBase {
         this.evalContext = new EvalContext();
         this.expression = expression;
         this.scvdVarName = scvdVarName;
+        this.tag = scvdVarName;
     }
 
     public get expressionAst(): ParseResult | undefined {
@@ -56,18 +58,8 @@ export class ScvdExpression extends ScvdBase {
         if (expression == undefined || expression === '') {
             return;
         }
-        this._expression = expression;
-        this.expressionAst = defaultParser.parse(expression);
 
-        if(this.expressionAst !== undefined) {
-            if(this.expressionAst.constValue === undefined) {
-                const result = this.evaluateExpression();
-                console.log('Expr.: ', this.expression, '\nResult:', result);
-            } else {
-                const result = this.expressionAst.constValue;
-                console.log('Const: ', this.expression, '\nResult:', result);
-            }
-        }
+        this._expression = expression;
     }
 
     public evaluateExpression(): EvaluateResult {
@@ -81,11 +73,15 @@ export class ScvdExpression extends ScvdBase {
         return this._result;
     }
 
+    public get resultText(): string | undefined {
+        return this._resultText;
+    }
+
     public get value(): NumberType {
         if( this._result === undefined) {
-            this._result = this.evaluate();
+            this.evaluate();
         }
-        return this._result ?? new NumberType(1);
+        return this._result ?? new NumberType(0);
     }
 
     public get scvdVarName(): string | undefined {
@@ -96,7 +92,7 @@ export class ScvdExpression extends ScvdBase {
     }
 
     public setMinMax(min: number | undefined, max: number | undefined) {
-        if (this._result) {
+        if (this._result !== undefined) {
             this._result.setMinMax(min, max);
         }
     }
@@ -105,21 +101,66 @@ export class ScvdExpression extends ScvdBase {
         return this.value !== undefined && this.value.value > 0;
     }
 
-    // Method to evaluate the expression, returns size in bytes
-    public evaluate(): NumberType | undefined {
-        if (this._expression === undefined) {
-            return undefined;
-        }
-
-        try {
-            // Simple evaluation logic, can be extended for complex expressions
-            this._result = new NumberType(42); //eval(this._expression);
-            return this._result;
-        } catch (error) {
-            console.log('>>> Error evaluating expression:', error);
-            return undefined;
+    public evaluate() {
+        if(this.expressionAst !== undefined) {
+            if(this.expressionAst.constValue === undefined) {
+                const result = this.evaluateExpression();
+                if(result !== undefined) {
+                    if(typeof result === 'number') {
+                        this._result = new NumberType(result);
+                    } else {
+                        this._resultText = String(result);
+                    }
+                }
+            } else {
+                this._result = new NumberType(this.expressionAst.constValue);
+            }
         }
     }
+
+    public configure(): boolean {
+        const expression = this.expression;
+        if (expression === undefined) {
+            return false;
+        }
+
+        const expressionAst = defaultParser.parse(expression);
+        if(expressionAst !== undefined && expressionAst.diagnostics.length === 0) {
+            this.expressionAst = expressionAst;
+        }
+
+        return super.configure();
+    }
+
+    public validate(prevResult: boolean): boolean {
+        const expression = this.expression;
+        if (expression === undefined) {
+            console.error('Expression is undefined');
+            return super.validate(false);
+        }
+
+        const expressionAst = this.expressionAst;
+        if(expressionAst === undefined) {
+            console.error(this.getLineInfoStr(), 'Expression AST is undefined for expression: ', expression);
+            return super.validate(false);
+        }
+        if(expressionAst.diagnostics.length > 0) {
+            console.error(this.getLineInfoStr(), 'Expression AST has diagnostics for expression: ', expression, '\nDiagnostics: ', expressionAst.diagnostics);
+            return super.validate(false);
+        }
+
+        return super.validate(prevResult && true);
+    }
+
+    public debug(): boolean {
+        this.evaluate();
+        console.log(this.getLineInfoStr(), 'Expr.: ', this.expression, '\nResult:', this.result?.getDisplayText() ?? this._resultText);
+
+        return super.debug();
+    }
+
+
+
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
@@ -131,6 +172,9 @@ export class ScvdExpression extends ScvdBase {
         }
         if(this.result) {
             info.push({ name: 'Result', value: this.result.getDisplayText() });
+        }
+        if(this.resultText) {
+            info.push({ name: 'Result Text', value: this.resultText });
         }
         if (this.value) {
             info.push({ name: 'Value', value: this.value.getDisplayText() });

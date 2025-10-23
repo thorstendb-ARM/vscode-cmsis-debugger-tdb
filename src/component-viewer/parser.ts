@@ -1,5 +1,5 @@
 /**
- * Fast, reusable, error‑tolerant expression parser with:
+ * Fast, reusable, error-tolerant expression parser with:
  *  - Assignment '=' (right-associative) and C-style compound assignments: +=, -=, *=, /=, %=, <<=, >>=, &=, ^=, |=
  *  - ++ / -- (both prefix and postfix)
  *  - Printf-like formatting segments: `%spec[ expr ]` and `%%`
@@ -7,7 +7,8 @@
  *      __CalcMemUsed, __FindSymbol, __GetRegVal, __Offset_of, __size_of, __Symbol_exists
  *  - Constant folding (assignment expression value = RHS const value when foldable)
  *  - External symbol collection
- *  - NEW: Colon selector operators `typedef_name:member` and `typedef_name:member:enum`
+ *  - Colon selector operators `typedef_name:member` and `typedef_name:member:enum`
+ *  - Ternary conditional `?:` (right-associative)
  *
  * Intended to be instantiated once and reused: `const parser = new Parser();`
  */
@@ -17,6 +18,7 @@ export type ValueType = 'number' | 'boolean' | 'string' | 'unknown';
 export interface BaseNode { kind: string; start: number; end: number; valueType?: ValueType; constValue?: any; }
 export interface NumberLiteral extends BaseNode { kind:'NumberLiteral'; value:number; raw:string; valueType:'number'; }
 export interface StringLiteral extends BaseNode { kind:'StringLiteral'; value:string; raw:string; valueType:'string'; }
+export interface BooleanLiteral extends BaseNode { kind:'BooleanLiteral'; value:boolean; valueType:'boolean'; }
 export interface Identifier extends BaseNode { kind:'Identifier'; name:string; }
 export interface MemberAccess extends BaseNode { kind:'MemberAccess'; object: ASTNode; property: string; }
 export interface ArrayIndex extends BaseNode { kind:'ArrayIndex'; array: ASTNode; index: ASTNode; }
@@ -24,14 +26,12 @@ export interface UnaryExpression extends BaseNode { kind:'UnaryExpression'; oper
 export interface BinaryExpression extends BaseNode { kind:'BinaryExpression'; operator:string; left:ASTNode; right:ASTNode; }
 export interface ConditionalExpression extends BaseNode { kind:'ConditionalExpression'; test:ASTNode; consequent:ASTNode; alternate:ASTNode; }
 
-/** UPDATED: operator widened to include C compound assignments */
 export interface AssignmentExpression extends BaseNode {
   kind:'AssignmentExpression';
   operator:'='|'+='|'-='|'*='|'/='|'%='|'<<='|'>>='|'&='|'^='|'|=';
   left:ASTNode; right:ASTNode;
 }
 
-/** NEW: ++ / -- */
 export interface UpdateExpression extends BaseNode {
   kind:'UpdateExpression';
   operator:'++'|'--';
@@ -40,11 +40,10 @@ export interface UpdateExpression extends BaseNode {
   prefix: boolean;
 }
 
-/** NEW: Colon selector for `typedef_name:member` and `typedef_name:member:enum` */
+/** Colon selector for `typedef_name:member` and `typedef_name:member:enum` */
 export interface ColonPath extends BaseNode {
   kind:'ColonPath';
-  /** e.g. ["MyType","field"] or ["MyType","field","EnumVal"] */
-  parts: string[];
+  parts: string[]; // e.g., ["MyType","field"] or ["MyType","field","EnumVal"]
 }
 
 export type IntrinsicName = '__CalcMemUsed'|'__FindSymbol'|'__GetRegVal'|'__Offset_of'|'__size_of'|'__Symbol_exists';
@@ -57,7 +56,7 @@ export interface PrintfExpression extends BaseNode { kind:'PrintfExpression'; se
 export interface ErrorNode extends BaseNode { kind:'ErrorNode'; message:string; }
 
 export type ASTNode =
-  | NumberLiteral | StringLiteral | Identifier | MemberAccess | ArrayIndex
+  | NumberLiteral | StringLiteral | BooleanLiteral | Identifier | MemberAccess | ArrayIndex
   | UnaryExpression | BinaryExpression | ConditionalExpression | AssignmentExpression | UpdateExpression
   | ColonPath
   | CallExpression | EvalPointCall | PrintfExpression | TextSegment | FormatSegment | ErrorNode;
@@ -76,19 +75,19 @@ export interface ParseResult {
 type TokenKind = 'EOF'|'IDENT'|'NUMBER'|'STRING'|'PUNCT'|'UNKNOWN';
 interface Token { kind: TokenKind; value: string; start: number; end: number; }
 
-/** UPDATED: include ++, --, and C compound assignment ops; keep longer tokens before shorter ones */
+/** include >>>, ++, --, and C compound assignment ops; keep longer tokens before shorter ones */
 const MULTI = [
     '>>=','<<=',
+    '>>>',
     '++','--',
     '&&','||','==','!=','<=','>=','<<','>>',
     '+=','-=','*=','/=','%=','&=','^=','|='
 ] as const;
 
-/** unchanged */
-const SINGLE = new Set('()[]{}.,:?;+-*/%&|^!~<>= '.split('')); // include '=' and space
+const SINGLE = new Set('()[]{}.,:?;+-*/%&|^!~<>= '.split(''));
 
 class Tokenizer {
-    private s: string = '';   // initialized to satisfy strictPropertyInitialization (TS2564)
+    private s: string = '';
     private i = 0;
     private n = 0;
     constructor(s: string) { this.reset(s); }
@@ -101,17 +100,15 @@ class Tokenizer {
         this.skipWS();
         if (this.eof()) return { kind:'EOF', value:'', start:this.i, end:this.i };
 
-        // multi-char punct must be tested first
         for (const m of MULTI) {
             if (this.s.startsWith(m, this.i)) {
                 const start = this.i; this.advance(m.length);
-                return { kind:'PUNCT', value:m, start, end:this.i };
+                return { kind:'PUNCT', value:m as string, start, end:this.i };
             }
         }
 
         const ch = this.peek(0);
 
-        // number literal
         const isDigit = (c:string)=> c >= '0' && c <= '9';
         if (isDigit(ch) || (ch === '.' && isDigit(this.peek(1)))) {
             const start = this.i;
@@ -130,7 +127,6 @@ class Tokenizer {
             return { kind:'NUMBER', value:raw, start, end:this.i };
         }
 
-        // identifier
         const isAlpha = (c:string)=> (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c === '_';
         if (isAlpha(ch)) {
             const start = this.i; this.advance();
@@ -139,7 +135,6 @@ class Tokenizer {
             return { kind:'IDENT', value:val, start, end:this.i };
         }
 
-        // string literal (single or double quotes)
         if (ch === '"' || ch === '\'') {
             const quote = ch; const start = this.i; this.advance();
             let escaped = false;
@@ -152,13 +147,11 @@ class Tokenizer {
             return { kind:'STRING', value:this.s.slice(start, this.i), start, end:this.i };
         }
 
-        // single-char punct
         if (SINGLE.has(ch)) {
             const start = this.i; this.advance();
             return { kind:'PUNCT', value:ch, start, end:this.i };
         }
 
-        // unknown character (consume one)
         const start = this.i;
         const u = this.peek();
         this.advance();
@@ -185,6 +178,51 @@ function numFromRaw(raw: string): number {
     } catch { return NaN; }
 }
 
+function unescapeString(rawWithQuotes: string): string {
+    const s = rawWithQuotes.slice(1, -1);
+    let out = '';
+    for (let i = 0; i < s.length; i++) {
+        const ch = s[i]!;
+        if (ch !== '\\') { out += ch; continue; }
+        i++;
+        if (i >= s.length) { out += '\\'; break; }
+        const e = s[i]!;
+        switch (e) {
+            case 'n': out += '\n'; break;
+            case 'r': out += '\r'; break;
+            case 't': out += '\t'; break;
+            case 'b': out += '\b'; break;
+            case 'f': out += '\f'; break;
+            case 'v': out += '\v'; break;
+            case '\\': out += '\\'; break;
+            case '"': out += '"'; break;
+            case '\'': out += '\''; break;
+            case '0': out += '\0'; break;
+            case 'x': {
+                const h1 = s[i+1], h2 = s[i+2];
+                if (h1 && h2 && /[0-9a-fA-F]/.test(h1) && /[0-9a-fA-F]/.test(h2)) {
+                    out += String.fromCharCode(parseInt(h1 + h2, 16));
+                    i += 2;
+                } else out += 'x';
+                break;
+            }
+            case 'u': {
+                if (s[i+1] === '{') {
+                    let j = i + 2, hex = '';
+                    while (j < s.length && s[j] !== '}') { hex += s[j]!; j++; }
+                    if (s[j] === '}' && /^[0-9a-fA-F]+$/.test(hex)) { out += String.fromCodePoint(parseInt(hex, 16)); i = j; } else out += 'u';
+                } else {
+                    const h = s.substr(i+1, 4);
+                    if (/^[0-9a-fA-F]{4}$/.test(h)) { out += String.fromCharCode(parseInt(h, 16)); i += 4; } else out += 'u';
+                }
+                break;
+            }
+            default: out += e; break;
+        }
+    }
+    return out;
+}
+
 export class Parser {
     private s = '';
     private tok = new Tokenizer('');
@@ -196,13 +234,29 @@ export class Parser {
         this.reset(input);
         const isPrintf = this.looksLikePrintf(input);
         let ast: ASTNode;
+
         if (isPrintf) {
+            // Parse printf-style template directly from the raw string.
             ast = this.parsePrintfExpression();
+
+            // IMPORTANT: In printf-mode we didn't consume tokens from the tokenizer,
+            // so don't run tokenizer-based "extra tokens" checks.
+            // Optionally force EOF so any downstream logic won't see stray tokens.
+            this.cur = { kind: 'EOF', value: '', start: this.s.length, end: this.s.length } as Token;
         } else {
+            // Normal expression mode
             ast = this.parseExpression();
+
+            // Accept optional trailing semicolons; warn on any other trailing tokens.
+            while (this.cur.kind === 'PUNCT' && this.cur.value === ';') this.eat('PUNCT',';');
+            if (this.cur.kind !== 'EOF') {
+                this.warn('Extra tokens after expression', this.cur.start, this.cur.end);
+            }
         }
+
         ast = this.fold(ast);
         const constValue = isPrintf ? undefined : (ast as any).constValue;
+
         return {
             ast,
             diagnostics: this.diagnostics.slice(),
@@ -211,7 +265,6 @@ export class Parser {
             constValue
         };
     }
-
     private reset(s:string) {
         this.s = s;
         this.tok.reset(s);
@@ -238,12 +291,16 @@ export class Parser {
         return undefined;
     }
 
+    /** Helper to avoid TS flow-narrowing pitfalls on this.cur.kind */
+    private curIs(kind: TokenKind, value?: string): boolean {
+        const t = this.cur;
+        return t.kind === kind && (value === undefined || t.value === value);
+    }
+
     private looksLikePrintf(s:string): boolean {
         if (s.includes('%%')) return true;
         return /%(?:[dutxCEIJNMSTU])\s*\[/.test(s);
     }
-
-    /* ---- helpers ---- */
 
     private isAssignable(n: ASTNode): boolean {
         return n.kind === 'Identifier' || n.kind === 'MemberAccess' || n.kind === 'ArrayIndex';
@@ -263,18 +320,15 @@ export class Parser {
                 break;
             }
             if (j > i) segments.push({ kind:'TextSegment', text:s.slice(i,j), ...span(i,j) });
-            // %%
             if (j+1 < n && s[j+1] === '%') {
                 segments.push({ kind:'TextSegment', text:'%', ...span(j,j+2) });
                 i = j+2; continue;
             }
-            // %<spec>[ expr ]
             const spec = (j+1 < n) ? s[j+1] : '';
             if (FORMAT_SPECS.has(spec) && spec !== '%') {
                 let k = j+2;
                 while (k<n && /\s/.test(s[k]!)) k++;
                 if (k>=n || s[k] !== '[') {
-                    // treat as literal if not followed by '['
                     segments.push({ kind:'TextSegment', text:'%'+spec, ...span(j,j+2) });
                     i = j+2; continue;
                 }
@@ -287,18 +341,13 @@ export class Parser {
                     m++;
                 }
                 let exprEnd = m;
-                if (depth !== 0) {
-                    this.warn('Unclosed formatter bracket; treating rest as expression.', j, n);
-                    exprEnd = n;
-                }
-                // parse inner expression on a temporary tokenizer, then fold
+                if (depth !== 0) { this.warn('Unclosed formatter bracket; treating rest as expression.', j, n); exprEnd = n; }
                 const inner = this.parseSubexpression(s.slice(exprStart, exprEnd), exprStart);
                 const seg: FormatSegment = { kind:'FormatSegment', spec: spec as FormatSpec, value: inner, ...span(j, depth===0? exprEnd+1 : n) };
                 segments.push(seg);
                 i = (depth===0? exprEnd+1 : n);
                 continue;
             }
-            // plain '%'
             segments.push({ kind:'TextSegment', text:'%', ...span(j,j+1) });
             i = j+1;
         }
@@ -307,7 +356,6 @@ export class Parser {
 
     private parseSubexpression(exprSrc: string, baseOffset: number): ASTNode {
         const savedS = this.s, savedTok = this.tok, savedCur = this.cur, savedDiag = this.diagnostics;
-        // retokenize on substring
         const t = new Tokenizer(exprSrc);
         (this as any).s = exprSrc;
         (this as any).tok = t;
@@ -316,10 +364,8 @@ export class Parser {
         (this as any).diagnostics = tmp;
         const node = this.parseExpression();
         const folded = this.fold(node);
-        // move diagnostics back with adjusted positions
         const adj = tmp.map(d => ({ ...d, start: d.start + baseOffset, end: d.end + baseOffset }));
         savedDiag.push(...adj);
-        // restore
         (this as any).s = savedS;
         (this as any).tok = savedTok;
         (this as any).cur = savedCur;
@@ -344,7 +390,6 @@ export class Parser {
     }
 
     private static PREC: Record<string, number> = {
-        // Keep C-like precedence ordering; higher number = tighter binding
         '||':1,
         '&&':2,
         '|':3,
@@ -358,20 +403,17 @@ export class Parser {
     };
 
     private parseAssignment(): ASTNode {
-        // Assignment has the lowest precedence and is right-associative.
         const left = this.parseConditional();
-
         if (this.cur.kind === 'PUNCT') {
             const op = this.cur.value;
             const isAssignOp =
-                op === '=' || op === '+=' || op === '-=' || op === '*=' || op === '/=' ||
-                op === '%=' || op === '<<=' || op === '>>=' || op === '&=' || op === '^=' || op === '|=';
+        op === '=' || op === '+=' || op === '-=' || op === '*=' || op === '/=' ||
+        op === '%=' || op === '<<=' || op === '>>=' || op === '&=' || op === '^=' || op === '|=';
 
             if (isAssignOp) {
                 this.eat('PUNCT', op);
-                if (!this.isAssignable(left)) {
-                    this.error('Invalid assignment target', (left as any).start, (left as any).end);
-                }
+                if (!this.isAssignable(left)) this.error('Invalid assignment target', (left as any).start, (left as any).end);
+                if (left.kind === 'Identifier') this.externals.delete(left.name);
                 const right = this.parseAssignment(); // right-assoc
                 return { kind:'AssignmentExpression', operator: op as any, left, right, ...span((left as any).start, (right as any).end) };
             }
@@ -393,17 +435,12 @@ export class Parser {
     }
 
     private parseUnary(): ASTNode {
-        // prefix ++ / --
         if (this.cur.kind === 'PUNCT' && (this.cur.value === '++' || this.cur.value === '--')) {
             const op = this.cur.value; const t = this.eat('PUNCT', op);
             const arg = this.parseUnary();
-            if (!this.isAssignable(arg)) {
-                this.error('Invalid increment/decrement target', (arg as any).start, (arg as any).end);
-            }
+            if (!this.isAssignable(arg)) this.error('Invalid increment/decrement target', (arg as any).start, (arg as any).end);
             return { kind:'UpdateExpression', operator: op as any, argument: arg, prefix: true, ...span(t.start, (arg as any).end) };
         }
-
-        // +, -, !, ~
         if (this.cur.kind === 'PUNCT' && (this.cur.value === '+' || this.cur.value === '-' || this.cur.value === '!' || this.cur.value === '~')) {
             const op = this.cur.value; const t = this.eat('PUNCT', op);
             const arg = this.parseUnary();
@@ -416,41 +453,40 @@ export class Parser {
         let node = this.parsePrimary();
         while (true) {
             // colon-type/member/enum selector chain: typedef_name:member[:enum]
-            if (this.tryEat('PUNCT', ':')) {
-                if (node.kind !== 'Identifier' && node.kind !== 'ColonPath') {
-                    this.error('Expected identifier before ":"', (node as any).start, (node as any).end);
+            if ((node.kind === 'Identifier' || node.kind === 'ColonPath') && this.curIs('PUNCT', ':')) {
+                this.eat('PUNCT', ':');
+                let parts: string[];
+                const startPos = (node as any).start;
+                let lastEnd = (node as any).end;
+                if (node.kind === 'Identifier') {
+                    this.externals.delete((node as Identifier).name);
+                    parts = [(node as Identifier).name];
                 } else {
-                    let parts: string[];
-                    const startPos = (node as any).start;
-                    let lastEnd = (node as any).end;
-                    if (node.kind === 'Identifier') {
-                        this.externals.delete((node as Identifier).name);
-                        parts = [(node as Identifier).name];
-                    } else {
-                        parts = [...(node as ColonPath).parts];
-                    }
-                    // after the first ':' we require an identifier
-                    if (this.cur.kind !== 'IDENT') {
-                        this.error('Expected identifier after ":"', this.cur.start, this.cur.end);
-                    } else {
-                        const first = this.eat('IDENT');
-                        parts.push(first.value);
-                        lastEnd = first.end;
-                        // Consume any further ":name" segments
-                        while (this.tryEat('PUNCT', ':')) {
-                            if (this.cur.kind !== 'IDENT') {
-                                this.error('Expected identifier after ":"', this.cur.start, this.cur.end);
-                                break;
-                            }
-                            const idt = this.eat('IDENT');
-                            parts.push(idt.value);
-                            lastEnd = idt.end;
-                        }
-                    }
-                    node = { kind:'ColonPath', parts, valueType:'unknown', ...span(startPos, lastEnd) };
+                    parts = [...(node as ColonPath).parts];
                 }
+                if (!this.curIs('IDENT')) {
+                    this.error('Expected identifier after ":"', this.cur.start, this.cur.end);
+                } else {
+                    const first = this.eat('IDENT');
+                    parts.push(first.value);
+                    lastEnd = first.end;
+                    while (this.curIs('PUNCT', ':')) {
+                        this.eat('PUNCT', ':');
+                        if (!this.curIs('IDENT')) {
+                            this.error('Expected identifier after ":"', this.cur.start, this.cur.end);
+                            break;
+                        }
+                        const idt = this.eat('IDENT');
+                        parts.push(idt.value);
+                        lastEnd = idt.end;
+                    }
+                }
+                node = { kind:'ColonPath', parts, valueType:'unknown', ...span(startPos, lastEnd) };
                 continue;
             }
+
+            // If next token is ':' but we're not on Identifier/ColonPath, it's likely the ternary ':'; stop here.
+            if (this.curIs('PUNCT', ':')) break;
 
             // function call
             if (this.tryEat('PUNCT','(')) {
@@ -493,11 +529,8 @@ export class Parser {
             // postfix ++ / --
             if (this.cur.kind === 'PUNCT' && (this.cur.value === '++' || this.cur.value === '--')) {
                 const op = this.cur.value; const t = this.eat('PUNCT', op);
-                if (!this.isAssignable(node)) {
-                    this.error('Invalid increment/decrement target', (node as any).start, (node as any).end);
-                }
+                if (!this.isAssignable(node)) this.error('Invalid increment/decrement target', (node as any).start, (node as any).end);
                 node = { kind:'UpdateExpression', operator: op as any, argument: node, prefix: false, ...span((node as any).start, t.end) };
-                // no further postfix chains like x++(), x++[...]
                 break;
             }
             break;
@@ -510,17 +543,22 @@ export class Parser {
         if (t.kind === 'NUMBER') {
             this.eat('NUMBER');
             const val = numFromRaw(t.value);
-            return { kind:'NumberLiteral', value:val, raw:t.value, valueType:'number', ...span(t.start,t.end) };
+            return { kind:'NumberLiteral', value:val, raw:t.value, valueType:'number', constValue: val, ...span(t.start,t.end) };
         }
         if (t.kind === 'STRING') {
             this.eat('STRING');
-            const text = t.value.slice(1,-1);
-            return { kind:'StringLiteral', value:text, raw:t.value, valueType:'string', ...span(t.start,t.end) };
+            const text = unescapeString(t.value);
+            return { kind:'StringLiteral', value:text, raw:t.value, valueType:'string', constValue: text, ...span(t.start,t.end) };
+        }
+        if (t.kind === 'IDENT' && (t.value === 'true' || t.value === 'false')) {
+            this.eat('IDENT');
+            const val = t.value === 'true';
+            return { kind:'BooleanLiteral', value: val, valueType:'boolean', constValue: val, ...span(t.start,t.end) };
         }
         if (t.kind === 'IDENT') {
             this.eat('IDENT');
             const node: Identifier = { kind:'Identifier', name:t.value, valueType:'unknown', ...span(t.start,t.end) };
-            if (!INTRINSICS.has(t.value) && t.value !== 'true' && t.value !== 'false') this.externals.add(t.value);
+            if (!INTRINSICS.has(t.value)) this.externals.add(t.value);
             return node;
         }
         if (t.kind === 'PUNCT' && t.value === '(') {
@@ -539,21 +577,14 @@ export class Parser {
     private fold(node: ASTNode): ASTNode {
         const k = node.kind;
 
-        if (k === 'NumberLiteral' || k === 'StringLiteral') {
+        if (k === 'NumberLiteral' || k === 'StringLiteral' || k === 'BooleanLiteral') {
             return { ...node, constValue: (node as any).value };
         }
-        if (k === 'Identifier') {
-            return node; // unknown
-        }
-        if (k === 'ColonPath') {
-            return node; // symbolic; evaluation handled elsewhere
-        }
-        if (k === 'MemberAccess') {
-            return { ...node, object: this.fold((node as MemberAccess).object) };
-        }
-        if (k === 'ArrayIndex') {
-            return { ...node, array: this.fold((node as ArrayIndex).array), index: this.fold((node as ArrayIndex).index) };
-        }
+        if (k === 'Identifier') return node;
+        if (k === 'ColonPath') return node;
+        if (k === 'MemberAccess') return { ...node, object: this.fold((node as MemberAccess).object) };
+        if (k === 'ArrayIndex') return { ...node, array: this.fold((node as ArrayIndex).array), index: this.fold((node as ArrayIndex).index) };
+
         if (k === 'UnaryExpression') {
             const arg = this.fold((node as UnaryExpression).argument);
             const op = (node as UnaryExpression).operator;
@@ -567,15 +598,16 @@ export class Parser {
                     else if (op === '!') cv = !v;
                     else if (op === '~') cv = (~(v|0)) >>> 0;
                     if (cv !== undefined) res.constValue = cv;
-                } catch { /* ignore */ }
+                } catch {}
             }
             return res;
         }
+
         if (k === 'UpdateExpression') {
             const ue = node as UpdateExpression;
-            // side-effecting; don't fold to a const. But fold the argument subtree.
             return { ...ue, argument: this.fold(ue.argument) };
         }
+
         if (k === 'BinaryExpression') {
             const left = this.fold((node as BinaryExpression).left);
             const right = this.fold((node as BinaryExpression).right);
@@ -591,9 +623,7 @@ export class Parser {
                         case '+': cv = a + b; break;
                         case '-': cv = a - b; break;
                         case '*': cv = a * b; break;
-                        case '/':
-                            if (b === 0) this.error('Division by zero', (node as any).start, (node as any).end);
-                            else cv = a / b; break;
+                        case '/': if (b === 0) this.error('Division by zero', (node as any).start, (node as any).end); else cv = a / b; break;
                         case '%': cv = a % b; break;
                         case '<<': cv = (a << b) >>> 0; break;
                         case '>>': cv = (a >> b) >>> 0; break;
@@ -611,44 +641,44 @@ export class Parser {
                         case '||': cv = !!a || !!b; break;
                     }
                     if (cv !== undefined) res.constValue = cv;
-                } catch { /* ignore */ }
+                } catch {}
             } else {
                 if (op === '&&' && hasL && !la) res.constValue = false;
                 if (op === '||' && hasL && la) res.constValue = true;
             }
             return res;
         }
+
         if (k === 'AssignmentExpression') {
-            // Value of simple assignment is RHS value (folded if possible).
-            // For compound assignments, we don't produce a const value.
             const ae = node as AssignmentExpression;
             const right = this.fold(ae.right);
             const res: any = { ...ae, right };
-            if (ae.operator === '=' && (right as any).constValue !== undefined) {
-                res.constValue = (right as any).constValue;
-            }
+            if (ae.operator === '=' && (right as any).constValue !== undefined) res.constValue = (right as any).constValue;
             return res;
         }
+
         if (k === 'ConditionalExpression') {
             const test = this.fold((node as ConditionalExpression).test);
             const cons = this.fold((node as ConditionalExpression).consequent);
             const alt = this.fold((node as ConditionalExpression).alternate);
             const res: any = { ...node, test, consequent: cons, alternate: alt };
             if ((test as any).constValue !== undefined) {
-                res.constValue = ( (test as any).constValue ? (cons as any).constValue : (alt as any).constValue );
+                res.constValue = ((test as any).constValue ? (cons as any).constValue : (alt as any).constValue);
             }
             return res;
         }
+
         if (k === 'CallExpression' || k === 'EvalPointCall') {
             return { ...node, args: (node as any).args.map((a:ASTNode)=> this.fold(a)) } as any;
         }
+
         if (k === 'PrintfExpression') {
             return { ...node, segments: (node as PrintfExpression).segments.map(seg => {
                 if (seg.kind === 'FormatSegment') return { ...seg, value: this.fold(seg.value) };
                 return seg;
             }) };
         }
-        // ErrorNode or unknown kinds: return as-is
+
         return node;
     }
 }

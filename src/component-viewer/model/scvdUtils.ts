@@ -75,7 +75,7 @@ export function getTextBodyFromJson(xml: Json): string[] | undefined {
 
     if (typeof text === 'string') {
         return text
-            .split(/\r?\n/)
+            .split(/[;\r\n]+/)
             .map(l => l.trim())
             .filter(l => l.length > 0);
     }

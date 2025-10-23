@@ -75,12 +75,18 @@ export class ComponentViewer {
         this.model = new ScvdComonentViewer(undefined);
         this.model.readXml(xml);
         const modelTime = Date.now();
+        this.model.configureAll();
+        const modelConfiguredTime = Date.now();
+        this.model.validateAll(true);
+        const modelValidatedTime = Date.now();
+        this.model.debugAll();
+        const modelDebuggedTime = Date.now();
 
         const resolver = new Resolver(this.model);
         resolver.resolve();
         const resolveAndLinkTime = Date.now();
 
-        console.log(`SCVD file read in ${Date.now() - startTime} ms (read: ${readTime - startTime} ms, inject: ${injectTime - readTime} ms, parse: ${parseTime - injectTime} ms, model: ${modelTime - parseTime} ms, resolveAndLink: ${resolveAndLinkTime - modelTime} ms)`);
+        console.log(`SCVD file read in ${resolveAndLinkTime - startTime} ms (read: ${readTime - startTime} ms, inject: ${injectTime - readTime} ms, parse: ${parseTime - injectTime} ms, model: ${modelTime - parseTime} ms, configure: ${modelConfiguredTime - modelTime} ms, validate: ${modelValidatedTime - modelConfiguredTime} ms, debug: ${modelDebuggedTime - modelValidatedTime} ms, resolveAndLink: ${resolveAndLinkTime - modelDebuggedTime} ms)`);
         console.log('Model: ', this.model);
 
         this.treeDataProvider?.setModel(this.model);

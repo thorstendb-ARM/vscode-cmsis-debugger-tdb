@@ -97,6 +97,39 @@ export class ScvdComonentViewer extends ScvdBase {
         return this._events;
     }
 
+    public configureAll(): boolean {
+        return this.configureRecursive(this);
+    }
+    private configureRecursive(item: ScvdBase): boolean {
+        item.configure();
+        item.children.forEach( (child: ScvdBase) => {
+            this.configureRecursive(child);
+        });
+        return true;
+    }
+
+    public validateAll(prevResult: boolean): boolean {
+        this.valid = prevResult;
+        return this.validateRecursive(this, prevResult);
+    }
+    private validateRecursive(item: ScvdBase, prevResult: boolean): boolean {
+        const valid = item.validate(prevResult);
+        item.children.forEach( (child: ScvdBase) => {
+            this.validateRecursive(child, valid);
+        });
+        return valid;
+    }
+    public debugAll(): boolean {
+        return this.debugRecursive(this);
+    }
+    private debugRecursive(item: ScvdBase): boolean {
+        item.debug();
+        item.children.forEach( (child: ScvdBase) => {
+            this.debugRecursive(child);
+        });
+        return true;
+    }
+
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
         info.push(...itemInfo);
