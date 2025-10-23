@@ -20,14 +20,24 @@ import { Resolver } from './resolver';
 const scvdFiles: string[] = [
     'test-data/BaseExample.scvd',
     'test-data/RTX5.scvd',
+    'test-data/Network.scvd',
+    'test-data/USB.scvd',
+    'test-data/FileSystem.scvd',
+    'test-data/EventRecorder.scvd',
+    'test-data/GetRegVal_Test.scvd',
 ];
 
 enum scvdExamples {
     BaseExample = 0,
     RTX5 = 1,
+    Network = 2,
+    USB = 3,
+    FileSystem = 4,
+    EventRecorder = 5,
+    GetRegVal_Test = 6,
 }
 
-const scvdFile = scvdFiles[scvdExamples.RTX5];
+const scvdFile = scvdFiles[scvdExamples.GetRegVal_Test];
 
 
 const xmlOpts: ParserOptions = {

@@ -38,9 +38,9 @@ export class ScvdFormatSpecifier {
 
     private format_t(value: number | string, _ctx: EvalContext): string {
         if (typeof value === 'number' && Number.isInteger(value)) {
-            return `Reading string from: 0x${value.toString(16)}`;
+            return `ReadingStringFrom: 0x${value.toString(16)}`;
         }
-        return `Error reading string from: 0x${value.toString(16)}`;
+        return `ErrorReadingStringFrom: 0x${value.toString(16)}`;
     }
 
     private format_x(value: number | string, _ctx: EvalContext): string {
@@ -51,7 +51,7 @@ export class ScvdFormatSpecifier {
 
     private resolveSymbol(_addr: number, _ctx: EvalContext): string | undefined {
         // TODO: implement symbol resolution
-        return `symbol: 0x${_addr.toString(16)}`;
+        return `Symbol: 0x${_addr.toString(16)}`;
     }
 
     private format_address_like(value: number | string, fallbackHex: boolean, ctx: EvalContext): string {
@@ -75,7 +75,7 @@ export class ScvdFormatSpecifier {
 
     private format_E(value: number | string, ctx: EvalContext): string {
         // Placeholder: attempt symbolic enumerator resolution (not implemented)
-        return this.format_d(value, ctx);
+        return `SymbolicEnumeratorValue: ${this.format_d(value, ctx)}`;
     }
 
     private format_I(value: number | string, _ctx: EvalContext): string {

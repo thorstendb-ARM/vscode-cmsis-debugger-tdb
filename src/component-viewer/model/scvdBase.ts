@@ -290,7 +290,11 @@ export class ScvdBase {
     }
 
     public getExplorerDisplayName(): string {
-        return this.name ?? this.info ?? '';
+        const displayName = this.name ?? this.info ?? '';
+        if(displayName.length > 0) {
+            return displayName;
+        }
+        return `Line: ${this.getLineNoStr()}`;
     }
 
     public getExplorerDescription(): string {

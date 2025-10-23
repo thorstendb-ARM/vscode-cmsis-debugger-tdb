@@ -162,8 +162,8 @@ export function createDefaultIntrinsicHost(): IntrinsicHost {
             return 0;
         },
         __GetRegVal(_ctx: EvalContext, _args: any[]): any {
-            // Dummy: pretend all registers read as 0
-            return 0;
+            // Dummy: pretend all registers read as 12345678
+            return 12345678;
         },
         __Offset_of(_ctx: EvalContext, _args: any[]): any {
             // No real type model here; accept ColonPath-shaped objects and return 0.
