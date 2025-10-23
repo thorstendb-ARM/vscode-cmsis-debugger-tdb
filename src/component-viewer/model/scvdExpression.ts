@@ -133,9 +133,11 @@ export class ScvdExpression extends ScvdBase {
             return false;
         }
 
-        const expressionAst = parseExpression(expression, this.isPrintExpression);
-        if(expressionAst !== undefined && expressionAst.diagnostics.length === 0) {
-            this.expressionAst = expressionAst;
+        if(this.expressionAst === undefined) {  // if already parsed by dependency, skip parsing
+            const expressionAst = parseExpression(expression, this.isPrintExpression);
+            if(expressionAst !== undefined && expressionAst.diagnostics.length === 0) {
+                this.expressionAst = expressionAst;
+            }
         }
 
         return super.configure();

@@ -274,7 +274,7 @@ export class ScvdBase {
             info.push({ name: 'Tag', value: this.tag });
         }
         if (this.lineNo) {
-            info.push({ name: 'Line Number', value: this.lineNo });
+            info.push({ name: 'Line Number', value: this.getLineInfoStr() });
         }
         if (this.name) {
             info.push({ name: 'Name', value: this.name });

@@ -32,12 +32,6 @@ export class ScvdEventId extends ScvdBase {
     ) {
         super(parent);
         this._id = new ScvdExpression(this, id, 'id');
-        const value = this._id.value?.value;
-        if( value !== undefined ) {
-            this._messageNumber = new NumberType(value & 0xFF);
-            this._componentNumber = new NumberType((value >> 8) & 0xFF);
-            this._level = new NumberType((value >> 16) & 0x3);
-        }
     }
 
     get id(): ScvdExpression {
@@ -54,6 +48,26 @@ export class ScvdEventId extends ScvdBase {
 
     get level(): NumberType | undefined {
         return this._level;
+    }
+
+    public configure(): boolean {
+        const id = this._id;
+        if(id !== undefined ) {
+            id.configure();
+            id.evaluate();
+            const value = this._id.value?.value;
+            if( value !== undefined ) {
+                this._messageNumber = new NumberType(value & 0xFF);
+                this._componentNumber = new NumberType((value >> 8) & 0xFF);
+                this._level = new NumberType((value >> 16) & 0x3);
+            }
+        }
+
+        return super.configure();
+    }
+
+    public validate(prevResult: boolean): boolean {
+        return super.validate(prevResult && true);
     }
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {

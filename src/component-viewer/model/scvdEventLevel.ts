@@ -25,6 +25,20 @@ export enum EventLevel {
     EventLevelDetail = 3,  // Additional detailed information of operations
 }
 
+export const EventLevelMap: Map<string, EventLevel> = new Map([
+    ['Error', EventLevel.EventLevelError],
+    ['API', EventLevel.EventLevelAPI],
+    ['Op', EventLevel.EventLevelOp],
+    ['Detail', EventLevel.EventLevelDetail],
+]);
+
+export const EventLevelReverseMap: Map<EventLevel, string> = new Map([
+    [EventLevel.EventLevelError, 'Error'],
+    [EventLevel.EventLevelAPI, 'API'],
+    [EventLevel.EventLevelOp, 'Op'],
+    [EventLevel.EventLevelDetail, 'Detail'],
+]);
+
 export class ScvdEventLevel extends ScvdBase {
     private _level: EventLevel | undefined;
 
@@ -41,7 +55,12 @@ export class ScvdEventLevel extends ScvdBase {
     }
 
     set level(value: string | undefined) {
-        this._level = EventLevel[value as keyof typeof EventLevel];
+        const level = EventLevelMap.get(value ?? '');
+        if( level !== undefined ) {
+            this._level = level;
+        } else {
+            this._level = EventLevel[value as keyof typeof EventLevel];
+        }
     }
 
     public filterLevel(level: EventLevel): boolean {
@@ -50,13 +69,18 @@ export class ScvdEventLevel extends ScvdBase {
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
-        info.push({ name: 'Level', value: this._level?.toString() ?? 'undefined' });
+        if(this._level !== undefined) {
+            info.push({ name: 'Level', value: EventLevelReverseMap.get(this._level) ?? 'undefined' });
+        }
         info.push(...itemInfo);
         return super.getExplorerInfo(info);
     }
 
     public getExplorerDisplayName(): string {
-        return this.level?.toString() ?? 'undefined';
+        if(this._level === undefined) {
+            return super.getExplorerDisplayName();
+        }
+        return EventLevelReverseMap.get(this._level) ?? 'undefined';
     }
 
 }
