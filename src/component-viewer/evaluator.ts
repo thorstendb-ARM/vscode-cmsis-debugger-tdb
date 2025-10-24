@@ -163,6 +163,8 @@ export function createDefaultIntrinsicHost(): IntrinsicHost {
         },
         __GetRegVal(_ctx: EvalContext, _args: any[]): any {
             // Dummy: pretend all registers read as 12345678
+            // GetRegEngine: Stall all accesses as promise, gather, then execute at once
+            // same for memory reads
             return 12345678;
         },
         __Offset_of(_ctx: EvalContext, _args: any[]): any {
