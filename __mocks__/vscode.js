@@ -71,6 +71,7 @@ module.exports = {
             warn: jest.fn(),
             error: jest.fn(),
         })),
+        registerTreeDataProvider: jest.fn(() => ({ dispose: jest.fn() })),
         showWarningMessage: jest.fn(),
         createStatusBarItem: jest.fn(),
         showQuickPick: jest.fn(),
