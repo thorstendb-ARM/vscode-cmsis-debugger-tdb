@@ -109,14 +109,14 @@ export class ScvdReadList extends ScvdRead {
         return this._nextObj;
     }
 
-    public resolveAndLink(_resolveFunc: (name: string, type: resolveType) => ScvdBase | undefined): boolean {
+    public resolveAndLink(resolveFunc: (name: string, type: resolveType) => ScvdBase | undefined): boolean {
         if (this._next !== undefined) {
-            const foundNext = undefined; //this.findTypedefByName(this._next);
+            const foundNext = resolveFunc(this._next, resolveType.target);
             if (foundNext) {
-                this._nextObj = foundNext;
+                ; //this.nextObj = foundNext;
             }
         }
-        return super.resolveAndLink(_resolveFunc);
+        return super.resolveAndLink(resolveFunc);
     }
 
     public applyInit(): boolean {

@@ -84,14 +84,14 @@ export class Resolver {
     }
 
     private resolveRecursive(item: ScvdBase, resolveFunc: (name: string, type: resolveType) => ScvdBase | undefined): boolean {
-        if(item.resolveAndLink(resolveFunc)) {
+        const resolvedItem = item.resolveAndLink(resolveFunc);
+        if(resolvedItem) {
             console.log('Resolved item:', item.getExplorerDisplayName());
         }
 
         item.forEach(child => {
             this.resolveRecursive(child, resolveFunc);
-        }
-        );
+        });
 
         return true;
     }

@@ -119,6 +119,7 @@ export class ScvdComonentViewer extends ScvdBase {
         });
         return valid;
     }
+
     public debugAll(): boolean {
         return this.debugRecursive(this);
     }

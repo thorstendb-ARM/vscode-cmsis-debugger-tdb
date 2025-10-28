@@ -1,36 +1,7 @@
-/*
- * AST Evaluator for the provided Parser (typed variables edition)
- * -----------------------------------------------------------------
- * - Stateful symbol table with optional per-symbol C-like data types
- * - Auto-vivification: unknown identifiers are created with value 0 on first touch
- * - Supports:
- *   - Assignment and C-style compound assignments
- *   - Prefix/postfix ++ / --
- *   - Unary, binary (incl. short-circuit && / ||) and conditional (?:)
- *   - Member access (obj.prop) and array indexing (arr[idx])
- *   - Function calls and intrinsic evaluation-point calls
- *   - Printf-like expressions
- *   - ColonPath symbolic values (typedef_name:member[:enum])
- *
- *  NEW in this version
- *  -------------------
- *  Typed variables with the following data types:
- *    - uint8_t,  int8_t
- *    - uint16_t, int16_t
- *    - uint32_t, int32_t
- *    - uint64_t, int64_t   (backed by BigInt)
- *    - float (32-bit, uses Math.fround), double (64-bit JS number)
- *
- *  Semantics
- *  ---------
- *  • Storage type is enforced on writes via ctx.setSymbol() and on reads via ctx.getSymbol().
- *  • Intermediate arithmetic uses JS numbers, except if any operand is a BigInt (64-bit values),
- *    in which case the operation runs in BigInt and yields a BigInt result.
- *  • Compound assignments and ++/-- wrap correctly because they route through setSymbol().
- *  • You can declare a variable type with ctx.setType(name, CTypeName) or ctx.define(name, type, init?).
- */
+// evaluator.ts — condensed, drop-in
 
-// Adjust the path to where the parser types live in your project
+// If you have parser node types, keep this import; otherwise you can remove it
+// and treat AST nodes as `any`.
 import type {
     ASTNode,
     NumberLiteral,
@@ -53,15 +24,12 @@ import type {
 } from './parser';
 
 /* =============================================================================
- * Types & Runtime Context
+ * Public API
  * ============================================================================= */
 
-/** Symbol table / memory. Unknown identifiers are auto-created with value 0. */
-export type Memory = Map<string, any>;
-
-// Result type for evaluation helpers
 export type EvaluateResult = number | string | undefined;
 
+/** Scalar C-like types supported by the evaluator’s numeric coercions. */
 export type CTypeName =
   | 'uint8_t' | 'int8_t'
   | 'uint16_t' | 'int16_t'
@@ -69,6 +37,63 @@ export type CTypeName =
   | 'uint64_t' | 'int64_t'
   | 'float' | 'double';
 
+/** Aggregate C-like type descriptors (containers are opaque to the evaluator). */
+export type CTypeDesc =
+  | { kind: 'scalar'; ctype: CTypeName }
+  | { kind: 'struct'; fields: Record<string, CTypeDesc> }
+  | { kind: 'array'; of: CTypeDesc; length: number };
+
+/** Host interface: all symbol + container access goes through here. */
+export interface DataHost {
+  // Symbols (top-level identifiers)
+  hasSymbol(name: string): boolean;
+  readSymbol(name: string): any | undefined;
+  writeSymbol(name: string, value: any): any;
+
+  // Containers
+  isContainer(v: any): boolean;
+  isArray(v: any): boolean;
+  makeObject(): any;
+  makeArray(): any;
+
+  // Generic key access (.prop and [key])
+  readKey(container: any, key: any): any | undefined;
+  writeKey(container: any, key: any, value: any): any;
+
+  // Optional: simple stats
+  stats?(): { symbols?: number; bytesUsed?: number };
+
+  // Optional: symbol → C type descriptor registry (for structs/arrays)
+  registerType?(symbol: string, desc: CTypeDesc): void;
+  getType?(symbol: string): CTypeDesc | undefined;
+}
+
+/** Minimal, in-memory host (Map-backed, plain objects/arrays). */
+export function createBasicDataHost(): DataHost {
+    const symbols = new Map<string, any>();
+    const types = new Map<string, CTypeDesc>();
+
+    return {
+        hasSymbol: n => symbols.has(n),
+        readSymbol: n => symbols.get(n),
+        writeSymbol: (n, v) => (symbols.set(n, v), v),
+
+        isContainer: v => typeof v === 'object' && v !== null,
+        isArray: Array.isArray,
+        makeObject: () => ({}),
+        makeArray: () => ([]),
+
+        readKey: (c, k) => (typeof c === 'object' && c !== null) ? (c as any)[k] : undefined,
+        writeKey: (c, k, v) => ((c as any)[k] = v),
+
+        stats: () => ({ symbols: symbols.size }),
+
+        registerType: (s, d) => types.set(s, d),
+        getType: (s) => types.get(s),
+    };
+}
+
+/** Intrinsics available to EvalPointCall nodes. Keep minimal, no external deps. */
 export interface IntrinsicHost {
   __CalcMemUsed(ctx: EvalContext, args: any[]): any;
   __FindSymbol(ctx: EvalContext, args: any[]): any;
@@ -78,101 +103,102 @@ export interface IntrinsicHost {
   __Symbol_exists(ctx: EvalContext, args: any[]): any;
 }
 
-/** Optional normal (non-intrinsic) functions available to CallExpression. */
+/** Functions callable by CallExpression (optional). */
 export type ExternalFunctions = Record<string, (...args: any[]) => any>;
 
 export interface EvalContextInit {
-  memory?: Memory;
+  data?: DataHost;
   intrinsics?: IntrinsicHost;
   functions?: ExternalFunctions;
-  /** Optional hook to customize printf (%C %E %I %J %N %M %S %T %U) formatting. */
   printf?: {
-    /**
-     * If you return a string, it is used as the formatted value.
-     * Return undefined to fall back to the evaluator’s default formatting.
-     */
     format?: (spec: FormatSegment['spec'], value: any, ctx: EvalContext) => string | undefined;
   };
 }
 
+/** Execution context: routes all reads/writes through DataHost. */
 export class EvalContext {
-    readonly memory: Memory;
+    readonly data: DataHost;
     readonly intrinsics: IntrinsicHost;
     readonly functions: ExternalFunctions;
     readonly printf: NonNullable<EvalContextInit['printf']>;
 
-    /** Optional per-symbol type map. */
-    readonly types = new Map<string, CTypeName>();
+    /** Per-symbol scalar type coercions (only top-level identifiers). */
+    private scalarTypes = new Map<string, CTypeName>();
 
     constructor(init: EvalContextInit = {}) {
-        this.memory = init.memory ?? new Map<string, any>();
+        this.data = init.data ?? createBasicDataHost();
         this.intrinsics = init.intrinsics ?? createDefaultIntrinsicHost();
         this.functions = init.functions ?? Object.create(null);
         this.printf = init.printf ?? {};
     }
 
-    /** Define or change a variable's type (does not change existing value). */
-    setType(name: string, type: CTypeName): void { this.types.set(name, type); }
-    getType(name: string): CTypeName | undefined { return this.types.get(name); }
+    /* ---- Scalar type API (coercion for top-level symbols only) ---- */
 
-    /** Define a typed variable, optionally with an initial value (coerced). */
-    define(name: string, type: CTypeName, initial?: any): void {
-        this.setType(name, type);
-        if (initial !== undefined) this.setSymbol(name, initial); else this.ensureSymbol(name);
+    setType(name: string, type: CTypeName): void {
+        this.scalarTypes.set(name, type);
+    }
+    getType(name: string): CTypeName | undefined {
+        return this.scalarTypes.get(name);
     }
 
-    /** Ensure a symbol exists; if not, create with value 0 (coerced to type if present). */
+    /** Define a typed variable with an optional initial value (coerced). */
+    define(name: string, type: CTypeName, initial?: any): void {
+        this.setType(name, type);
+        if (initial !== undefined) this.setSymbol(name, initial);
+        else this.ensureSymbol(name);
+    }
+
+    /** Ensure a symbol exists; create with 0 (coerced if scalar type was set). */
     ensureSymbol(name: string): void {
-        if (!this.memory.has(name)) {
-            const t = this.types.get(name);
+        if (!this.data.hasSymbol(name)) {
+            const t = this.getType(name);
             const v = t ? coerceOnWrite(0, t) : 0;
-            this.memory.set(name, v);
+            this.data.writeSymbol(name, v);
         }
     }
 
-    /** Read a symbol (auto-creates with 0 if unknown). */
+    /** Read a symbol (auto-create with 0 if unknown). */
     getSymbol(name: string): any {
         this.ensureSymbol(name);
-        const v = this.memory.get(name);
-        return coerceOnRead(v, this.types.get(name));
+        const v = this.data.readSymbol(name);
+        return coerceOnRead(v, this.getType(name));
     }
 
-    /** Overwrite a symbol (value is coerced to the variable's declared type, if any). */
+    /** Overwrite a symbol; value is coerced to its declared scalar type, if any. */
     setSymbol(name: string, value: any): any {
-        const t = this.types.get(name);
+        const t = this.getType(name);
         const coerced = t ? coerceOnWrite(value, t) : value;
-        this.memory.set(name, coerced);
+        this.data.writeSymbol(name, coerced);
         return coerced;
     }
 }
 
+/* =============================================================================
+ * Default intrinsics (minimal)
+ * ============================================================================= */
+
 export function createDefaultIntrinsicHost(): IntrinsicHost {
     return {
-        __CalcMemUsed(ctx: EvalContext, _args: any[]): any {
-            // Dummy: count entries and estimate a tiny size per entry
-            const entries = ctx.memory.size;
-            return entries * 16; // bytes-ish; adapt as needed
+        __CalcMemUsed(ctx, _args) {
+            const s = ctx.data.stats?.();
+            if (s?.bytesUsed != null) return s.bytesUsed;
+            if (s?.symbols != null) return s.symbols * 16;
+            return 0;
         },
-        __FindSymbol(ctx: EvalContext, args: any[]): any {
+        __FindSymbol(ctx, args) {
             const [name] = args;
             if (typeof name !== 'string') return 0;
-            if (ctx.memory.has(name)) return ctx.memory.get(name);
-            // auto-create on first touch, returning 0 per requirement
-            ctx.memory.set(name, 0);
+            if (ctx.data.hasSymbol(name)) return ctx.getSymbol(name);
+            ctx.ensureSymbol(name);
+            return ctx.getSymbol(name);
+        },
+        __GetRegVal(_ctx, _args) {
             return 0;
         },
-        __GetRegVal(_ctx: EvalContext, _args: any[]): any {
-            // Dummy: pretend all registers read as 12345678
-            // GetRegEngine: Stall all accesses as promise, gather, then execute at once
-            // same for memory reads
-            return 12345678;
-        },
-        __Offset_of(_ctx: EvalContext, _args: any[]): any {
-            // No real type model here; accept ColonPath-shaped objects and return 0.
+        __Offset_of(_ctx, _args) {
             return 0;
         },
-        __size_of(_ctx: EvalContext, args: any[]): any {
-            // If given a known C type name (string), return its size in bytes; otherwise 4.
+        __size_of(_ctx, args) {
             const [arg0] = args;
             if (typeof arg0 === 'string') {
                 const sz = sizeOfTypeName(arg0 as CTypeName | string);
@@ -180,16 +206,16 @@ export function createDefaultIntrinsicHost(): IntrinsicHost {
             }
             return 4;
         },
-        __Symbol_exists(ctx: EvalContext, args: any[]): any {
+        __Symbol_exists(ctx, args) {
             const [name] = args;
             if (typeof name !== 'string') return 0;
-            return ctx.memory.has(name) ? 1 : 0; // 1/0 for truthiness
+            return ctx.data.hasSymbol(name) ? 1 : 0;
         },
     };
 }
 
 /* =============================================================================
- * Numeric helpers & type coercion
+ * Numeric helpers & scalar coercions
  * ============================================================================= */
 
 const U8_MASK  = 0xFF;
@@ -202,7 +228,7 @@ function truthy(x: any): boolean { return !!x; }
 function asNumber(x: any): number {
     if (typeof x === 'number') return Number.isFinite(x) ? x : 0;
     if (typeof x === 'boolean') return x ? 1 : 0;
-    if (typeof x === 'bigint') return Number(x); // lossy, avoid where precision matters
+    if (typeof x === 'bigint') return Number(x);
     if (typeof x === 'string' && x.trim() !== '') {
         const n = +x; return Number.isFinite(n) ? n : 0;
     }
@@ -219,7 +245,7 @@ function toBigInt(x: any): bigint {
     return 0n;
 }
 
-// Integer coercions (<=32-bit use JS number; 64-bit use BigInt)
+// <=32-bit: JS number; 64-bit: BigInt
 function toU8(n: any): number { return (asNumber(n) & U8_MASK) >>> 0; }
 function toS8(n: any): number { const u = toU8(n);  return (u & 0x80) ? u - 0x100 : u; }
 function toU16(n: any): number { return (asNumber(n) & U16_MASK) >>> 0; }
@@ -248,12 +274,7 @@ function coerceOnWrite(v: any, t?: CTypeName): any {
         case 'double':   return toF64(v);
     }
 }
-
-function coerceOnRead(v: any, t?: CTypeName): any {
-    if (!t) return v;
-    // Re-apply the same coercion to keep invariant even if memory was mutated externally
-    return coerceOnWrite(v, t);
-}
+function coerceOnRead(v: any, t?: CTypeName): any { return t ? coerceOnWrite(v, t) : v; }
 
 function sizeOfTypeName(name: CTypeName | string): number | undefined {
     switch (name) {
@@ -271,88 +292,87 @@ function sizeOfTypeName(name: CTypeName | string): number | undefined {
 
 type Ref = { get(): any; set(v: any): any };
 
-function isObjectLike(v: any): v is Record<string, any> {
-    return typeof v === 'object' && v !== null;
-}
-
-/** Create an l-value reference for assignments / ++ / --. */
 function lref(node: ASTNode, ctx: EvalContext): Ref {
     switch (node.kind) {
         case 'Identifier': {
             const id = node as Identifier;
             ctx.ensureSymbol(id.name);
-            return {
-                get: () => ctx.getSymbol(id.name),
-                set: (v) => ctx.setSymbol(id.name, v),
-            };
+            return { get: () => ctx.getSymbol(id.name), set: (v) => ctx.setSymbol(id.name, v) };
         }
+
         case 'MemberAccess': {
             const ma = node as MemberAccess;
             const baseRef = lrefable(ma.object)
                 ? lref(ma.object as any, ctx)
-                : ({
-                    get: () => evalNode(ma.object, ctx),
-                    set: (_v: any) => { throw new Error('Left side is not assignable (member base).'); },
-                } satisfies Ref);
-            let obj = baseRef.get();
-            if (!isObjectLike(obj)) { obj = {}; baseRef.set(obj); }
-            const key = ma.property;
+                : ({ get: () => evalNode(ma.object, ctx), set: () => { throw new Error('Left side is not assignable (member base).'); } } as Ref);
+
             return {
-                get: () => (key in obj ? (obj as any)[key] : 0),
-                set: (v) => ((obj as any)[key] = v),
+                get: () => {
+                    const base = baseRef.get();
+                    if (!ctx.data.isContainer(base)) return 0;
+                    const v = ctx.data.readKey(base, ma.property);
+                    return v === undefined ? 0 : v;
+                },
+                set: (val) => {
+                    let base = baseRef.get();
+                    if (!ctx.data.isContainer(base)) {
+                        base = ctx.data.makeObject();
+                        baseRef.set(base);
+                    }
+                    return ctx.data.writeKey(base, ma.property, val);
+                },
             };
         }
+
         case 'ArrayIndex': {
             const ai = node as ArrayIndex;
             const baseRef = lrefable(ai.array)
                 ? lref(ai.array as any, ctx)
-                : ({
-                    get: () => evalNode(ai.array, ctx),
-                    set: (_v: any) => { throw new Error('Left side is not assignable (index base).'); },
-                } satisfies Ref);
-            let base = baseRef.get();
-            const indexVal = evalNode(ai.index, ctx);
-            const key = isObjectLike(base) ? indexVal : (asNumber(indexVal) | 0);
-            if (!isObjectLike(base)) {
-                base = typeof key === 'number' ? [] : {};
-                baseRef.set(base);
-            }
+                : ({ get: () => evalNode(ai.array, ctx), set: () => { throw new Error('Left side is not assignable (index base).'); } } as Ref);
+
             return {
                 get: () => {
-                    const v = (base as any)[key as any];
+                    const base = baseRef.get();
+                    if (!ctx.data.isContainer(base)) return 0;
+                    const idxVal = evalNode(ai.index, ctx);
+                    const key = ctx.data.isArray(base) ? (asNumber(idxVal) | 0) : idxVal;
+                    const v = ctx.data.readKey(base, key);
                     return v === undefined ? 0 : v;
                 },
-                set: (v) => ((base as any)[key as any] = v),
+                set: (val) => {
+                    let base = baseRef.get();
+                    const idxVal = evalNode(ai.index, ctx);
+                    const preferArray = Number.isFinite(asNumber(idxVal));
+                    if (!ctx.data.isContainer(base)) {
+                        base = preferArray ? ctx.data.makeArray() : ctx.data.makeObject();
+                        baseRef.set(base);
+                    }
+                    const key = ctx.data.isArray(base) ? (asNumber(idxVal) | 0) : idxVal;
+                    return ctx.data.writeKey(base, key, val);
+                },
             };
         }
+
         default:
             throw new Error('Invalid assignment target.');
     }
 }
-
 function lrefable(node: ASTNode): boolean {
     return node.kind === 'Identifier' || node.kind === 'MemberAccess' || node.kind === 'ArrayIndex';
 }
 
-/** BigInt-aware arithmetic helpers used by evalBinary and compound assignments */
+/* BigInt-aware helpers */
 function addVals(a: any, b: any): any {
     if (typeof a === 'string' || typeof b === 'string') return String(a) + String(b);
     if (typeof a === 'bigint' || typeof b === 'bigint') return toBigInt(a) + toBigInt(b);
     return asNumber(a) + asNumber(b);
 }
-function subVals(a: any, b: any): any {
-    if (typeof a === 'bigint' || typeof b === 'bigint') return toBigInt(a) - toBigInt(b);
-    return asNumber(a) - asNumber(b);
-}
-function mulVals(a: any, b: any): any {
-    if (typeof a === 'bigint' || typeof b === 'bigint') return toBigInt(a) * toBigInt(b);
-    return asNumber(a) * asNumber(b);
-}
+function subVals(a: any, b: any): any { return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) - toBigInt(b)) : (asNumber(a) - asNumber(b)); }
+function mulVals(a: any, b: any): any { return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) * toBigInt(b)) : (asNumber(a) * asNumber(b)); }
 function divVals(a: any, b: any): any {
     if (typeof a === 'bigint' || typeof b === 'bigint') {
         const bb = toBigInt(b); if (bb === 0n) throw new Error('Division by zero');
-        const aa = toBigInt(a);
-        return aa / bb; // BigInt division truncates toward 0
+        return toBigInt(a) / bb;
     }
     const nb = asNumber(b); if (nb === 0) throw new Error('Division by zero');
     return asNumber(a) / nb;
@@ -370,83 +390,65 @@ function orVals (a: any, b: any): any { return (typeof a === 'bigint' || typeof 
 function shlVals(a: any, b: any): any { return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) << toBigInt(b)) : (((asNumber(a)|0) << (asNumber(b)&31)) >>> 0); }
 function sarVals(a: any, b: any): any { return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) >> toBigInt(b)) : (((asNumber(a)|0) >> (asNumber(b)&31)) >>> 0); }
 function shrVals(a: any, b: any): any {
-    // Logical right shift. For BigInt emulate 64-bit logical: (a & U64) >> b
     if (typeof a === 'bigint' || typeof b === 'bigint') {
         const aa = toBigInt(a) & U64_MASK; const bb = toBigInt(b);
         return (aa >> bb) & U64_MASK;
     }
     return (asNumber(a) >>> (asNumber(b) & 31)) >>> 0;
 }
-
 function eqVals(a: any, b: any): boolean {
     if (typeof a === 'string' || typeof b === 'string') return String(a) === String(b);
     if (typeof a === 'bigint' || typeof b === 'bigint') return toBigInt(a) === toBigInt(b);
     return asNumber(a) == asNumber(b);
 }
-function ltVals(a: any, b: any): boolean {
-    if (typeof a === 'bigint' || typeof b === 'bigint') return toBigInt(a) < toBigInt(b);
-    return asNumber(a) < asNumber(b);
-}
-function lteVals(a: any, b: any): boolean {
-    if (typeof a === 'bigint' || typeof b === 'bigint') return toBigInt(a) <= toBigInt(b);
-    return asNumber(a) <= asNumber(b);
-}
-function gtVals(a: any, b: any): boolean {
-    if (typeof a === 'bigint' || typeof b === 'bigint') return toBigInt(a) > toBigInt(b);
-    return asNumber(a) > asNumber(b);
-}
-function gteVals(a: any, b: any): boolean {
-    if (typeof a === 'bigint' || typeof b === 'bigint') return toBigInt(a) >= toBigInt(b);
-    return asNumber(a) >= asNumber(b);
-}
+function ltVals(a: any, b: any): boolean { return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) <  toBigInt(b)) : (asNumber(a) <  asNumber(b)); }
+function lteVals(a: any, b: any): boolean { return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) <= toBigInt(b)) : (asNumber(a) <= asNumber(b)); }
+function gtVals(a: any, b: any): boolean { return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) >  toBigInt(b)) : (asNumber(a) >  asNumber(b)); }
+function gteVals(a: any, b: any): boolean { return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) >= toBigInt(b)) : (asNumber(a) >= asNumber(b)); }
 
-/** Evaluate (read) a node to a value (no reference). */
+/** Evaluate a node to a value. */
 export function evalNode(node: ASTNode, ctx: EvalContext): any {
     switch (node.kind) {
-        case 'NumberLiteral':
-            return (node as NumberLiteral).value;
-        case 'StringLiteral':
-            return (node as StringLiteral).value;
-        case 'Identifier': {
-            const id = node as Identifier;
-            return ctx.getSymbol(id.name);
-        }
+        case 'NumberLiteral':  return (node as NumberLiteral).value;
+        case 'StringLiteral':  return (node as StringLiteral).value;
+
+        case 'Identifier':     return ctx.getSymbol((node as Identifier).name);
+
         case 'MemberAccess': {
             const { object, property } = node as MemberAccess;
             const base = evalNode(object, ctx);
-            if (!isObjectLike(base)) return 0;
-            const v = (base as any)[property];
+            if (!ctx.data.isContainer(base)) return 0;
+            const v = ctx.data.readKey(base, property);
             return v === undefined ? 0 : v;
         }
+
         case 'ArrayIndex': {
             const { array, index } = node as ArrayIndex;
             const base = evalNode(array, ctx);
-            const key = isObjectLike(base) ? evalNode(index, ctx) : (asNumber(evalNode(index, ctx)) | 0);
-            if (!isObjectLike(base)) return 0;
-            const v = (base as any)[key as any];
+            if (!ctx.data.isContainer(base)) return 0;
+            const idxVal = evalNode(index, ctx);
+            const key = ctx.data.isArray(base) ? (asNumber(idxVal) | 0) : idxVal;
+            const v = ctx.data.readKey(base, key);
             return v === undefined ? 0 : v;
         }
+
         case 'ColonPath': {
             const cp = node as ColonPath;
             return { __colonPath: cp.parts.slice() };
         }
+
         case 'UnaryExpression': {
             const u = node as UnaryExpression;
             const v = evalNode(u.argument, ctx);
             switch (u.operator) {
-                case '+':
-                    if (typeof v === 'bigint') return v; // preserve 64-bit
-                    return +asNumber(v);
-                case '-':
-                    return (typeof v === 'bigint') ? (-toBigInt(v)) : (-asNumber(v));
-                case '!':
-                    return !truthy(v);
-                case '~':
-                    return (typeof v === 'bigint') ? (~toBigInt(v)) : ((~(asNumber(v) | 0)) >>> 0);
-                default:
-                    throw new Error(`Unsupported unary operator ${u.operator}`);
+                case '+': return (typeof v === 'bigint') ? v : +asNumber(v);
+                case '-': return (typeof v === 'bigint') ? (-toBigInt(v)) : (-asNumber(v));
+                case '!': return !truthy(v);
+                case '~': return (typeof v === 'bigint') ? (~toBigInt(v)) : ((~(asNumber(v) | 0)) >>> 0);
+                default:  throw new Error(`Unsupported unary operator ${u.operator}`);
             }
         }
+
         case 'UpdateExpression': {
             const u = node as UpdateExpression;
             const ref = lref(u.argument, ctx);
@@ -457,44 +459,41 @@ export function evalNode(node: ASTNode, ctx: EvalContext): any {
             ref.set(next);
             return u.prefix ? ref.get() : prev;
         }
-        case 'BinaryExpression':
-            return evalBinary(node as BinaryExpression, ctx);
+
+        case 'BinaryExpression':   return evalBinary(node as BinaryExpression, ctx);
+
         case 'ConditionalExpression': {
             const c = node as ConditionalExpression;
-            const t = truthy(evalNode(c.test, ctx));
-            return t ? evalNode(c.consequent, ctx) : evalNode(c.alternate, ctx);
+            return truthy(evalNode(c.test, ctx)) ? evalNode(c.consequent, ctx) : evalNode(c.alternate, ctx);
         }
+
         case 'AssignmentExpression': {
             const a = node as AssignmentExpression;
             const ref = lref(a.left, ctx);
-            if (a.operator === '=') {
-                const val = evalNode(a.right, ctx);
-                return ref.set(val);
-            }
-            // compound: compute from current left value and RHS value
-            const leftVal = evalNode(a.left, ctx);
-            const rightVal = evalNode(a.right, ctx);
-            let result: any;
+            if (a.operator === '=') return ref.set(evalNode(a.right, ctx));
+            const L = evalNode(a.left, ctx);
+            const R = evalNode(a.right, ctx);
+            let out: any;
             switch (a.operator) {
-                case '+=': result = addVals(leftVal, rightVal); break;
-                case '-=': result = subVals(leftVal, rightVal); break;
-                case '*=': result = mulVals(leftVal, rightVal); break;
-                case '/=': result = divVals(leftVal, rightVal); break;
-                case '%=': result = modVals(leftVal, rightVal); break;
-                case '<<=': result = shlVals(leftVal, rightVal); break;
-                case '>>=': result = sarVals(leftVal, rightVal); break;
-                case '&=': result = andVals(leftVal, rightVal); break;
-                case '^=': result = xorVals(leftVal, rightVal); break;
-                case '|=': result = orVals(leftVal, rightVal); break;
-                default:
-                    throw new Error(`Unsupported assignment operator ${a.operator}`);
+                case '+=': out = addVals(L, R); break;
+                case '-=': out = subVals(L, R); break;
+                case '*=': out = mulVals(L, R); break;
+                case '/=': out = divVals(L, R); break;
+                case '%=': out = modVals(L, R); break;
+                case '<<=': out = shlVals(L, R); break;
+                case '>>=': out = sarVals(L, R); break;
+                case '&=': out = andVals(L, R); break;
+                case '^=': out = xorVals(L, R); break;
+                case '|=': out = orVals(L, R); break;
+                default: throw new Error(`Unsupported assignment operator ${a.operator}`);
             }
-            return ref.set(result);
+            return ref.set(out);
         }
+
         case 'CallExpression': {
             const c = node as CallExpression;
             const fnVal = evalNode(c.callee, ctx);
-            const args = c.args.map((a) => evalNode(a, ctx));
+            const args = c.args.map(a => evalNode(a, ctx));
             if (typeof fnVal === 'function') return fnVal(...args);
             if (c.callee.kind === 'Identifier') {
                 const name = (c.callee as Identifier).name;
@@ -503,26 +502,34 @@ export function evalNode(node: ASTNode, ctx: EvalContext): any {
             }
             throw new Error('Callee is not callable.');
         }
+
         case 'EvalPointCall': {
             const c = node as EvalPointCall;
             const name = c.intrinsic as keyof IntrinsicHost;
-            const args = c.args.map((a) => evalNode(a, ctx));
+            const args = c.args.map(a => evalNode(a, ctx));
             const fn = ctx.intrinsics[name];
             if (typeof fn !== 'function') throw new Error(`Missing intrinsic ${name}`);
             return fn(ctx, args);
         }
-        case 'PrintfExpression':
-            return evalPrintf(node as PrintfExpression, ctx);
-        case 'TextSegment':
-            return (node as TextSegment).text;
-        case 'FormatSegment':
-            return formatValue(
-                (node as FormatSegment).spec,
-                evalNode((node as FormatSegment).value, ctx),
-                ctx
-            );
-        case 'ErrorNode':
-            throw new Error('Cannot evaluate an ErrorNode.');
+
+        case 'PrintfExpression': {
+            const pf = node as PrintfExpression;
+            let out = '';
+            for (const seg of pf.segments) {
+                if (seg.kind === 'TextSegment') out += (seg as TextSegment).text;
+                else {
+                    const fs = seg as FormatSegment;
+                    out += formatValue(fs.spec, evalNode(fs.value as any, ctx), ctx);
+                }
+            }
+            return out;
+        }
+
+        case 'TextSegment':    return (node as TextSegment).text;
+        case 'FormatSegment':  return formatValue((node as FormatSegment).spec, evalNode((node as FormatSegment).value, ctx), ctx);
+
+        case 'ErrorNode':      throw new Error('Cannot evaluate an ErrorNode.');
+
         default:
             throw new Error(`Unhandled node kind: ${(node as any).kind}`);
     }
@@ -530,15 +537,8 @@ export function evalNode(node: ASTNode, ctx: EvalContext): any {
 
 function evalBinary(node: BinaryExpression, ctx: EvalContext): any {
     const { operator, left, right } = node;
-
-    if (operator === '&&') {
-        const lv = evalNode(left, ctx);
-        return truthy(lv) ? evalNode(right, ctx) : lv; // short-circuit
-    }
-    if (operator === '||') {
-        const lv = evalNode(left, ctx);
-        return truthy(lv) ? lv : evalNode(right, ctx); // short-circuit
-    }
+    if (operator === '&&') { const lv = evalNode(left, ctx); return truthy(lv) ? evalNode(right, ctx) : lv; }
+    if (operator === '||') { const lv = evalNode(left, ctx); return truthy(lv) ? lv : evalNode(right, ctx); }
 
     const a = evalNode(left, ctx);
     const b = evalNode(right, ctx);
@@ -561,92 +561,48 @@ function evalBinary(node: BinaryExpression, ctx: EvalContext): any {
         case '<=': return lteVals(a, b);
         case '>': return gtVals(a, b);
         case '>=': return gteVals(a, b);
-        default:
-            throw new Error(`Unsupported binary operator ${operator}`);
+        default: throw new Error(`Unsupported binary operator ${operator}`);
     }
 }
 
 /* =============================================================================
- * Printf-like evaluation
+ * Printf helpers
  * ============================================================================= */
-
-function evalPrintf(node: PrintfExpression, _ctx: EvalContext): string {
-    let out = '';
-    for (const seg of node.segments) {
-        if (seg.kind === 'TextSegment') {
-            out += seg.text;
-        } else {
-            const fs = seg as FormatSegment;
-            const v = evalNode(fs.value as any, _ctx as any);
-            out += formatValue(fs.spec, v, _ctx);
-        }
-    }
-    return out;
-}
 
 function formatValue(spec: FormatSegment['spec'], v: any, ctx?: EvalContext): string {
-    // Allow host to override any spec (commonly the domain-specific ones).
-    if (ctx?.printf?.format) {
-        const override = ctx.printf.format(spec, v, ctx);
-        if (typeof override === 'string') return override;
-    }
+    const override = ctx?.printf?.format?.(spec, v, ctx);
+    if (typeof override === 'string') return override;
+
     switch (spec) {
-        case 'd': // signed decimal
-            if (typeof v === 'bigint') return v.toString(10);
-            return String((asNumber(v) | 0));
-        case 'u': { // unsigned decimal
-            if (typeof v === 'bigint') return (v & U64_MASK).toString(10);
-            return String((asNumber(v) >>> 0));
-        }
-        case 'x': // hex (lowercase)
-            if (typeof v === 'bigint') return (v & U64_MASK).toString(16);
-            return (asNumber(v) >>> 0).toString(16);
-        case 't': // boolean text
-            return truthy(v) ? 'true' : 'false';
-        case 'S': // string
-            return typeof v === 'string' ? v : String(v);
-        // Domain-specific placeholders
-        case 'C': case 'E': case 'I': case 'J': case 'N': case 'M': case 'T': case 'U':
-            return String(v);
-        case '%': // not normally produced (%% handled as a TextSegment '%')
-            return '%';
-        default:
-            return String(v);
+        case 'd':  return (typeof v === 'bigint') ? v.toString(10) : String((asNumber(v) | 0));
+        case 'u':  return (typeof v === 'bigint') ? (v & U64_MASK).toString(10) : String((asNumber(v) >>> 0));
+        case 'x':  return (typeof v === 'bigint') ? (v & U64_MASK).toString(16) : (asNumber(v) >>> 0).toString(16);
+        case 't':  return truthy(v) ? 'true' : 'false';
+        case 'S':  return typeof v === 'string' ? v : String(v);
+            // Domain-specific passthroughs (print as-is)
+        case 'C': case 'E': case 'I': case 'J': case 'N': case 'M': case 'T': case 'U': return String(v);
+        case '%':  return '%';
+        default:   return String(v);
     }
 }
 
 /* =============================================================================
- * Convenience API
+ * Convenience: evaluate a parsed expression
  * ============================================================================= */
 
-/** Evaluate a ParseResult from the parser. */
 function normalizeEvaluateResult(v: any): EvaluateResult {
     if (v === undefined || v === null) return undefined;
     if (typeof v === 'number' || typeof v === 'string') return v;
     if (typeof v === 'bigint') return v.toString(10);
     if (typeof v === 'boolean') return v ? 1 : 0;
-    return undefined; // objects, arrays, etc.
+    return undefined;
 }
 
 export function evaluateParseResult(pr: ParseResult, ctx = new EvalContext()): EvaluateResult {
     try {
         const v = evalNode(pr.ast, ctx);
         return normalizeEvaluateResult(v);
-    } catch (e) {
-        console.error('Expression AST Evaluation error:', e);
+    } catch {
         return undefined;
     }
 }
-
-/* =============================================================================
- * Example usage (commented)
- * ============================================================================= */
-
-// const ctx = new EvalContext();
-// ctx.define('u8', 'uint8_t', 300);  // stored as 44
-// ctx.define('i8', 'int8_t', 130);   // stored as -126
-// ctx.define('u64', 'uint64_t', -1); // stored as 0xFFFF_FFFF_FFFF_FFFFn
-// ctx.define('f', 'float', 3.14159); // 3.141590118...
-//
-// // After parsing: const pr = defaultParser.parse("u64 + 5");
-// // evaluateParseResult(pr, ctx);

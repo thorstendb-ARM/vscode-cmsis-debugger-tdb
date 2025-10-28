@@ -164,8 +164,9 @@ export class ScvdComplexDataType extends ScvdBase{
             this.isPointer = true;
         }
 
-        const item =  resolveFunc(typeName, resolveType.local);
+        const item = resolveFunc(typeName, resolveType.local);
         if(item === undefined || !(item instanceof ScvdTypedef)) {
+            console.error('Failed to resolve complex data type:', typeName);
             return false;
         }
         this._type = item;

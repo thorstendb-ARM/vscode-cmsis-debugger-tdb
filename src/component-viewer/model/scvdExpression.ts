@@ -18,11 +18,17 @@
 
 
 import { parseExpression, ParseResult } from '../parser';
-import { EvalContext, evaluateParseResult, EvaluateResult } from '../evaluator';
+import {  evaluateParseResult, EvaluateResult } from '../evaluator';
 
 import { NumberType } from './numberType';
 import { ExplorerInfo, ScvdBase } from './scvdBase';
+import { makeTypedDemoContext, ObjectDataHost } from '../dataHost';
 
+const target = {
+    regs: { r0: 0x1234 },
+    os:   { thread: { priority: 24 } },
+    x: 10,
+};
 
 
 export class ScvdExpression extends ScvdBase {
@@ -40,7 +46,9 @@ export class ScvdExpression extends ScvdBase {
         printfHook?: any,
     ) {
         super(parent);
-        this.evalContext = new EvalContext(printfHook);
+        const host = new ObjectDataHost(target);
+        //this.evalContext = new EvalContext({ printf: printfHook, data: host });
+        this.evalContext = makeTypedDemoContext({ printf: printfHook, data: host });
         this.expression = expression;
         this.scvdVarName = scvdVarName;
         this.tag = scvdVarName;

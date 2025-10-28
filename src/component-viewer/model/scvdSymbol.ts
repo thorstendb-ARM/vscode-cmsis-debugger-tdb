@@ -50,7 +50,6 @@ export class ScvdSymbol extends ScvdBase {
         if(this.symbol === undefined) {
             return false;
         }
-        console.log('Resolving target symbol:', this.symbol);
 
         const item = resolveFunc(this.symbol, resolveType.target);
         if(item === undefined ) {
