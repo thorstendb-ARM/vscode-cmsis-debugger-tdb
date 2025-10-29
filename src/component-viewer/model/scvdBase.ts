@@ -252,9 +252,14 @@ export class ScvdBase extends ScvdEvalInterface {
     }
 
     // expanded values
-    public getValue(): string | undefined {
+    public getValue(): string | number | undefined {
         return undefined;
     }
+
+    public setValue(_val: number): number | undefined {
+        return undefined;
+    }
+
 
     private getLineNoInfo(item: ScvdBase | undefined): string | undefined {
         if(item === undefined) {

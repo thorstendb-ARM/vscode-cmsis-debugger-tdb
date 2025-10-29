@@ -22,8 +22,10 @@ import { ExplorerInfo, Json, ScvdBase } from './scvdBase';
 import { ScvdObjects } from './scvdObject';
 import { ScvdTypedefs } from './scvdTypedef';
 import { getArrayFromJson, getObjectFromJson } from './scvdUtils';
+import { ScvdVar } from './scvdVar';
+import { ScvdEvalInterface } from './scvdEvalInterface';
 
-export class ScvdComonentViewer extends ScvdBase {
+export class ScvdComponentViewer extends ScvdBase {
     private _componentIdentifier: ScvdComponentIdentifier | undefined;
     private _typedefs: ScvdTypedefs | undefined;
     private _objects: ScvdObjects | undefined;
@@ -33,6 +35,13 @@ export class ScvdComonentViewer extends ScvdBase {
         parent: ScvdBase | undefined,
     ) {
         super(parent);
+    }
+
+    static castTo(instance: ScvdEvalInterface): ScvdComponentViewer | undefined {
+        if(!(instance instanceof ScvdComponentViewer)) {
+            return undefined;
+        }
+        return instance as unknown as ScvdComponentViewer;
     }
 
     /* template for readXml
@@ -119,6 +128,17 @@ export class ScvdComonentViewer extends ScvdBase {
         });
         return valid;
     }
+
+
+    public getVar(name: string): ScvdVar | undefined {
+        const objectsContainer = this.objects;
+        if(objectsContainer === undefined) {
+            return undefined;
+        }
+
+        return objectsContainer.getVar(name);
+    }
+
 
     public debugAll(): boolean {
         return this.debugRecursive(this);

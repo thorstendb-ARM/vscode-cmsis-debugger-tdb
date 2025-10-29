@@ -175,11 +175,20 @@ export class ScvdItem extends ScvdBase {
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
+
+        if(this.value !== undefined) {
+            info.push({ name: 'Value', value: this.value.getExplorerDisplayName() });
+        }
         info.push(...itemInfo);
         return super.getExplorerInfo(info);
     }
 
     public getExplorerDisplayName(): string {
-        return this.property?.getExplorerDisplayName() ?? super.getExplorerDisplayName();
+        const propertyName = this.property?.getExplorerDisplayName() ?? super.getExplorerDisplayName();
+        const valueStr = this.value?.getExplorerDisplayName();
+        if(valueStr !== undefined && valueStr.length > 0) {
+            return `${propertyName} = ${valueStr}`;
+        }
+        return propertyName;
     }
 }

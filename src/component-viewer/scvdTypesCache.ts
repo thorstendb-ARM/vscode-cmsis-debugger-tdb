@@ -15,7 +15,7 @@
  */
 
 import { ScvdBase } from './model/scvdBase';
-import { ScvdComonentViewer } from './model/scvdComonentViewer';
+import { ScvdComponentViewer } from './model/scvdComonentViewer';
 import { ScvdTypedef } from './model/scvdTypedef';
 
 
@@ -23,19 +23,19 @@ import { ScvdTypedef } from './model/scvdTypedef';
 
 
 export class ScvdTypesCache {
-    private _model: ScvdComonentViewer | undefined;
+    private _model: ScvdComponentViewer | undefined;
     private typesCache: Map<string, ScvdBase> = new Map<string, ScvdBase>();
 
     constructor(
-        model: ScvdComonentViewer,
+        model: ScvdComponentViewer,
     ) {
         this.model = model;
     }
 
-    protected getModel(): ScvdComonentViewer | undefined {
+    protected getModel(): ScvdComponentViewer | undefined {
         return this._model;
     }
-    private set model(value: ScvdComonentViewer | undefined) {
+    private set model(value: ScvdComponentViewer | undefined) {
         this._model = value;
     }
 

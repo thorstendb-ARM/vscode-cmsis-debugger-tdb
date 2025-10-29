@@ -16,7 +16,7 @@
 
 import { EvalContext } from './evaluator';
 import { createIntrinsicHost } from './intrinsics';
-import { ScvdComonentViewer } from './model/scvdComonentViewer';
+import { ScvdComponentViewer } from './model/scvdComonentViewer';
 import { ScvdFormatSpecifier } from './model/scvdFormatSpecifier';
 import { ScvdVar } from './model/scvdVar';
 
@@ -34,12 +34,12 @@ const printfHook: PrintfHook = {
 };
 
 export class ScvdVarEngine {
-    private _model: ScvdComonentViewer;
+    private _model: ScvdComponentViewer;
     private _ctx: EvalContext;
     private _printf: PrintfHook = printfHook;
 
     constructor(
-        model: ScvdComonentViewer
+        model: ScvdComponentViewer
     ) {
         this._model = model;
         this._ctx = new EvalContext({
@@ -52,7 +52,7 @@ export class ScvdVarEngine {
         });
     }
 
-    public get model(): ScvdComonentViewer {
+    public get model(): ScvdComponentViewer {
         return this._model;
     }
 

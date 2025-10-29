@@ -57,6 +57,18 @@ export class ScvdObjects extends ScvdBase {
         return this._objects;
     }
 
+    public getVar(name: string): ScvdVar | undefined {
+        for(const obj of this._objects) {
+            for(const v of obj.vars) {
+                if(v.name === name) {
+                    return v;
+                }
+            }
+        }
+        return undefined;
+    }
+
+
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
         info.push(...itemInfo);

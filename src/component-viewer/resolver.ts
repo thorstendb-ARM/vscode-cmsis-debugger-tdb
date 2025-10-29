@@ -15,7 +15,7 @@
  */
 
 import { ScvdBase } from './model/scvdBase';
-import { ScvdComonentViewer } from './model/scvdComonentViewer';
+import { ScvdComponentViewer } from './model/scvdComonentViewer';
 import { ScvdTypedef } from './model/scvdTypedef';
 import { ScvdTypesCache } from './scvdTypesCache';
 
@@ -28,19 +28,19 @@ export enum resolveType {
 }
 
 export class Resolver {
-    private _model: ScvdComonentViewer | undefined;
+    private _model: ScvdComponentViewer | undefined;
     private _typesCache: ScvdTypesCache | undefined;
 
     constructor(
-        model: ScvdComonentViewer,
+        model: ScvdComponentViewer,
     ) {
         this.model = model;
     }
 
-    protected get model(): ScvdComonentViewer | undefined {
+    protected get model(): ScvdComponentViewer | undefined {
         return this._model;
     }
-    private set model(value: ScvdComonentViewer | undefined) {
+    private set model(value: ScvdComponentViewer | undefined) {
         this._model = value;
     }
 

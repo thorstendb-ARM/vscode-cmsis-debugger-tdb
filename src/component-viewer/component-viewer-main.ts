@@ -10,7 +10,7 @@
 import * as vscode from 'vscode';
 import { URI } from 'vscode-uri';
 import { parseStringPromise, ParserOptions } from 'xml2js';
-import { ScvdComonentViewer } from './model/scvdComonentViewer';
+import { ScvdComponentViewer } from './model/scvdComonentViewer';
 import { Json } from './model/scvdBase';
 import { SidebarDebugView } from './sidebarDebugView';
 import { Resolver } from './resolver';
@@ -54,7 +54,7 @@ const xmlOpts: ParserOptions = {
 };
 
 export class ComponentViewer {
-    private model: ScvdComonentViewer | undefined;
+    private model: ScvdComponentViewer | undefined;
     private treeDataProvider: SidebarDebugView | undefined;
 
     public constructor(
@@ -85,7 +85,7 @@ export class ComponentViewer {
         const injectTime = Date.now();
         const xml: Json = await this.parseXml(bufLineNo);
         const parseTime = Date.now();
-        this.model = new ScvdComonentViewer(undefined);
+        this.model = new ScvdComponentViewer(undefined);
         this.model.readXml(xml);
         const modelTime = Date.now();
         this.model.configureAll();

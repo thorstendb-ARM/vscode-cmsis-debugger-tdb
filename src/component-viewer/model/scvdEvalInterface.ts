@@ -3,6 +3,8 @@
  * ============================================================================= */
 
 import { DataHost, ExternalFunctions } from '../evaluator';
+import { ScvdBase } from './scvdBase';
+import { ScvdComponentViewer } from './scvdComonentViewer';
 
 /**
  * Extend this class to connect the evaluator to your data model.
@@ -12,37 +14,40 @@ import { DataHost, ExternalFunctions } from '../evaluator';
  */
 export abstract class ScvdEvalInterface implements DataHost {
     /** Local symbol cache (mirrors model when you choose to). */
-    protected symbols = new Map<string, any>();
+    protected symbols = new Map<string, ScvdBase>();
 
     /** Optional function table you can populate from your model. */
     functions: ExternalFunctions = Object.create(null);
 
+
     // ---- DataHost: symbols ----
     hasSymbol(name: string): boolean {
-        return this.symbols.has(name) || this.peekModel(name) !== undefined;
+        return this.cacheSymbol(name) !== undefined;
     }
 
     readSymbol(name: string): any | undefined {
-        if (this.symbols.has(name)) return this.symbols.get(name);
-        const v = this.peekModel(name);
-        if (v !== undefined) {
-            this.symbols.set(name, v);
-            return v;
-        }
-        return undefined;
+        const symbol = this.cacheSymbol(name);
+        return symbol?.getValue() ?? undefined;
     }
 
     writeSymbol(name: string, value: any): any {
-        this.symbols.set(name, value);
-        this.commitModel(name, value);
-        return value;
+        const symbol = this.cacheSymbol(name);
+        return symbol?.setValue(value) ?? undefined;
     }
 
     // ---- DataHost: containers (override if you expose custom containers) ----
-    isContainer(v: any): boolean { return typeof v === 'object' && v !== null; }
-    isArray(v: any): boolean { return Array.isArray(v); }
-    makeObject(): any { return {}; }
-    makeArray(): any { return []; }
+    isContainer(v: any): boolean {
+        return typeof v === 'object' && v !== null;
+    }
+    isArray(v: any): boolean {
+        return Array.isArray(v);
+    }
+    makeObject(): any {
+        return {};
+    }
+    makeArray(): any {
+        return [];
+    }
 
     readKey(container: any, key: any): any | undefined {
         if (typeof container === 'object' && container !== null) {
@@ -60,22 +65,47 @@ export abstract class ScvdEvalInterface implements DataHost {
         throw new Error('writeKey on non-container');
     }
 
-    stats() { return { symbols: this.symbols.size }; }
+    stats() {
+        return { symbols: this.symbols.size };
+    }
 
     // ---- Hooks you should override in your subclass ----
 
     /** Return the current value of a symbol from your model (or `undefined` if unknown). */
 
-    protected peekModel(_name: string): any | undefined { return undefined; }
+    protected peekModel(name: string): ScvdBase | undefined {
+        const model = ScvdComponentViewer.castTo(this);
+        if(!model) {
+            return undefined;
+        }
+
+        return model.getVar(name);
+    }
 
     /** Persist a symbol back into your model (no-op by default). */
-    protected commitModel(_name: string, _value: any): void { /* no-op */ }
+    protected commitModel(_name: string, _value: any): void {
+        /* no-op */
+    }
+
+    private cacheSymbol(name: string): ScvdBase | undefined {
+        const cachedSym = this.symbols.get(name);
+        if(cachedSym) {
+            return cachedSym;
+        }
+        const newSym = this.peekModel(name);
+        if (newSym !== undefined) {
+            this.symbols.set(name, newSym);
+        }
+        return newSym;
+    }
 
     /**
    * Optional: Resolve colon-paths like `reg:PC` or `mem:0x1000`.
    * Return `undefined` to signal "not handled".
    */
     resolveColonPath?(_parts: string[]): any;
+
+    // Model evaluation functions
 
 }
 

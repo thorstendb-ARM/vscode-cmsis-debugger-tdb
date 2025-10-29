@@ -51,6 +51,29 @@ export class ScvdVar extends ScvdBase {
         }
     }
 
+    public getValue(): number | undefined {
+        if (this._value === undefined) {
+            return undefined;
+        }
+        const val = this._value.getValue();
+        if (typeof val === 'number') {
+            return val;
+        }
+        return undefined;
+    }
+
+    public setValue(val: number): number | undefined {
+        if (this._value === undefined) {
+            return undefined;
+        }
+        const valExpr = this._value;
+        if( valExpr === undefined) {
+            return undefined;
+        }
+        valExpr.setValue(val);
+        return val;
+    }
+
     get type(): ScvdDataType | undefined {
         return this._type;
     }

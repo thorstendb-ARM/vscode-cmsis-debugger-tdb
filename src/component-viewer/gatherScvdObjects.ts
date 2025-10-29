@@ -14,22 +14,22 @@
  * limitations under the License.
  */
 
-import { ScvdComonentViewer } from './model/scvdComonentViewer';
+import { ScvdComponentViewer } from './model/scvdComonentViewer';
 import { ScvdObject } from './model/scvdObject';
 import { ScvdVarEngine } from './scvdVarEngine';
 
 export class GatherScvdObjects {
-    private _model: ScvdComonentViewer;
+    private _model: ScvdComponentViewer;
     private _varEngine: ScvdVarEngine | undefined;
 
     constructor(
-        model: ScvdComonentViewer
+        model: ScvdComponentViewer
     ) {
         this._model = model;
         this._varEngine = new ScvdVarEngine(model);
     }
 
-    private get model(): ScvdComonentViewer {
+    private get model(): ScvdComponentViewer {
         return this._model;
     }
 

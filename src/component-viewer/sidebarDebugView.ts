@@ -4,16 +4,16 @@
  *********************************************************************/
 
 import * as vscode from 'vscode';
-import { ScvdComonentViewer } from './model/scvdComonentViewer';
+import { ScvdComponentViewer } from './model/scvdComonentViewer';
 import { ScvdBase } from './model/scvdBase';
 
 export class SidebarDebugView implements vscode.TreeDataProvider<vscode.TreeItem> {
     private readonly _onDidChangeTreeData = new vscode.EventEmitter<void>();
     readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 
-    constructor(private model: ScvdComonentViewer | undefined) {}
+    constructor(private model: ScvdComponentViewer | undefined) {}
 
-    public setModel(model: ScvdComonentViewer | undefined) {
+    public setModel(model: ScvdComponentViewer | undefined) {
         this.model = model;
         this.refresh();
     }
