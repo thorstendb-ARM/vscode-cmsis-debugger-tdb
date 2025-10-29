@@ -2,7 +2,7 @@
 // External, pluggable IntrinsicHost for the AST evaluator.
 
 import type { EvalContext, CTypeName, IntrinsicHost } from './evaluator';
-import { registerCache } from './ScvdCacheRegister';
+import { registerCache } from './scvdCacheRegister';
 
 /** Partial override type for supplying custom intrinsic implementations. */
 export type IntrinsicOverrides = Partial<IntrinsicHost>;
