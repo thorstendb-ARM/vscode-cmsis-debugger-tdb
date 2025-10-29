@@ -17,6 +17,7 @@
 import { EvalContext } from '../evaluator';
 import { resolveType } from '../resolver';
 import { NumberType } from './numberType';
+import { ScvdEvalInterface } from './scvdEvalInterface';
 import { getLineNumberFromJson, getStringFromJson } from './scvdUtils';
 
 // add linter exception for Json
@@ -31,7 +32,7 @@ export type ExplorerInfo = {
     icon?: string;
 };
 
-export class ScvdBase {
+export class ScvdBase extends ScvdEvalInterface {
     private _parent: ScvdBase | undefined;
     private _children: ScvdBase[] = [];
     private _nodeId: number = 0;
@@ -45,12 +46,13 @@ export class ScvdBase {
     private _isModified: boolean = false;
     private _valid: boolean = false;
 
-    private _evalContext: EvalContext | undefined;
+    static #_evalContext?: EvalContext | undefined;
 
 
     constructor(
         parent: ScvdBase | undefined,
     ) {
+        super();
         g_idNext += 1;
         this._nodeId = g_idNext;
 
@@ -89,12 +91,23 @@ export class ScvdBase {
         return true;
     }
 
-    set evalContext(ctx: EvalContext) {
-        this._evalContext = ctx;
+    /** Set once for the entire process / class hierarchy. */
+    static initEvalContext(ctx: EvalContext) {
+        ScvdBase.#_evalContext = ctx;
     }
 
+    /** Static accessor in case you need it from static contexts. */
+    static getEvalContext(): EvalContext | undefined{
+        return ScvdBase.#_evalContext;
+    }
+
+    /** Instance-level convenience that reads the shared static. */
     get evalContext(): EvalContext | undefined {
-        return this._evalContext;
+        return ScvdBase.getEvalContext();
+    }
+
+    set evalContext(_ctx: EvalContext) {
+        ScvdBase.initEvalContext(_ctx);
     }
 
 

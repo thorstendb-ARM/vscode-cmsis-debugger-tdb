@@ -13,9 +13,9 @@ import { parseStringPromise, ParserOptions } from 'xml2js';
 import { ScvdComonentViewer } from './model/scvdComonentViewer';
 import { Json } from './model/scvdBase';
 import { SidebarDebugView } from './sidebarDebugView';
-import path from 'path';
 import { Resolver } from './resolver';
 import { GatherScvdObjects } from './gatherScvdObjects';
+import path from 'path';
 
 
 const scvdFiles: string[] = [
@@ -40,7 +40,7 @@ enum scvdExamples {
     MyTest = 7,
 }
 
-const scvdFile = scvdFiles[scvdExamples.RTX5];
+const scvdFile = scvdFiles[scvdExamples.GetRegVal_Test];
 
 
 const xmlOpts: ParserOptions = {
@@ -92,18 +92,27 @@ export class ComponentViewer {
         const modelConfiguredTime = Date.now();
         this.model.validateAll(true);
         const modelValidatedTime = Date.now();
-        this.model.debugAll();
-        const modelDebuggedTime = Date.now();
-
         const gatherObjects = new GatherScvdObjects(this.model);
         gatherObjects.gatherObjects();
+        const modelGatherObjectsTime = Date.now();
+
+        this.model.debugAll();
+        const modelDebuggedTime = Date.now();
 
         const resolver = new Resolver(this.model);
         resolver.resolve();
         const resolveAndLinkTime = Date.now();
 
-        console.log(`SCVD file read in ${resolveAndLinkTime - startTime} ms (read: ${readTime - startTime} ms, inject: ${injectTime - readTime} ms, parse: ${parseTime - injectTime} ms, model: ${modelTime - parseTime} ms, configure: ${modelConfiguredTime - modelTime} ms, validate: ${modelValidatedTime - modelConfiguredTime} ms, debug: ${modelDebuggedTime - modelValidatedTime} ms, resolveAndLink: ${resolveAndLinkTime - modelDebuggedTime} ms)`);
-        console.log('Model: ', this.model);
+        console.log(`SCVD file read in ${resolveAndLinkTime - startTime} ms:`,
+            `\n  read: ${readTime - startTime} ms,`,
+            `\n  inject: ${injectTime - readTime} ms,`,
+            `\n  parse: ${parseTime - injectTime} ms,`,
+            `\n  model: ${modelTime - parseTime} ms,`,
+            `\n  configure: ${modelConfiguredTime - modelTime} ms,`,
+            `\n  validate: ${modelValidatedTime - modelConfiguredTime} ms,`,
+            `\n  gatherObjects: ${modelGatherObjectsTime - modelValidatedTime} ms,`,
+            `\n  debug: ${modelDebuggedTime - modelGatherObjectsTime} ms,`,
+            `\n  resolveAndLink: ${resolveAndLinkTime - modelDebuggedTime} ms`);
 
         this.treeDataProvider?.setModel(this.model);
     }

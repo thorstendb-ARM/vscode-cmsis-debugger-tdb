@@ -59,5 +59,6 @@ export class GatherScvdObjects {
         vars.forEach( (v) => {
             this.varEngine?.registerVar(v);
         });
+        item.evalContext = this.varEngine.ctx;
     }
 }

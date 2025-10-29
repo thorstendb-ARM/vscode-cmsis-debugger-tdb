@@ -9,12 +9,12 @@ export type IntrinsicOverrides = Partial<IntrinsicHost>;
 
 /** Public factory: start with sensible defaults, then apply overrides. */
 export function createIntrinsicHost(overrides: IntrinsicOverrides = {}): IntrinsicHost {
-    const base = createDefaultIntrinsicHost();
+    const base = createScvdIntrinsicHost();
     return { ...base, ...overrides };
 }
 
 /** Default / dummy implementations for all intrinsics (DataHost-based). */
-export function createDefaultIntrinsicHost(): IntrinsicHost {
+export function createScvdIntrinsicHost(): IntrinsicHost {
     return {
         __CalcMemUsed(ctx: EvalContext, _args: any[]): any {
             // Prefer DataHost stats if provided; fall back to a tiny heuristic.

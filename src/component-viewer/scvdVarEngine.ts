@@ -14,41 +14,42 @@
  * limitations under the License.
  */
 
-import { ObjectDataHost } from './dataHost';
-import { EvalContext, EvalContextInit } from './evaluator';
+import { EvalContext } from './evaluator';
+import { createIntrinsicHost } from './intrinsics';
 import { ScvdComonentViewer } from './model/scvdComonentViewer';
-import { ScvdComplexDataType, ScvdScalarDataType } from './model/scvdDataType';
 import { ScvdFormatSpecifier } from './model/scvdFormatSpecifier';
 import { ScvdVar } from './model/scvdVar';
 
 
+export type PrintfHook = {
+  format: (spec: string, value: any, ctx: EvalContext) => string | undefined;
+};
+
 const formatSpecifier = new ScvdFormatSpecifier();
 
-export const contextInit: EvalContextInit = {
-    printf: {
-        format(spec, value, ctx) {
-            return formatSpecifier.formatValue(spec, value, ctx);
-        },
+const printfHook: PrintfHook = {
+    format(spec: string, value: any, ctx: EvalContext): string | undefined {
+        return formatSpecifier.formatValue(spec, value, ctx);
     },
 };
-const target = {
-    //regs: { r0: 0x1234 },
-    //os:   { thread: { priority: 24 } },
-    //x: 10,
-};
-
 
 export class ScvdVarEngine {
     private _model: ScvdComonentViewer;
     private _ctx: EvalContext;
-
+    private _printf: PrintfHook = printfHook;
 
     constructor(
         model: ScvdComonentViewer
     ) {
         this._model = model;
-        const host = new ObjectDataHost(target);
-        this._ctx = new EvalContext({ ...contextInit, data: host });
+        this._ctx = new EvalContext({
+            data: this.model,
+            intrinsics: createIntrinsicHost(),
+            printf: {
+                format: (spec, value, ctx) => this._printf.format(spec, value, ctx),
+            },
+            // functions: this.model.functions,          // optional: if your model exposes callables
+        });
     }
 
     public get model(): ScvdComonentViewer {
@@ -68,38 +69,5 @@ export class ScvdVarEngine {
             console.log('ScvdVarEngine.registerVar: Variable name is undefined or empty');
             return;
         }
-
-        const varType = item.type?.type;
-
-        if(varType instanceof ScvdScalarDataType) {
-            console.log(` - Type: ${varType.type}`);
-            const typeName = varType.type;
-            if(typeName === undefined) {
-                console.log('ScvdVarEngine.registerVar: Variable type name is undefined');
-                return;
-            }
-            let ctype = this.ctx.getType(typeName);
-            if(ctype === undefined) {
-                console.log(`ScvdVarEngine.registerVar: Registering type: ${typeName}`);
-                const newType = this.ctx.convertType(typeName);
-                if(newType === undefined) {
-                    console.log(`ScvdVarEngine.registerVar: Failed to convert type: ${typeName}`);
-                    return;
-                }
-                ctype = newType;
-            }
-            const itemValue = item.value?.value;
-            let value: number = 0;
-            if(itemValue !== undefined) {
-                value = itemValue.value;
-            }
-            this.ctx.define(name, ctype, value);
-        } else if(varType instanceof ScvdComplexDataType) {
-            console.log(` - Type: ${varType.typeName} (complex)`);
-        } else {
-            console.log(' - Type: undefined');
-        }
-
-
     }
 }
