@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { CacheCbFunc, ScvdCacheBase, ScvdValueRecord } from './scvdCacheBase';
+import { CacheCbFunc, ScvdCacheBase, ScvdValueRecord } from './ScvdCacheBase';
 
 // https://arm-software.github.io/CMSIS-View/main/elem_var.html
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { ScvdCacheBase } from './scvdCacheBase';
+import { ScvdCacheBase } from './ScvdCacheBase';
 
 // https://arm-software.github.io/CMSIS-View/main/elem_var.html
 

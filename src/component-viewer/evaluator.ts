@@ -1,4 +1,4 @@
-// evaluator.ts — cleaned, host-adaptable
+// evaluator.ts — intrinsics moved to DataHost
 
 // If you have parser node types, keep this import; otherwise you can remove it
 // and treat AST nodes as `any`.
@@ -61,21 +61,21 @@ export interface DataHost {
 
   // Optional: stats
   stats?(): { symbols?: number; bytesUsed?: number };
-}
 
-/** Intrinsics available to EvalPointCall nodes (minimal) */
-export interface IntrinsicHost {
-  __CalcMemUsed(ctx: EvalContext, args: any[]): any;
-  __FindSymbol(ctx: EvalContext, args: any[]): any;
-  __GetRegVal(ctx: EvalContext, args: any[]): any;
-  __size_of(ctx: EvalContext, args: any[]): any;
-  __Symbol_exists(ctx: EvalContext, args: any[]): any;
-  __Offset_of(_ctx: EvalContext, args: any[]): any;
+  // === Intrinsics live on the DataHost now ===
+  evalIntrinsic?(name: string, container: any, args: any[]): any;
+    __CalcMemUsed?(container: any, args: any[]): any;
+    __FindSymbol?(container: any, args: any[]): any;
+    __GetRegVal?(container: any, args: any[]): any;
+    __size_of?(container: any, args: any[]): any;
+    __Symbol_exists?(container: any, args: any[]): any;
+    __Offset_of?(container: any, args: any[]): any;
+  // Optional: external functions table (used if EvalContextInit.functions is not passed)
+  functions?: ExternalFunctions;
 }
 
 export interface EvalContextInit {
   data: DataHost;                 // your ScvdBase instance goes here
-  intrinsics: IntrinsicHost;      // override if you need
   printf: {
     format?: (spec: FormatSegment['spec'], value: any, ctx: EvalContext) => string | undefined;
   };
@@ -88,13 +88,11 @@ export interface EvalContextInit {
 
 export class EvalContext {
     readonly data: DataHost;
-    readonly intrinsics: IntrinsicHost;
     readonly functions: ExternalFunctions;
     readonly printf: NonNullable<EvalContextInit['printf']>;
 
     constructor(init: EvalContextInit) {
         this.data = init.data;
-        this.intrinsics = init.intrinsics ?? createDefaultIntrinsicHost();
         // If your DataHost (ScvdEvalInterface) has a .functions table, use it by default.
         const hostFns = (this.data as any)?.functions as ExternalFunctions | undefined;
         this.functions = init.functions ?? hostFns ?? Object.create(null);
@@ -115,51 +113,6 @@ export class EvalContext {
     setSymbol(name: string, value: any): any {
         return this.data.writeSymbol(name, value);
     }
-}
-
-/* =============================================================================
- * Default intrinsics (minimal, model-aware where possible)
- * ============================================================================= */
-
-export function createDefaultIntrinsicHost(): IntrinsicHost {
-    return {
-        __CalcMemUsed(ctx) {
-            const s = ctx.data.stats?.();
-            if (s?.bytesUsed != null) return s.bytesUsed;
-            if (s?.symbols != null) return s.symbols * 16;
-            return 0;
-        },
-        __FindSymbol(ctx, args) {
-            const [name] = args;
-            if (typeof name !== 'string') return 0;
-            if (ctx.data.hasSymbol(name)) return ctx.getSymbol(name);
-            ctx.ensureSymbol(name);
-            return ctx.getSymbol(name);
-        },
-        __GetRegVal(ctx, args) {
-            const [regName] = args;
-            if (typeof regName !== 'string') return 0;
-            const r = (ctx.data as any).resolveColonPath?.(['reg', regName]);
-            return r ?? 0;
-        },
-        __size_of(_ctx, args) {
-            const [arg0] = args;
-            if (typeof arg0 === 'string') {
-                const sz = sizeOfTypeName(arg0 as CTypeName | string);
-                if (sz !== undefined) return sz;
-            }
-            return 4;
-        },
-        __Symbol_exists(ctx, args) {
-            const [name] = args;
-            if (typeof name !== 'string') return 0;
-            return ctx.data.hasSymbol(name) ? 1 : 0;
-        },
-        __Offset_of(_ctx: EvalContext, _args: any[]): any {
-            // Domain-specific in real systems; here accept ColonPath-like or strings and return 0.
-            return 0;
-        },
-    };
 }
 
 /* =============================================================================
@@ -419,11 +372,9 @@ export function evalNode(node: ASTNode, ctx: EvalContext): any {
 
         case 'EvalPointCall': {
             const c = node as EvalPointCall;
-            const name = c.intrinsic as keyof IntrinsicHost;
+            const name = c.intrinsic as string;
             const args = c.args.map(a => evalNode(a, ctx));
-            const fn = ctx.intrinsics[name];
-            if (typeof fn !== 'function') throw new Error(`Missing intrinsic ${name}`);
-            return fn(ctx, args);
+            return routeIntrinsic(ctx, name, args);
         }
 
         case 'PrintfExpression': {
@@ -484,7 +435,7 @@ function evalBinary(node: BinaryExpression, ctx: EvalContext): any {
  * ============================================================================= */
 
 function formatValue(spec: FormatSegment['spec'], v: any, ctx?: EvalContext): string {
-    const override = ctx?.printf?.format?.(spec, v, ctx);
+    const override = ctx?.printf?.format?.(spec, v, ctx as EvalContext);
     if (typeof override === 'string') return override;
 
     switch (spec) {
@@ -497,6 +448,66 @@ function formatValue(spec: FormatSegment['spec'], v: any, ctx?: EvalContext): st
         case 'C': case 'E': case 'I': case 'J': case 'N': case 'M': case 'T': case 'U': return String(v);
         case '%':  return '%';
         default:   return String(v);
+    }
+}
+
+/* =============================================================================
+ * Intrinsics routing (now owned by DataHost)
+ * ============================================================================= */
+
+function routeIntrinsic(ctx: EvalContext, name: string, args: any[]): any {
+    // 1) If host provides a generic dispatcher, use it
+    if (typeof ctx.data.evalIntrinsic === 'function') {
+        return ctx.data.evalIntrinsic(name, ctx.data, args);
+    }
+    const direct = (ctx.data as any)[name];
+    if (typeof direct === 'function') {
+        return direct.call(ctx.data, ctx.data, args);
+    }
+    // 3) Fallback to defaults
+    return defaultIntrinsic(name, ctx, args);
+}
+
+function defaultIntrinsic(name: string, ctx: EvalContext, args: any[]): any {
+    switch (name) {
+        case '__CalcMemUsed': {
+            const s = ctx.data.stats?.();
+            if (s?.bytesUsed != null) return s.bytesUsed;
+            if (s?.symbols != null) return s.symbols * 16;
+            return 0;
+        }
+        case '__FindSymbol': {
+            const [sym] = args;
+            if (typeof sym !== 'string') return 0;
+            if (ctx.data.hasSymbol(sym)) return ctx.getSymbol(sym);
+            ctx.ensureSymbol(sym);
+            return ctx.getSymbol(sym);
+        }
+        case '__GetRegVal': {
+            const [regName] = args;
+            if (typeof regName !== 'string') return 0;
+            const r = (ctx.data as any).resolveColonPath?.(['reg', regName]);
+            return r ?? 0;
+        }
+        case '__size_of': {
+            const [arg0] = args;
+            if (typeof arg0 === 'string') {
+                const sz = sizeOfTypeName(arg0 as CTypeName | string);
+                if (sz !== undefined) return sz;
+            }
+            return 4;
+        }
+        case '__Symbol_exists': {
+            const [name] = args;
+            if (typeof name !== 'string') return 0;
+            return ctx.data.hasSymbol(name) ? 1 : 0;
+        }
+        case '__Offset_of': {
+            // Domain-specific in real systems; here accept ColonPath-like or strings and return 0.
+            return 0;
+        }
+        default:
+            throw new Error(`Missing intrinsic ${name}`);
     }
 }
 
@@ -520,23 +531,3 @@ export function evaluateParseResult(pr: ParseResult, ctx: EvalContext): Evaluate
         return undefined;
     }
 }
-
-/* =============================================================================
- * Usage (printf stays attached exactly as you wanted)
- * ============================================================================= */
-
-// Example wiring:
-//
-// import { EvalContext, EvalContextInit, ScvdBase } from './evaluator';
-// import { formatSpecifier } from './yourPrintfModule';
-//
-// export const contextInit: EvalContextInit = {
-//   data: new ScvdBase(myModel), // <-- your model adapter instance
-//   printf: {
-//     format(spec, value, ctx) {
-//       return formatSpecifier.formatValue(spec, value, ctx);
-//     },
-//   },
-//   // Optionally, you can add ext. functions here (or set data.functions)
-//   // functions: { clamp: (x:number,min:number,max:number)=>Math.min(Math.max(x,min),max) },
-// };

@@ -15,7 +15,6 @@
  */
 
 import { EvalContext } from './evaluator';
-import { createIntrinsicHost } from './intrinsics';
 import { ScvdComponentViewer } from './model/scvdComonentViewer';
 import { ScvdFormatSpecifier } from './model/scvdFormatSpecifier';
 import { ScvdVar } from './model/scvdVar';
@@ -44,7 +43,6 @@ export class ScvdVarEngine {
         this._model = model;
         this._ctx = new EvalContext({
             data: this.model,
-            intrinsics: createIntrinsicHost(),
             printf: {
                 format: (spec, value, ctx) => this._printf.format(spec, value, ctx),
             },
