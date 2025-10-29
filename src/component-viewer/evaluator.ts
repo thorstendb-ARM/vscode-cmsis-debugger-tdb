@@ -140,6 +140,21 @@ export class EvalContext {
     getType(name: string): CTypeName | undefined {
         return this.scalarTypes.get(name);
     }
+    convertType(name: string): CTypeName | undefined {
+        // Check explicit scalar type mapping first
+        const mapped = this.scalarTypes.get(name);
+        if (mapped) return mapped;
+
+        // If the identifier itself is a known CTypeName, return it
+        const scalarNames: readonly CTypeName[] = [
+            'uint8_t','int8_t',
+            'uint16_t','int16_t',
+            'uint32_t','int32_t',
+            'uint64_t','int64_t',
+            'float','double',
+        ];
+        return scalarNames.includes(name as CTypeName) ? (name as CTypeName) : undefined;
+    }
 
     /** Define a typed variable with an optional initial value (coerced). */
     define(name: string, type: CTypeName, initial?: any): void {

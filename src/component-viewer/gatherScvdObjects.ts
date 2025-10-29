@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-import { ScvdBase } from './model/scvdBase';
 import { ScvdComonentViewer } from './model/scvdComonentViewer';
+import { ScvdObject } from './model/scvdObject';
 import { ScvdVarEngine } from './scvdVarEngine';
 
-export class GatherScvdVariables {
+export class GatherScvdObjects {
     private _model: ScvdComonentViewer;
     private _varEngine: ScvdVarEngine | undefined;
 
@@ -33,38 +33,31 @@ export class GatherScvdVariables {
         return this._model;
     }
 
+    public gatherObjects(): boolean {
+        const objectsContainer = this.model.objects;
+        if(objectsContainer === undefined) {
+            return false;
+        }
+
+        objectsContainer.objects.forEach( (child: ScvdObject) => {
+            this.gatherObject(child);
+        });
+
+        return true;
+    }
+
     public get varEngine(): ScvdVarEngine | undefined {
         return this._varEngine;
     }
 
-    public gatherVariables(): boolean {
-        // Implementation for gathering variables from the model
-        this.gatherTypedefs();
-        this.gatherObjects();
-        return true;
-    }
-
-    private gatherTypedefsRecursive(item: ScvdBase): void {
-        item.children.forEach( (child: ScvdBase) => {
-            this.gatherTypedefsRecursive(child);
-        });
-    }
-    public gatherTypedefs(): void {
-        const typedefs = this.model.typedefs;
-        if(typedefs !== undefined) {
-            this.gatherTypedefsRecursive(typedefs);
+    public gatherObject(item: ScvdObject): void {
+        if(item === undefined || this.varEngine === undefined) {
+            return;
         }
-    }
 
-    private gatherObjectsRecursive(item: ScvdBase): void {
-        item.children.forEach( (child: ScvdBase) => {
-            this.gatherObjectsRecursive(child);
+        const vars = item.vars;
+        vars.forEach( (v) => {
+            this.varEngine?.registerVar(v);
         });
-    }
-    public gatherObjects(): void {
-        const objects = this.model.objects;
-        if(objects !== undefined) {
-            this.gatherObjectsRecursive(objects);
-        }
     }
 }

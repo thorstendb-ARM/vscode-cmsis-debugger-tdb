@@ -51,6 +51,10 @@ export class ScvdDataType extends ScvdBase {
         return this._type?.size;
     }
 
+    public get type(): ScvdScalarDataType | ScvdComplexDataType | undefined {
+        return this._type;
+    }
+
     public set type(type: string | undefined) {
         if (typeof type === 'string') {
             Object.keys(ScvdScalarDataTypeMap).forEach(element => { // test, then create object
@@ -85,7 +89,7 @@ export class ScvdDataType extends ScvdBase {
 
 
 export class ScvdScalarDataType extends ScvdBase {
-    private type: string | undefined;
+    private _type: string | undefined;
 
     constructor(
         parent: ScvdBase | undefined,
@@ -95,22 +99,26 @@ export class ScvdScalarDataType extends ScvdBase {
         if (typeof type === 'string') {
             Object.keys(ScvdScalarDataTypeMap).forEach(element => {
                 if (element === type) {
-                    this.type = type;
+                    this._type = type;
                 }
             });
         }
     }
 
     public get size(): NumberType | undefined {
-        const info = this.type && ScvdScalarDataTypeMap[this.type];
+        const info = this._type && ScvdScalarDataTypeMap[this._type];
         const value = info ? info[0] / 8 : undefined;
         return value as NumberType | undefined;
     }
 
+    public get type(): string | undefined {
+        return this._type;
+    }
+
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
-        if (this.type !== undefined) {
-            info.push({ name: 'Type', value: this.type });
+        if (this._type !== undefined) {
+            info.push({ name: 'Type', value: this._type });
             info.push({ name: 'Size', value: this.size?.toString() ?? '' });
         }
         info.push(...itemInfo);
@@ -118,7 +126,7 @@ export class ScvdScalarDataType extends ScvdBase {
     }
 
     public getExplorerDisplayName(): string {
-        return this.type ?? 'unknown scalar type';
+        return this._type ?? 'unknown scalar type';
     }
 }
 

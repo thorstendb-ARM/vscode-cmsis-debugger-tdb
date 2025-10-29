@@ -15,7 +15,7 @@ import { Json } from './model/scvdBase';
 import { SidebarDebugView } from './sidebarDebugView';
 import path from 'path';
 import { Resolver } from './resolver';
-import { GatherScvdVariables } from './gatherScvdVariables';
+import { GatherScvdObjects } from './gatherScvdObjects';
 
 
 const scvdFiles: string[] = [
@@ -40,7 +40,7 @@ enum scvdExamples {
     MyTest = 7,
 }
 
-const scvdFile = scvdFiles[scvdExamples.MyTest];
+const scvdFile = scvdFiles[scvdExamples.RTX5];
 
 
 const xmlOpts: ParserOptions = {
@@ -95,8 +95,8 @@ export class ComponentViewer {
         this.model.debugAll();
         const modelDebuggedTime = Date.now();
 
-        const gatherVariables = new GatherScvdVariables(this.model);
-        gatherVariables.gatherVariables();
+        const gatherObjects = new GatherScvdObjects(this.model);
+        gatherObjects.gatherObjects();
 
         const resolver = new Resolver(this.model);
         resolver.resolve();

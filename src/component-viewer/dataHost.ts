@@ -47,13 +47,17 @@ export class ObjectDataHost implements DataHost {
 
     // Generic key access
     readKey(container: any, key: any): any | undefined {
-        if (Array.isArray(container) && (key === '_count' || key === 'length')) return container.length;
+        if (Array.isArray(container) && (key === '_count' || key === 'length')) {
+            return container.length;
+        }
         return (typeof container === 'object' && container !== null) ? (container as any)[key] : undefined;
     }
     writeKey(container: any, key: any, value: any): any {
         (container as any)[key] = value;
         if (Array.isArray(container) && !Object.getOwnPropertyDescriptor(container, '_count')) {
-            Object.defineProperty(container, '_count', { get() { return (container as any).length; }, enumerable: false });
+            Object.defineProperty(container, '_count', { get() {
+                return (container as any).length;
+            }, enumerable: false });
         }
         return value;
     }
@@ -63,8 +67,12 @@ export class ObjectDataHost implements DataHost {
     }
 
     // Optional symbol → type registry
-    registerType(symbol: string, desc: CTypeDesc): void { this.types.set(symbol, desc); }
-    getType(symbol: string): CTypeDesc | undefined { return this.types.get(symbol); }
+    registerType(symbol: string, desc: CTypeDesc): void {
+        this.types.set(symbol, desc);
+    }
+    getType(symbol: string): CTypeDesc | undefined {
+        return this.types.get(symbol);
+    }
 }
 
 /** Instantiate a JS value for a CTypeDesc */

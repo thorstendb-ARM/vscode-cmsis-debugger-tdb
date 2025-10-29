@@ -22,13 +22,6 @@ import {  evaluateParseResult, EvaluateResult } from '../evaluator';
 
 import { NumberType } from './numberType';
 import { ExplorerInfo, ScvdBase } from './scvdBase';
-import { makeTypedDemoContext, ObjectDataHost } from '../dataHost';
-
-const target = {
-    regs: { r0: 0x1234 },
-    os:   { thread: { priority: 24 } },
-    x: 10,
-};
 
 
 export class ScvdExpression extends ScvdBase {
@@ -43,18 +36,13 @@ export class ScvdExpression extends ScvdBase {
         parent: ScvdBase | undefined,
         expression: string | undefined,
         scvdVarName: string,
-        printfHook?: any,
+        isPrintExpression?: boolean,
     ) {
         super(parent);
-        const host = new ObjectDataHost(target);
-        //this.evalContext = new EvalContext({ printf: printfHook, data: host });
-        this.evalContext = makeTypedDemoContext({ printf: printfHook, data: host });
         this.expression = expression;
         this.scvdVarName = scvdVarName;
         this.tag = scvdVarName;
-        if(printfHook !== undefined) {
-            this._isPrintExpression = true;
-        }
+        this._isPrintExpression = isPrintExpression ?? false;
     }
 
     public get expressionAst(): ParseResult | undefined {

@@ -14,23 +14,12 @@
  * limitations under the License.
  */
 
-import { EvalContextInit } from '../evaluator';
 import { ExplorerInfo, ScvdBase } from './scvdBase';
 import { ScvdExpression } from './scvdExpression';
-import { ScvdFormatSpecifier } from './scvdFormatSpecifier';
 
 // https://arm-software.github.io/CMSIS-View/main/scvd_expression.html
 
 
-const formatSpecifier = new ScvdFormatSpecifier();
-
-export const printfHook: EvalContextInit = {
-    printf: {
-        format(spec, value, ctx) {
-            return formatSpecifier.formatValue(spec, value, ctx);
-        },
-    },
-};
 
 export class ScvdPrintExpression extends ScvdExpression {
 
@@ -39,7 +28,7 @@ export class ScvdPrintExpression extends ScvdExpression {
         expression: string | undefined,
         scvdVarName: string,
     ) {
-        super(parent, expression, scvdVarName, printfHook);
+        super(parent, expression, scvdVarName, true);
         this.expression = expression;
     }
 

@@ -67,7 +67,7 @@ export class ScvdVar extends ScvdBase {
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
         if (this._type !== undefined && this._type.type !== undefined) {
-            info.push({ name: 'Type', value: this._type.type });
+            info.push({ name: 'Type', value: this._type.type.getExplorerDisplayName() });
         }
         if (this._value !== undefined && this._value.expression !== undefined) {
             info.push({ name: 'Value', value: this._value.expression });
