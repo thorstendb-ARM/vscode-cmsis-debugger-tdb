@@ -1,4 +1,4 @@
-// evaluator.ts — intrinsics moved to DataHost
+// evaluator.ts — container-aware symbols & host-owned intrinsics
 
 // If you have parser node types, keep this import; otherwise you can remove it
 // and treat AST nodes as `any`.
@@ -41,10 +41,10 @@ export type ExternalFunctions = Record<string, (...args: any[]) => any>;
 
 /** Host interface: evaluator routes all reads/writes through here. */
 export interface DataHost {
-  // Symbols (top-level identifiers)
-  hasSymbol(name: string): boolean;
-  readSymbol(name: string): any | undefined;
-  writeSymbol(name: string, value: any): any;
+  // Symbols (top-level identifiers) — container-aware
+  hasSymbol(container: any, name: string): boolean;
+  readSymbol(container: any, name: string): any | undefined;
+  writeSymbol(container: any, name: string, value: any): any;
 
   // Containers
   isContainer(v: any): boolean;
@@ -63,22 +63,28 @@ export interface DataHost {
   stats?(): { symbols?: number; bytesUsed?: number };
 
   // === Intrinsics live on the DataHost now ===
+  // Preferred generic dispatcher (if provided, used for ALL intrinsics):
   evalIntrinsic?(name: string, container: any, args: any[]): any;
-    __CalcMemUsed?(container: any, args: any[]): any;
-    __FindSymbol?(container: any, args: any[]): any;
-    __GetRegVal?(container: any, args: any[]): any;
-    __size_of?(container: any, args: any[]): any;
-    __Symbol_exists?(container: any, args: any[]): any;
-    __Offset_of?(container: any, args: any[]): any;
+
+  // Or implement any of these named helpers directly (called by default router):
+  __CalcMemUsed?(container: any, args: any[]): any;
+  __FindSymbol?(container: any, args: any[]): any;
+  __GetRegVal?(container: any, args: any[]): any;
+  __size_of?(container: any, args: any[]): any;
+  __Symbol_exists?(container: any, args: any[]): any;
+  __Offset_of?(container: any, args: any[]): any;
+
   // Optional: external functions table (used if EvalContextInit.functions is not passed)
   functions?: ExternalFunctions;
 }
 
 export interface EvalContextInit {
-  data: DataHost;                 // your ScvdBase instance goes here
+  data: DataHost;                 // your model adapter instance goes here
   printf: {
     format?: (spec: FormatSegment['spec'], value: any, ctx: EvalContext) => string | undefined;
   };
+  /** Optional: starting container for symbol resolution/intrinsics. Defaults to the DataHost itself. */
+  container?: any;
   functions?: ExternalFunctions;   // callables referenced by Identifier()
 }
 
@@ -88,30 +94,33 @@ export interface EvalContextInit {
 
 export class EvalContext {
     readonly data: DataHost;
+    /** The starting container for symbol resolution and intrinsics routing. */
+    container: any;
     readonly functions: ExternalFunctions;
     readonly printf: NonNullable<EvalContextInit['printf']>;
 
     constructor(init: EvalContextInit) {
         this.data = init.data;
-        // If your DataHost (ScvdEvalInterface) has a .functions table, use it by default.
+        // If your DataHost has a .functions table, use it by default.
         const hostFns = (this.data as any)?.functions as ExternalFunctions | undefined;
         this.functions = init.functions ?? hostFns ?? Object.create(null);
         this.printf = init.printf ?? {};
+        this.container = init.container ?? this.data;
     }
 
     /** Ensure a symbol exists; create as 0 if missing. */
     ensureSymbol(name: string): void {
-        if (!this.data.hasSymbol(name)) this.data.writeSymbol(name, 0);
+        if (!this.data.hasSymbol(this.container, name)) this.data.writeSymbol(this.container, name, 0);
     }
     /** Read a symbol (auto-create with 0 if unknown). */
     getSymbol(name: string): any {
         this.ensureSymbol(name);
-        const v = this.data.readSymbol(name);
+        const v = this.data.readSymbol(this.container, name);
         return v === undefined ? 0 : v;
     }
     /** Overwrite a symbol. */
     setSymbol(name: string, value: any): any {
-        return this.data.writeSymbol(name, value);
+        return this.data.writeSymbol(this.container, name, value);
     }
 }
 
@@ -458,11 +467,12 @@ function formatValue(spec: FormatSegment['spec'], v: any, ctx?: EvalContext): st
 function routeIntrinsic(ctx: EvalContext, name: string, args: any[]): any {
     // 1) If host provides a generic dispatcher, use it
     if (typeof ctx.data.evalIntrinsic === 'function') {
-        return ctx.data.evalIntrinsic(name, ctx.data, args);
+        return ctx.data.evalIntrinsic(name, ctx.container, args);
     }
+    // 2) If host has a direct method matching the intrinsic name, use it
     const direct = (ctx.data as any)[name];
     if (typeof direct === 'function') {
-        return direct.call(ctx.data, ctx.data, args);
+        return direct.call(ctx.data, ctx.container, args);
     }
     // 3) Fallback to defaults
     return defaultIntrinsic(name, ctx, args);
@@ -479,7 +489,7 @@ function defaultIntrinsic(name: string, ctx: EvalContext, args: any[]): any {
         case '__FindSymbol': {
             const [sym] = args;
             if (typeof sym !== 'string') return 0;
-            if (ctx.data.hasSymbol(sym)) return ctx.getSymbol(sym);
+            if (ctx.data.hasSymbol(ctx.container, sym)) return ctx.getSymbol(sym);
             ctx.ensureSymbol(sym);
             return ctx.getSymbol(sym);
         }
@@ -500,7 +510,7 @@ function defaultIntrinsic(name: string, ctx: EvalContext, args: any[]): any {
         case '__Symbol_exists': {
             const [name] = args;
             if (typeof name !== 'string') return 0;
-            return ctx.data.hasSymbol(name) ? 1 : 0;
+            return ctx.data.hasSymbol(ctx.container, name) ? 1 : 0;
         }
         case '__Offset_of': {
             // Domain-specific in real systems; here accept ColonPath-like or strings and return 0.
@@ -523,11 +533,40 @@ function normalizeEvaluateResult(v: any): EvaluateResult {
     return undefined;
 }
 
-export function evaluateParseResult(pr: ParseResult, ctx: EvalContext): EvaluateResult {
+export function evaluateParseResult(pr: ParseResult, ctx: EvalContext, container?: any): EvaluateResult {
+    const prev = ctx.container;
+    const override = (container !== undefined);
+    if (override) ctx.container = container;
     try {
         const v = evalNode(pr.ast, ctx);
         return normalizeEvaluateResult(v);
     } catch {
         return undefined;
+    } finally {
+        if (override) ctx.container = prev;
     }
 }
+
+/* =============================================================================
+ * Usage (printf stays attached exactly as you wanted)
+ * ============================================================================= */
+
+// Example wiring:
+//
+// import { EvalContext, EvalContextInit } from './evaluator';
+// import { formatSpecifier } from './yourPrintfModule';
+//
+// export const contextInit: EvalContextInit = {
+//   data: myHost, // implements DataHost
+//   container: myRootContainer, // <- starting point for symbol resolution (optional)
+//   printf: {
+//     format(spec, value, ctx) {
+//       return formatSpecifier.formatValue(spec, value, ctx);
+//     },
+//   },
+//   // Optionally, you can add ext. functions here (or set data.functions)
+//   // functions: { clamp: (x:number,min:number,max:number)=>Math.min(Math.max(x,min),max) },
+// };
+//
+// // At call time you can override the container per-evaluation:
+// // evaluateParseResult(parseResult, ctx, someOtherContainer);

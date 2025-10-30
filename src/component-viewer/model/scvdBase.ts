@@ -47,8 +47,7 @@ export class ScvdBase extends ScvdEvalInterface {
     private _valid: boolean = false;
 
     static #_evalContext?: EvalContext | undefined;
-    protected _symbolsCache = new Map<string, ScvdBase>();
-
+    private _scvdTreeContextContainer: ScvdBase | undefined;
 
 
     constructor(
@@ -93,20 +92,12 @@ export class ScvdBase extends ScvdEvalInterface {
         return true;
     }
 
-    public getVar(name: string): ScvdBase | undefined {
-        // 1) Check local cache
-        const cached = this._symbolsCache.get(name);
-        if(cached !== undefined) {
-            return cached;
-        }
+    public get scvdTreeContextContainer(): ScvdBase | undefined {
+        return this._scvdTreeContextContainer;
+    }
 
-        // 2) Check model
-        const modelSymbol = this.peekModel(name);
-        if(modelSymbol !== undefined) {
-            this._symbolsCache.set(name, modelSymbol);
-            return modelSymbol;
-        }
-
+    public getSymbol(name: string): ScvdBase | undefined {
+        console.error('ScvdBase: getSymbol not implemented for: ', name);
         return undefined;
     }
 

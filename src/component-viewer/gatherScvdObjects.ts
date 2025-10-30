@@ -26,7 +26,9 @@ export class GatherScvdObjects {
         model: ScvdComponentViewer
     ) {
         this._model = model;
-        this._varEngine = new ScvdVarEngine(model);
+        const varEngine = new ScvdVarEngine(model);
+        this._varEngine = varEngine;
+        this.model.evalContext = varEngine.ctx;
     }
 
     private get model(): ScvdComponentViewer {
@@ -55,10 +57,6 @@ export class GatherScvdObjects {
             return;
         }
 
-        const vars = item.vars;
-        vars.forEach( (v) => {
-            this.varEngine?.registerVar(v);
-        });
-        item.evalContext = this.varEngine.ctx;
+        //item.evalContext = this.varEngine.ctx;
     }
 }

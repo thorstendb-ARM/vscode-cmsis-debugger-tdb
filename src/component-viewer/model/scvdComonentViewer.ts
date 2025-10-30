@@ -22,8 +22,6 @@ import { ExplorerInfo, Json, ScvdBase } from './scvdBase';
 import { ScvdObjects } from './scvdObject';
 import { ScvdTypedefs } from './scvdTypedef';
 import { getArrayFromJson, getObjectFromJson } from './scvdUtils';
-import { ScvdVar } from './scvdVar';
-import { ScvdEvalInterface } from './scvdEvalInterface';
 
 export class ScvdComponentViewer extends ScvdBase {
     private _componentIdentifier: ScvdComponentIdentifier | undefined;
@@ -35,13 +33,6 @@ export class ScvdComponentViewer extends ScvdBase {
         parent: ScvdBase | undefined,
     ) {
         super(parent);
-    }
-
-    static castTo(instance: ScvdEvalInterface): ScvdComponentViewer | undefined {
-        if(!(instance instanceof ScvdComponentViewer)) {
-            return undefined;
-        }
-        return instance as unknown as ScvdComponentViewer;
     }
 
     /* template for readXml
@@ -93,6 +84,12 @@ export class ScvdComponentViewer extends ScvdBase {
         return super.readXml(xml);
     }
 
+    // fallback for global model symbol resolution
+    public getSymbol(name: string): ScvdBase | undefined {
+        const symbol = this.objects?.getSymbol(name);
+        return symbol;
+    }
+
     public get component(): ScvdComponentIdentifier | undefined {
         return this._componentIdentifier;
     }
@@ -128,17 +125,6 @@ export class ScvdComponentViewer extends ScvdBase {
         });
         return valid;
     }
-
-
-    public getVar(name: string): ScvdVar | undefined {
-        const objectsContainer = this.objects;
-        if(objectsContainer === undefined) {
-            return undefined;
-        }
-
-        return objectsContainer.getVar(name);
-    }
-
 
     public debugAll(): boolean {
         return this.debugRecursive(this);

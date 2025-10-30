@@ -57,17 +57,16 @@ export class ScvdObjects extends ScvdBase {
         return this._objects;
     }
 
-    public getVar(name: string): ScvdVar | undefined {
+    // fallback for global model symbol resolution
+    public getSymbol(name: string): ScvdBase | undefined {
         for(const obj of this._objects) {
-            for(const v of obj.vars) {
-                if(v.name === name) {
-                    return v;
-                }
+            const sym = obj.getSymbol(name);
+            if(sym !== undefined) {
+                return sym;
             }
         }
         return undefined;
     }
-
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
@@ -83,6 +82,7 @@ export class ScvdObject extends ScvdBase {
     private _read: ScvdRead[] = [];
     private _readList: ScvdReadList[] = [];
     private _out: ScvdOut[] = [];
+    private _symbolsCache = new Map<string, ScvdBase>();
 
     constructor(
         parent: ScvdBase | undefined,
@@ -132,6 +132,71 @@ export class ScvdObject extends ScvdBase {
         });
 
         return super.readXml(xml);
+    }
+
+    public get list(): ScvdList[] {
+        return this._list;
+    }
+
+    public get read(): ScvdRead[] {
+        return this._read;
+    }
+
+    public get readList(): ScvdReadList[] {
+        return this._readList;
+    }
+
+    private get symbolsCache(): Map<string, ScvdBase> {
+        return this._symbolsCache;
+    }
+    private addToSymbolsCache(name: string, item: ScvdBase): void {
+        this.symbolsCache.set(name, item);
+    }
+    private getFromSymbolsCache(name: string): ScvdBase | undefined {
+        return this.symbolsCache.get(name);
+    }
+
+    public getSymbol(name: string): ScvdBase | undefined {
+        // look in cache (vars, reads, ...)
+        const cachedSymbol = this.getFromSymbolsCache(name);
+        if(cachedSymbol !== undefined) {
+            return cachedSymbol;
+        }
+
+        const varSymbol = this.vars.find( v => v.name === name);
+        if(varSymbol !== undefined) {
+            this.addToSymbolsCache(name, varSymbol);
+            return varSymbol;
+        }
+
+        const readSymbol = this.reads.find( r => r.name === name);
+        if(readSymbol !== undefined) {
+            this.addToSymbolsCache(name, readSymbol);
+            return readSymbol;
+        }
+
+        return undefined;
+    }
+
+
+    public getVar(name: string): ScvdVar | undefined {
+        for(const v of this._vars) {
+            if(v.name === name) {
+                return v;
+            }
+        }
+
+        return undefined;
+    }
+
+    public getRead(name: string): ScvdRead | undefined {
+        for(const r of this._read) {
+            if(r.name === name) {
+                return r;
+            }
+        }
+
+        return undefined;
     }
 
 

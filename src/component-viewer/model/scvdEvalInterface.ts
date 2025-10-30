@@ -1,11 +1,10 @@
 /* =============================================================================
- * ScvdEvalInterface: Extend this to adapt your model (with DataHost intrinsics)
+ * ScvdEvalInterface: Extend this to adapt your model (with container-aware symbols)
  * ============================================================================= */
 
 import { CTypeName, DataHost, ExternalFunctions } from '../evaluator';
 import { registerCache } from '../ScvdCacheRegister';
 import { ScvdBase } from './scvdBase';
-import { ScvdComponentViewer } from './scvdComonentViewer';
 
 /* --------------------------------------------------------------------------------
  * Helpers (kept local to avoid runtime cycles with the evaluator)
@@ -36,7 +35,6 @@ function isColonPathLike(v: any): boolean {
     return !!(v && typeof v === 'object' && Array.isArray(v.__colonPath));
 }
 
-
 /**
  * Extend this class to connect the evaluator to your data model.
  * - Override `peekModel` / `commitModel` to map top-level identifiers.
@@ -45,24 +43,22 @@ function isColonPathLike(v: any): boolean {
  * - Intrinsics are implemented here so the evaluator can call them via DataHost.
  */
 export abstract class ScvdEvalInterface implements DataHost {
-    /** Local symbol cache (mirrors model when you choose to). */
-    protected symbols = new Map<string, ScvdBase>();
-
     /** Optional function table you can populate from your model. */
     functions: ExternalFunctions = Object.create(null);
 
-    // ---- DataHost: symbols ----
-    hasSymbol(name: string): boolean {
-        return this.cacheSymbol(name) !== undefined;
+    // ---- DataHost: symbols (container-aware) ----
+    hasSymbol(container: ScvdBase, name: string): boolean {
+        const symbol = container.getSymbol(name);
+        return symbol !== undefined;
     }
 
-    readSymbol(name: string): any | undefined {
-        const symbol = this.cacheSymbol(name);
+    readSymbol(container: ScvdBase, name: string): any | undefined {
+        const symbol = container.getSymbol(name);
         return symbol?.getValue() ?? undefined;
     }
 
-    writeSymbol(name: string, value: any): any {
-        const symbol = this.cacheSymbol(name);
+    writeSymbol(container: ScvdBase, name: string, value: any): any {
+        const symbol = container.getSymbol(name);
         return symbol?.setValue(value) ?? undefined;
     }
 
@@ -80,7 +76,7 @@ export abstract class ScvdEvalInterface implements DataHost {
         return [];
     }
 
-    readKey(container: any, key: any): any | undefined {
+    readKey(container: ScvdBase, key: any): any | undefined {
         if (typeof container === 'object' && container !== null) {
             // Default: plain object/array access
             return (container as any)[this.isArray(container) ? (Number(key) | 0) : key];
@@ -88,7 +84,7 @@ export abstract class ScvdEvalInterface implements DataHost {
         return undefined;
     }
 
-    writeKey(container: any, key: any, value: any): any {
+    writeKey(container: ScvdBase, key: any, value: any): any {
         if (typeof container === 'object' && container !== null) {
             (container as any)[this.isArray(container) ? (Number(key) | 0) : key] = value;
             return value;
@@ -97,35 +93,13 @@ export abstract class ScvdEvalInterface implements DataHost {
     }
 
     stats() {
-        return { symbols: this.symbols.size };
+        return { symbols: 0 /*this.symbols.size*/ };
     }
 
-    // ---- Hooks you should override in your subclass ----
-
-    /** Return the bound symbol wrapper from your model (or `undefined` if unknown). */
-    protected peekModel(name: string): ScvdBase | undefined {
-        const model = ScvdComponentViewer.castTo(this);
-        if (!model) {
-            return undefined;
-        }
-        return model.getVar(name);
-    }
 
     /** Persist a symbol back into your model (no-op by default). */
     protected commitModel(_name: string, _value: any): void {
     /* no-op */
-    }
-
-    private cacheSymbol(name: string): ScvdBase | undefined {
-        const cachedSym = this.symbols.get(name);
-        if (cachedSym) {
-            return cachedSym;
-        }
-        const newSym = this.peekModel(name);
-        if (newSym !== undefined) {
-            this.symbols.set(name, newSym);
-        }
-        return newSym;
     }
 
     /**
@@ -137,7 +111,6 @@ export abstract class ScvdEvalInterface implements DataHost {
     // =====================
     // Intrinsics (DataHost)
     // =====================
-    /** Prefer providing these directly. The evaluator will call them via `EvalPointCall`. */
     __CalcMemUsed(_container: any, _args: any[]): any {
         //const s = this.stats?.();
         //if (s?.bytesUsed != null) return s.bytesUsed;
@@ -145,12 +118,12 @@ export abstract class ScvdEvalInterface implements DataHost {
         return 0;
     }
 
-    __FindSymbol(_container: any, args: any[]): any {
+    __FindSymbol(container: any, args: any[]): any {
         const [name] = args ?? [];
         if (typeof name !== 'string') return 0;
         // Spec: auto-create unknown identifiers with value 0 on first touch.
-        if (!this.hasSymbol(name)) this.writeSymbol(name, 0);
-        return this.readSymbol(name) ?? 0;
+        if (!this.hasSymbol(container, name)) this.writeSymbol(container, name, 0);
+        return this.readSymbol(container, name) ?? 0;
     }
 
     __GetRegVal(_container: any, args: any[]): any {
@@ -177,17 +150,18 @@ export abstract class ScvdEvalInterface implements DataHost {
         return 4;
     }
 
-    __Symbol_exists(_container: any, args: any[]): any {
+    __Symbol_exists(container: any, args: any[]): any {
         const [name] = args ?? [];
         if (typeof name !== 'string') return 0;
-        return this.hasSymbol(name) ? 1 : 0; // 1/0 per original truthiness convention
+        console.log('Symbol_exists, currently assuming true:', name);
+        return 1;
     }
 }
 
 
 /**
  * Demo subclass you can start from:
- *   export class ScvdBase extends ScvdEvalInterface { ... }
+ *   export class ScvdBaseImpl extends ScvdEvalInterface { ... }
  */
 /*
 export class ScvdBaseImpl extends ScvdEvalInterface {

@@ -17,7 +17,6 @@
 import { EvalContext } from './evaluator';
 import { ScvdComponentViewer } from './model/scvdComonentViewer';
 import { ScvdFormatSpecifier } from './model/scvdFormatSpecifier';
-import { ScvdVar } from './model/scvdVar';
 
 
 export type PrintfHook = {
@@ -56,16 +55,5 @@ export class ScvdVarEngine {
 
     public get ctx(): EvalContext {
         return this._ctx;
-    }
-
-    public registerVar(item: ScvdVar): void {
-        console.log(`Registering SCVD variable: ${item.name}`);
-
-        // Register the variable in the engine
-        const name = item.name;
-        if(name === undefined || name.length === 0) {
-            console.log('ScvdVarEngine.registerVar: Variable name is undefined or empty');
-            return;
-        }
     }
 }
