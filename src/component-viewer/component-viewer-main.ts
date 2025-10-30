@@ -40,7 +40,7 @@ enum scvdExamples {
     MyTest = 7,
 }
 
-const scvdFile = scvdFiles[scvdExamples.GetRegVal_Test];
+const scvdFile = scvdFiles[scvdExamples.RTX5];
 
 
 const xmlOpts: ParserOptions = {
