@@ -16,6 +16,7 @@
 
 import { EvalContext } from './evaluator';
 import { ScvdComponentViewer } from './model/scvdComonentViewer';
+import { ScvdEvalInterface } from './model/scvdEvalInterface';
 import { ScvdFormatSpecifier } from './model/scvdFormatSpecifier';
 
 
@@ -35,17 +36,23 @@ export class ScvdVarEngine {
     private _model: ScvdComponentViewer;
     private _ctx: EvalContext;
     private _printf: PrintfHook = printfHook;
+    private _host: ScvdEvalInterface;
 
     constructor(
         model: ScvdComponentViewer
     ) {
         this._model = model;
+        // Create the DataHost (stateless; you can reuse a single instance)
+        this._host = new ScvdEvalInterface();
+
+        // Your model’s root ScvdBase (where symbol resolution starts)
         this._ctx = new EvalContext({
-            data: this.model,
+            data: this._host,              // DataHost
+            container: model, // ScvdBase root for symbol resolution
             printf: {
                 format: (spec, value, ctx) => this._printf.format(spec, value, ctx),
             },
-            // functions: this.model.functions,          // optional: if your model exposes callables
+            // functions: this._host.functions, // optional external callables table
         });
     }
 

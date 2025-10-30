@@ -17,7 +17,6 @@
 import { EvalContext } from '../evaluator';
 import { resolveType } from '../resolver';
 import { NumberType } from './numberType';
-import { ScvdEvalInterface } from './scvdEvalInterface';
 import { getLineNumberFromJson, getStringFromJson } from './scvdUtils';
 
 // add linter exception for Json
@@ -32,7 +31,7 @@ export type ExplorerInfo = {
     icon?: string;
 };
 
-export class ScvdBase extends ScvdEvalInterface {
+export class ScvdBase {
     private _parent: ScvdBase | undefined;
     private _children: ScvdBase[] = [];
     private _nodeId: number = 0;
@@ -53,7 +52,6 @@ export class ScvdBase extends ScvdEvalInterface {
     constructor(
         parent: ScvdBase | undefined,
     ) {
-        super();
         g_idNext += 1;
         this._nodeId = g_idNext;
 
@@ -266,7 +264,11 @@ export class ScvdBase extends ScvdEvalInterface {
         return undefined;
     }
 
-    public setValue(_val: number): number | undefined {
+    public setValue(_val: number | string): number | string | undefined {
+        return undefined;
+    }
+
+    public getIndexRef(_index: number): ScvdBase | undefined {
         return undefined;
     }
 

@@ -76,7 +76,13 @@ export class ScvdExpression extends ScvdBase {
         if(this.expressionAst === undefined || this.evalContext === undefined) {
             return undefined;
         }
-        return evaluateParseResult(this.expressionAst, this.evalContext, this.scvdTreeContextContainer);
+        try {
+            const result = evaluateParseResult(this.expressionAst, this.evalContext, this.scvdTreeContextContainer);
+            return result;
+        } catch (error) {
+            console.error('Error evaluating expression:', error);
+            return undefined;
+        }
     }
 
     public get result(): NumberType | undefined {

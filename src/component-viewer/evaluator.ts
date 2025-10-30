@@ -1,7 +1,5 @@
-// evaluator.ts — container-aware symbols & host-owned intrinsics
+// evaluator.ts — ScvdBase-only containers & host-owned intrinsics (strict missing symbol/value errors)
 
-// If you have parser node types, keep this import; otherwise you can remove it
-// and treat AST nodes as `any`.
 import type {
     ASTNode,
     NumberLiteral,
@@ -22,14 +20,10 @@ import type {
     ParseResult,
     ColonPath,
 } from './parser';
-
-/* =============================================================================
- * Public API (minimal)
- * ============================================================================= */
+import type { ScvdBase } from './model/scvdBase';
 
 export type EvaluateResult = number | string | undefined;
 
-/** Optional C-like names for size queries (kept small) */
 export type CTypeName =
   | 'uint8_t' | 'int8_t'
   | 'uint16_t' | 'int16_t'
@@ -39,93 +33,71 @@ export type CTypeName =
 
 export type ExternalFunctions = Record<string, (...args: any[]) => any>;
 
-/** Host interface: evaluator routes all reads/writes through here. */
 export interface DataHost {
-  // Symbols (top-level identifiers) — container-aware
-  hasSymbol(container: any, name: string): boolean;
-  readSymbol(container: any, name: string): any | undefined;
-  writeSymbol(container: any, name: string, value: any): any;
-
-  // Containers
-  isContainer(v: any): boolean;
-  isArray(v: any): boolean;
-  makeObject(): any;
-  makeArray(): any;
-
-  // Generic key access (.prop and [key])
-  readKey(container: any, key: any): any | undefined;
-  writeKey(container: any, key: any, value: any): any;
-
-  // Optional: advanced lookups
-  resolveColonPath?(parts: string[]): any;
-
-  // Optional: stats
+  getSymbolRef(root: ScvdBase, name: string, forWrite?: boolean): ScvdBase | undefined;
+  getMemberRef(base: ScvdBase, property: string, forWrite?: boolean): ScvdBase | undefined;
+  getIndexRef(base: ScvdBase, index: number, forWrite?: boolean): ScvdBase | undefined;
+  readValue(ref: ScvdBase): any;                // may return undefined -> error
+  writeValue(ref: ScvdBase, value: any): any;   // may return undefined -> error
+  resolveColonPath?(root: ScvdBase, parts: string[]): ScvdBase | any;
   stats?(): { symbols?: number; bytesUsed?: number };
+  evalIntrinsic?(name: string, root: ScvdBase, args: any[]): any;
 
-  // === Intrinsics live on the DataHost now ===
-  // Preferred generic dispatcher (if provided, used for ALL intrinsics):
-  evalIntrinsic?(name: string, container: any, args: any[]): any;
+  __CalcMemUsed?(root: ScvdBase, args: any[]): any;
+  __FindSymbol?(root: ScvdBase, args: any[]): any;
+  __GetRegVal?(root: ScvdBase, args: any[]): any;
+  __size_of?(root: ScvdBase, args: any[]): any;
+  __Symbol_exists?(root: ScvdBase, args: any[]): any;
+  __Offset_of?(root: ScvdBase, args: any[]): any;
 
-  // Or implement any of these named helpers directly (called by default router):
-  __CalcMemUsed?(container: any, args: any[]): any;
-  __FindSymbol?(container: any, args: any[]): any;
-  __GetRegVal?(container: any, args: any[]): any;
-  __size_of?(container: any, args: any[]): any;
-  __Symbol_exists?(container: any, args: any[]): any;
-  __Offset_of?(container: any, args: any[]): any;
-
-  // Optional: external functions table (used if EvalContextInit.functions is not passed)
+  // Optional: external functions table
   functions?: ExternalFunctions;
 }
 
 export interface EvalContextInit {
-  data: DataHost;                 // your model adapter instance goes here
+  data: DataHost;
   printf: {
     format?: (spec: FormatSegment['spec'], value: any, ctx: EvalContext) => string | undefined;
   };
-  /** Optional: starting container for symbol resolution/intrinsics. Defaults to the DataHost itself. */
-  container?: any;
-  functions?: ExternalFunctions;   // callables referenced by Identifier()
+  container: ScvdBase;
+  functions?: ExternalFunctions;
 }
-
-/* =============================================================================
- * Eval context
- * ============================================================================= */
 
 export class EvalContext {
     readonly data: DataHost;
-    /** The starting container for symbol resolution and intrinsics routing. */
-    container: any;
+    container: ScvdBase;
     readonly functions: ExternalFunctions;
     readonly printf: NonNullable<EvalContextInit['printf']>;
 
     constructor(init: EvalContextInit) {
         this.data = init.data;
-        // If your DataHost has a .functions table, use it by default.
         const hostFns = (this.data as any)?.functions as ExternalFunctions | undefined;
         this.functions = init.functions ?? hostFns ?? Object.create(null);
         this.printf = init.printf ?? {};
-        this.container = init.container ?? this.data;
+        this.container = init.container;
     }
 
-    /** Ensure a symbol exists; create as 0 if missing. */
-    ensureSymbol(name: string): void {
-        if (!this.data.hasSymbol(this.container, name)) this.data.writeSymbol(this.container, name, 0);
+    ensureSymbol(name: string): ScvdBase | undefined {
+        return this.data.getSymbolRef(this.container, name, true);
     }
-    /** Read a symbol (auto-create with 0 if unknown). */
     getSymbol(name: string): any {
-        this.ensureSymbol(name);
-        const v = this.data.readSymbol(this.container, name);
-        return v === undefined ? 0 : v;
+        const ref = this.data.getSymbolRef(this.container, name, false) ?? this.ensureSymbol(name);
+        if (!ref) throw new Error(`Unknown symbol '${name}'`);
+        const v = this.data.readValue(ref);
+        if (v === undefined) throw new Error(`Undefined value for symbol '${name}'`);
+        return v;
     }
-    /** Overwrite a symbol. */
     setSymbol(name: string, value: any): any {
-        return this.data.writeSymbol(this.container, name, value);
+        const ref = this.data.getSymbolRef(this.container, name, true);
+        if (!ref) throw new Error(`Unknown symbol '${name}'`);
+        const w = this.data.writeValue(ref, value);
+        if (w === undefined) throw new Error(`Write returned undefined for symbol '${name}'`);
+        return w;
     }
 }
 
 /* =============================================================================
- * Numeric helpers (BigInt-aware where needed)
+ * Numeric helpers
  * ============================================================================= */
 
 const U64_MASK = (1n << 64n) - 1n;
@@ -151,12 +123,6 @@ function toBigInt(x: any): bigint {
     return 0n;
 }
 
-// BigInt-aware ops
-function addVals(a: any, b: any): any {
-    if (typeof a === 'string' || typeof b === 'string') return String(a) + String(b);
-    if (typeof a === 'bigint' || typeof b === 'bigint') return toBigInt(a) + toBigInt(b);
-    return asNumber(a) + asNumber(b);
-}
 function subVals(a: any, b: any): any { return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) - toBigInt(b)) : (asNumber(a) - asNumber(b)); }
 function mulVals(a: any, b: any): any { return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) * toBigInt(b)) : (asNumber(a) * asNumber(b)); }
 function divVals(a: any, b: any): any {
@@ -177,8 +143,6 @@ function modVals(a: any, b: any): any {
 function andVals(a: any, b: any): any { return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) & toBigInt(b)) : (((asNumber(a)|0) & (asNumber(b)|0)) >>> 0); }
 function xorVals(a: any, b: any): any { return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) ^ toBigInt(b)) : (((asNumber(a)|0) ^ (asNumber(b)|0)) >>> 0); }
 function orVals (a: any, b: any): any { return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) | toBigInt(b)) : (((asNumber(a)|0) | (asNumber(b)|0)) >>> 0); }
-function shlVals(a: any, b: any): any { return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) << toBigInt(b)) : (((asNumber(a)|0) << (asNumber(b)&31)) >>> 0); }
-function sarVals(a: any, b: any): any { return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) >> toBigInt(b)) : (((asNumber(a)|0) >> (asNumber(b)&31)) >>> 0); }
 function shrVals(a: any, b: any): any {
     if (typeof a === 'bigint' || typeof b === 'bigint') {
         const aa = toBigInt(a) & U64_MASK; const bb = toBigInt(b);
@@ -195,121 +159,93 @@ function ltVals(a: any, b: any): boolean { return (typeof a === 'bigint' || type
 function lteVals(a: any, b: any): boolean { return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) <= toBigInt(b)) : (asNumber(a) <= asNumber(b)); }
 function gtVals(a: any, b: any): boolean { return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) >  toBigInt(b)) : (asNumber(a) >  asNumber(b)); }
 function gteVals(a: any, b: any): boolean { return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) >= toBigInt(b)) : (asNumber(a) >= asNumber(b)); }
+function addVals(a: any, b: any): any {
+    if (typeof a === 'string' || typeof b === 'string') return String(a) + String(b);
+    if (typeof a === 'bigint' || typeof b === 'bigint') return toBigInt(a) + toBigInt(b);
+    return asNumber(a) + asNumber(b);
+}
 
-function sizeOfTypeName(name: CTypeName | string): number | undefined {
-    switch (name) {
-        case 'uint8_t': case 'int8_t': return 1;
-        case 'uint16_t': case 'int16_t': return 2;
-        case 'uint32_t': case 'int32_t': case 'float': return 4;
-        case 'uint64_t': case 'int64_t': case 'double': return 8;
-        default: return undefined;
+/* =============================================================================
+ * Strict reference/value helpers (throw on missing)
+ * ============================================================================= */
+
+function mustRef(node: ASTNode, ctx: EvalContext, forWrite = false): ScvdBase {
+    switch (node.kind) {
+        case 'Identifier': {
+            const id = node as Identifier;
+            const ref = ctx.data.getSymbolRef(ctx.container, id.name, forWrite);
+            if (!ref) throw new Error(`Unknown symbol '${id.name}'`);
+            return ref;
+        }
+        case 'MemberAccess': {
+            const ma = node as MemberAccess;
+            const baseRef = mustRef(ma.object, ctx, forWrite);
+            const child = ctx.data.getMemberRef(baseRef, ma.property, forWrite);
+            if (!child) throw new Error(`Missing member '${ma.property}'`);
+            return child;
+        }
+        case 'ArrayIndex': {
+            const ai = node as ArrayIndex;
+            const baseRef = mustRef(ai.array, ctx, forWrite);
+            const idxVal = evalNode(ai.index, ctx);
+            const idx = asNumber(idxVal) | 0;
+            const child = ctx.data.getIndexRef(baseRef, idx, forWrite);
+            if (!child) throw new Error(`Missing index [${idx}]`);
+            return child;
+        }
+        default:
+            throw new Error('Invalid reference target.');
     }
+}
+
+function mustRead(ref: ScvdBase, ctx: EvalContext, label?: string): any {
+    const v = ctx.data.readValue(ref);
+    if (v === undefined) throw new Error(label ? `Undefined value for ${label}` : 'Undefined value');
+    return v;
+}
+
+type LValue = { get(): any; set(v: any): any };
+
+function lref(node: ASTNode, ctx: EvalContext): LValue {
+    const ref = mustRef(node, ctx, true);
+    return {
+        get: () => mustRead(ref, ctx),
+        set: (v) => {
+            const out = ctx.data.writeValue(ref, v);
+            if (out === undefined) throw new Error('Write returned undefined');
+            return out;
+        },
+    };
 }
 
 /* =============================================================================
  * Evaluation
  * ============================================================================= */
 
-type Ref = { get(): any; set(v: any): any };
-
-function lref(node: ASTNode, ctx: EvalContext): Ref {
-    switch (node.kind) {
-        case 'Identifier': {
-            const id = node as Identifier;
-            ctx.ensureSymbol(id.name);
-            return { get: () => ctx.getSymbol(id.name), set: (v) => ctx.setSymbol(id.name, v) };
-        }
-
-        case 'MemberAccess': {
-            const ma = node as MemberAccess;
-            const baseRef = lrefable(ma.object)
-                ? lref(ma.object as any, ctx)
-                : ({ get: () => evalNode(ma.object, ctx), set: () => { throw new Error('Left side is not assignable (member base).'); } } as Ref);
-
-            return {
-                get: () => {
-                    const base = baseRef.get();
-                    if (!ctx.data.isContainer(base)) return 0;
-                    const v = ctx.data.readKey(base, ma.property);
-                    return v === undefined ? 0 : v;
-                },
-                set: (val) => {
-                    let base = baseRef.get();
-                    if (!ctx.data.isContainer(base)) {
-                        base = ctx.data.makeObject();
-                        baseRef.set(base);
-                    }
-                    return ctx.data.writeKey(base, ma.property, val);
-                },
-            };
-        }
-
-        case 'ArrayIndex': {
-            const ai = node as ArrayIndex;
-            const baseRef = lrefable(ai.array)
-                ? lref(ai.array as any, ctx)
-                : ({ get: () => evalNode(ai.array, ctx), set: () => { throw new Error('Left side is not assignable (index base).'); } } as Ref);
-
-            return {
-                get: () => {
-                    const base = baseRef.get();
-                    if (!ctx.data.isContainer(base)) return 0;
-                    const idxVal = evalNode(ai.index, ctx);
-                    const key = ctx.data.isArray(base) ? (asNumber(idxVal) | 0) : idxVal;
-                    const v = ctx.data.readKey(base, key);
-                    return v === undefined ? 0 : v;
-                },
-                set: (val) => {
-                    let base = baseRef.get();
-                    const idxVal = evalNode(ai.index, ctx);
-                    const preferArray = Number.isFinite(asNumber(idxVal));
-                    if (!ctx.data.isContainer(base)) {
-                        base = preferArray ? ctx.data.makeArray() : ctx.data.makeObject();
-                        baseRef.set(base);
-                    }
-                    const key = ctx.data.isArray(base) ? (asNumber(idxVal) | 0) : idxVal;
-                    return ctx.data.writeKey(base, key, val);
-                },
-            };
-        }
-
-        default:
-            throw new Error('Invalid assignment target.');
-    }
-}
-function lrefable(node: ASTNode): boolean {
-    return node.kind === 'Identifier' || node.kind === 'MemberAccess' || node.kind === 'ArrayIndex';
-}
-
-/** Evaluate a node to a value. */
 export function evalNode(node: ASTNode, ctx: EvalContext): any {
     switch (node.kind) {
         case 'NumberLiteral':  return (node as NumberLiteral).value;
         case 'StringLiteral':  return (node as StringLiteral).value;
 
-        case 'Identifier':     return ctx.getSymbol((node as Identifier).name);
+        case 'Identifier': {
+            const r = mustRef(node, ctx, false);
+            return mustRead(r, ctx, (node as Identifier).name);
+        }
 
         case 'MemberAccess': {
-            const { object, property } = node as MemberAccess;
-            const base = evalNode(object, ctx);
-            if (!ctx.data.isContainer(base)) return 0;
-            const v = ctx.data.readKey(base, property);
-            return v === undefined ? 0 : v;
+            const r = mustRef(node, ctx, false);
+            return mustRead(r, ctx);
         }
 
         case 'ArrayIndex': {
-            const { array, index } = node as ArrayIndex;
-            const base = evalNode(array, ctx);
-            if (!ctx.data.isContainer(base)) return 0;
-            const idxVal = evalNode(index, ctx);
-            const key = ctx.data.isArray(base) ? (asNumber(idxVal) | 0) : idxVal;
-            const v = ctx.data.readKey(base, key);
-            return v === undefined ? 0 : v;
+            const r = mustRef(node, ctx, false);
+            return mustRead(r, ctx);
         }
 
         case 'ColonPath': {
             const cp = node as ColonPath;
-            const handled = ctx.data.resolveColonPath?.(cp.parts.slice());
+            const handled = ctx.data.resolveColonPath?.(ctx.container, cp.parts.slice());
+            // Colon paths that do not resolve are allowed to flow (domain-specific)
             return handled !== undefined ? handled : { __colonPath: cp.parts.slice() };
         }
 
@@ -356,8 +292,8 @@ export function evalNode(node: ASTNode, ctx: EvalContext): any {
                 case '*=': out = mulVals(L, R); break;
                 case '/=': out = divVals(L, R); break;
                 case '%=': out = modVals(L, R); break;
-                case '<<=': out = shlVals(L, R); break;
-                case '>>=': out = sarVals(L, R); break;
+                case '<<=': out = (typeof L === 'bigint' || typeof R === 'bigint') ? (toBigInt(L) << toBigInt(R)) : (((asNumber(L)|0) << (asNumber(R)&31)) >>> 0); break;
+                case '>>=': out = (typeof L === 'bigint' || typeof R === 'bigint') ? (toBigInt(L) >> toBigInt(R)) : (((asNumber(L)|0) >> (asNumber(R)&31)) >>> 0); break;
                 case '&=': out = andVals(L, R); break;
                 case '^=': out = xorVals(L, R); break;
                 case '|=': out = orVals(L, R); break;
@@ -368,14 +304,15 @@ export function evalNode(node: ASTNode, ctx: EvalContext): any {
 
         case 'CallExpression': {
             const c = node as CallExpression;
-            const fnVal = evalNode(c.callee, ctx);
             const args = c.args.map(a => evalNode(a, ctx));
-            if (typeof fnVal === 'function') return fnVal(...args);
+            // Prefer external function table BEFORE reading callee symbol value
             if (c.callee.kind === 'Identifier') {
                 const name = (c.callee as Identifier).name;
                 const ext = ctx.functions[name];
                 if (typeof ext === 'function') return ext(...args);
             }
+            const fnVal = evalNode(c.callee, ctx); // may throw if missing/undefined
+            if (typeof fnVal === 'function') return fnVal(...args);
             throw new Error('Callee is not callable.');
         }
 
@@ -423,8 +360,8 @@ function evalBinary(node: BinaryExpression, ctx: EvalContext): any {
         case '*': return mulVals(a, b);
         case '/': return divVals(a, b);
         case '%': return modVals(a, b);
-        case '<<': return shlVals(a, b);
-        case '>>': return sarVals(a, b);
+        case '<<': return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) << toBigInt(b)) : (((asNumber(a)|0) << (asNumber(b)&31)) >>> 0);
+        case '>>': return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) >> toBigInt(b)) : (((asNumber(a)|0) >> (asNumber(b)&31)) >>> 0);
         case '>>>': return shrVals(a, b);
         case '&': return andVals(a, b);
         case '^': return xorVals(a, b);
@@ -453,7 +390,6 @@ function formatValue(spec: FormatSegment['spec'], v: any, ctx?: EvalContext): st
         case 'x':  return (typeof v === 'bigint') ? (v & U64_MASK).toString(16) : (asNumber(v) >>> 0).toString(16);
         case 't':  return truthy(v) ? 'true' : 'false';
         case 'S':  return typeof v === 'string' ? v : String(v);
-            // Domain-specific passthroughs (print as-is)
         case 'C': case 'E': case 'I': case 'J': case 'N': case 'M': case 'T': case 'U': return String(v);
         case '%':  return '%';
         default:   return String(v);
@@ -461,20 +397,17 @@ function formatValue(spec: FormatSegment['spec'], v: any, ctx?: EvalContext): st
 }
 
 /* =============================================================================
- * Intrinsics routing (now owned by DataHost)
+ * Intrinsics routing
  * ============================================================================= */
 
 function routeIntrinsic(ctx: EvalContext, name: string, args: any[]): any {
-    // 1) If host provides a generic dispatcher, use it
     if (typeof ctx.data.evalIntrinsic === 'function') {
         return ctx.data.evalIntrinsic(name, ctx.container, args);
     }
-    // 2) If host has a direct method matching the intrinsic name, use it
     const direct = (ctx.data as any)[name];
     if (typeof direct === 'function') {
         return direct.call(ctx.data, ctx.container, args);
     }
-    // 3) Fallback to defaults
     return defaultIntrinsic(name, ctx, args);
 }
 
@@ -487,33 +420,41 @@ function defaultIntrinsic(name: string, ctx: EvalContext, args: any[]): any {
             return 0;
         }
         case '__FindSymbol': {
+            // Prefer host override; if we got here, emulate strict behavior
             const [sym] = args;
-            if (typeof sym !== 'string') return 0;
-            if (ctx.data.hasSymbol(ctx.container, sym)) return ctx.getSymbol(sym);
-            ctx.ensureSymbol(sym);
-            return ctx.getSymbol(sym);
+            if (typeof sym !== 'string') throw new Error('Invalid symbol name');
+            const ref = ctx.data.getSymbolRef(ctx.container, sym, false);
+            if (!ref) throw new Error(`Unknown symbol '${sym}'`);
+            const v = ctx.data.readValue(ref);
+            if (v === undefined) throw new Error(`Undefined value for symbol '${sym}'`);
+            return v;
         }
         case '__GetRegVal': {
             const [regName] = args;
-            if (typeof regName !== 'string') return 0;
-            const r = (ctx.data as any).resolveColonPath?.(['reg', regName]);
-            return r ?? 0;
+            if (typeof regName !== 'string') throw new Error('Invalid register name');
+            const r = ctx.data.resolveColonPath?.(ctx.container, ['reg', regName]);
+            if (r === undefined) throw new Error(`Unknown register '${regName}'`);
+            return r;
         }
         case '__size_of': {
             const [arg0] = args;
             if (typeof arg0 === 'string') {
-                const sz = sizeOfTypeName(arg0 as CTypeName | string);
-                if (sz !== undefined) return sz;
+                switch (arg0) {
+                    case 'uint8_t': case 'int8_t': return 1;
+                    case 'uint16_t': case 'int16_t': return 2;
+                    case 'uint32_t': case 'int32_t': case 'float': return 4;
+                    case 'uint64_t': case 'int64_t': case 'double': return 8;
+                }
             }
             return 4;
         }
         case '__Symbol_exists': {
             const [name] = args;
             if (typeof name !== 'string') return 0;
-            return ctx.data.hasSymbol(ctx.container, name) ? 1 : 0;
+            const ref = ctx.data.getSymbolRef(ctx.container, name, false);
+            return ref ? 1 : 0;
         }
         case '__Offset_of': {
-            // Domain-specific in real systems; here accept ColonPath-like or strings and return 0.
             return 0;
         }
         default:
@@ -522,7 +463,7 @@ function defaultIntrinsic(name: string, ctx: EvalContext, args: any[]): any {
 }
 
 /* =============================================================================
- * Convenience: evaluate a parsed expression
+ * Convenience
  * ============================================================================= */
 
 function normalizeEvaluateResult(v: any): EvaluateResult {
@@ -533,40 +474,17 @@ function normalizeEvaluateResult(v: any): EvaluateResult {
     return undefined;
 }
 
-export function evaluateParseResult(pr: ParseResult, ctx: EvalContext, container?: any): EvaluateResult {
+export function evaluateParseResult(pr: ParseResult, ctx: EvalContext, container?: ScvdBase): EvaluateResult {
     const prev = ctx.container;
     const override = (container !== undefined);
-    if (override) ctx.container = container;
+    if (override) ctx.container = container as ScvdBase;
     try {
         const v = evalNode(pr.ast, ctx);
         return normalizeEvaluateResult(v);
     } catch {
+    // Stop evaluation and surface error to caller by returning undefined
         return undefined;
     } finally {
         if (override) ctx.container = prev;
     }
 }
-
-/* =============================================================================
- * Usage (printf stays attached exactly as you wanted)
- * ============================================================================= */
-
-// Example wiring:
-//
-// import { EvalContext, EvalContextInit } from './evaluator';
-// import { formatSpecifier } from './yourPrintfModule';
-//
-// export const contextInit: EvalContextInit = {
-//   data: myHost, // implements DataHost
-//   container: myRootContainer, // <- starting point for symbol resolution (optional)
-//   printf: {
-//     format(spec, value, ctx) {
-//       return formatSpecifier.formatValue(spec, value, ctx);
-//     },
-//   },
-//   // Optionally, you can add ext. functions here (or set data.functions)
-//   // functions: { clamp: (x:number,min:number,max:number)=>Math.min(Math.max(x,min),max) },
-// };
-//
-// // At call time you can override the container per-evaluation:
-// // evaluateParseResult(parseResult, ctx, someOtherContainer);
