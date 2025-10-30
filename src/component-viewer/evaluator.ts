@@ -411,6 +411,7 @@ export function evaluateParseResult(pr: ParseResult, ctx: EvalContext, container
         const v = evalNode(pr.ast, ctx);
         return normalizeEvaluateResult(v);
     } catch {
+        console.error('Error evaluating parse result:', pr);
         return undefined;
     } finally {
         if (override) ctx.container = prev;

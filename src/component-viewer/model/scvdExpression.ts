@@ -31,8 +31,6 @@ export class ScvdExpression extends ScvdBase {
     private _scvdVarName: string | undefined;
     private _expressionAst: ParseResult | undefined;
     private _isPrintExpression: boolean = false;
-    private _isConstant: boolean = false;
-
 
     constructor(
         parent: ScvdBase | undefined,
@@ -105,7 +103,7 @@ export class ScvdExpression extends ScvdBase {
     }
 
     public setValue(val: number): number | undefined {
-        if(this._isConstant && this._result) {
+        if(this._result) {
             this._result.value = val;
         } else {
             this.expression = val.toString();
@@ -158,12 +156,6 @@ export class ScvdExpression extends ScvdBase {
             const expressionAst = parseExpression(expression, this.isPrintExpression);
             if(expressionAst !== undefined && expressionAst.diagnostics.length === 0) {
                 this.expressionAst = expressionAst;
-            }
-        }
-
-        if(this.expressionAst !== undefined) {
-            if(this.expressionAst.constValue !== undefined) {
-                this._isConstant = true;
             }
         }
 
