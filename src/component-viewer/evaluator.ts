@@ -1,4 +1,4 @@
-// evaluator.ts — ScvdBase-only containers & host-owned intrinsics (strict missing symbol/value errors)
+// evaluator.ts — ScvdBase-only containers; strict errors on missing refs/values; no defaults
 
 import type {
     ASTNode,
@@ -22,6 +22,10 @@ import type {
 } from './parser';
 import type { ScvdBase } from './model/scvdBase';
 
+/* =============================================================================
+ * Public API
+ * ============================================================================= */
+
 export type EvaluateResult = number | string | undefined;
 
 export type CTypeName =
@@ -31,73 +35,48 @@ export type CTypeName =
   | 'uint64_t' | 'int64_t'
   | 'float' | 'double';
 
-export type ExternalFunctions = Record<string, (...args: any[]) => any>;
-
+/** Host contract used by the evaluator (implemented by ScvdEvalInterface). */
 export interface DataHost {
   getSymbolRef(root: ScvdBase, name: string, forWrite?: boolean): ScvdBase | undefined;
   getMemberRef(base: ScvdBase, property: string, forWrite?: boolean): ScvdBase | undefined;
   getIndexRef(base: ScvdBase, index: number, forWrite?: boolean): ScvdBase | undefined;
-  readValue(ref: ScvdBase): any;                // may return undefined -> error
-  writeValue(ref: ScvdBase, value: any): any;   // may return undefined -> error
-  resolveColonPath?(root: ScvdBase, parts: string[]): ScvdBase | any;
+  readValue(ref: ScvdBase): any;                  // may return undefined -> error
+  writeValue(ref: ScvdBase, value: any): any;     // may return undefined -> error
+  resolveColonPath?(root: ScvdBase, parts: string[]): any; // undefined => not found
   stats?(): { symbols?: number; bytesUsed?: number };
-  evalIntrinsic?(name: string, root: ScvdBase, args: any[]): any;
+  evalIntrinsic?(name: string, root: ScvdBase, args: any[]): any;     // undefined => not handled
 
+  // Optional named intrinsic methods (same calling convention as evalIntrinsic)
   __CalcMemUsed?(root: ScvdBase, args: any[]): any;
   __FindSymbol?(root: ScvdBase, args: any[]): any;
   __GetRegVal?(root: ScvdBase, args: any[]): any;
   __size_of?(root: ScvdBase, args: any[]): any;
   __Symbol_exists?(root: ScvdBase, args: any[]): any;
   __Offset_of?(root: ScvdBase, args: any[]): any;
-
-  // Optional: external functions table
-  functions?: ExternalFunctions;
 }
 
 export interface EvalContextInit {
   data: DataHost;
+  container: ScvdBase; // starting reference for symbol resolution
   printf: {
     format?: (spec: FormatSegment['spec'], value: any, ctx: EvalContext) => string | undefined;
   };
-  container: ScvdBase;
-  functions?: ExternalFunctions;
 }
 
 export class EvalContext {
     readonly data: DataHost;
     container: ScvdBase;
-    readonly functions: ExternalFunctions;
     readonly printf: NonNullable<EvalContextInit['printf']>;
 
     constructor(init: EvalContextInit) {
         this.data = init.data;
-        const hostFns = (this.data as any)?.functions as ExternalFunctions | undefined;
-        this.functions = init.functions ?? hostFns ?? Object.create(null);
-        this.printf = init.printf ?? {};
         this.container = init.container;
-    }
-
-    ensureSymbol(name: string): ScvdBase | undefined {
-        return this.data.getSymbolRef(this.container, name, true);
-    }
-    getSymbol(name: string): any {
-        const ref = this.data.getSymbolRef(this.container, name, false) ?? this.ensureSymbol(name);
-        if (!ref) throw new Error(`Unknown symbol '${name}'`);
-        const v = this.data.readValue(ref);
-        if (v === undefined) throw new Error(`Undefined value for symbol '${name}'`);
-        return v;
-    }
-    setSymbol(name: string, value: any): any {
-        const ref = this.data.getSymbolRef(this.container, name, true);
-        if (!ref) throw new Error(`Unknown symbol '${name}'`);
-        const w = this.data.writeValue(ref, value);
-        if (w === undefined) throw new Error(`Write returned undefined for symbol '${name}'`);
-        return w;
+        this.printf = init.printf ?? {};
     }
 }
 
 /* =============================================================================
- * Numeric helpers
+ * Helpers
  * ============================================================================= */
 
 const U64_MASK = (1n << 64n) - 1n;
@@ -123,6 +102,11 @@ function toBigInt(x: any): bigint {
     return 0n;
 }
 
+function addVals(a: any, b: any): any {
+    if (typeof a === 'string' || typeof b === 'string') return String(a) + String(b);
+    if (typeof a === 'bigint' || typeof b === 'bigint') return toBigInt(a) + toBigInt(b);
+    return asNumber(a) + asNumber(b);
+}
 function subVals(a: any, b: any): any { return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) - toBigInt(b)) : (asNumber(a) - asNumber(b)); }
 function mulVals(a: any, b: any): any { return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) * toBigInt(b)) : (asNumber(a) * asNumber(b)); }
 function divVals(a: any, b: any): any {
@@ -143,6 +127,8 @@ function modVals(a: any, b: any): any {
 function andVals(a: any, b: any): any { return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) & toBigInt(b)) : (((asNumber(a)|0) & (asNumber(b)|0)) >>> 0); }
 function xorVals(a: any, b: any): any { return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) ^ toBigInt(b)) : (((asNumber(a)|0) ^ (asNumber(b)|0)) >>> 0); }
 function orVals (a: any, b: any): any { return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) | toBigInt(b)) : (((asNumber(a)|0) | (asNumber(b)|0)) >>> 0); }
+function shlVals(a: any, b: any): any { return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) << toBigInt(b)) : (((asNumber(a)|0) << (asNumber(b)&31)) >>> 0); }
+function sarVals(a: any, b: any): any { return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) >> toBigInt(b)) : (((asNumber(a)|0) >> (asNumber(b)&31)) >>> 0); }
 function shrVals(a: any, b: any): any {
     if (typeof a === 'bigint' || typeof b === 'bigint') {
         const aa = toBigInt(a) & U64_MASK; const bb = toBigInt(b);
@@ -159,15 +145,12 @@ function ltVals(a: any, b: any): boolean { return (typeof a === 'bigint' || type
 function lteVals(a: any, b: any): boolean { return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) <= toBigInt(b)) : (asNumber(a) <= asNumber(b)); }
 function gtVals(a: any, b: any): boolean { return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) >  toBigInt(b)) : (asNumber(a) >  asNumber(b)); }
 function gteVals(a: any, b: any): boolean { return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) >= toBigInt(b)) : (asNumber(a) >= asNumber(b)); }
-function addVals(a: any, b: any): any {
-    if (typeof a === 'string' || typeof b === 'string') return String(a) + String(b);
-    if (typeof a === 'bigint' || typeof b === 'bigint') return toBigInt(a) + toBigInt(b);
-    return asNumber(a) + asNumber(b);
-}
 
 /* =============================================================================
- * Strict reference/value helpers (throw on missing)
+ * Strict ref/value utilities
  * ============================================================================= */
+
+type LValue = { get(): any; set(v: any): any };
 
 function mustRef(node: ASTNode, ctx: EvalContext, forWrite = false): ScvdBase {
     switch (node.kind) {
@@ -203,8 +186,6 @@ function mustRead(ref: ScvdBase, ctx: EvalContext, label?: string): any {
     if (v === undefined) throw new Error(label ? `Undefined value for ${label}` : 'Undefined value');
     return v;
 }
-
-type LValue = { get(): any; set(v: any): any };
 
 function lref(node: ASTNode, ctx: EvalContext): LValue {
     const ref = mustRef(node, ctx, true);
@@ -245,8 +226,8 @@ export function evalNode(node: ASTNode, ctx: EvalContext): any {
         case 'ColonPath': {
             const cp = node as ColonPath;
             const handled = ctx.data.resolveColonPath?.(ctx.container, cp.parts.slice());
-            // Colon paths that do not resolve are allowed to flow (domain-specific)
-            return handled !== undefined ? handled : { __colonPath: cp.parts.slice() };
+            if (handled === undefined) throw new Error(`Unresolved colon path: ${cp.parts.join(':')}`);
+            return handled;
         }
 
         case 'UnaryExpression': {
@@ -292,8 +273,8 @@ export function evalNode(node: ASTNode, ctx: EvalContext): any {
                 case '*=': out = mulVals(L, R); break;
                 case '/=': out = divVals(L, R); break;
                 case '%=': out = modVals(L, R); break;
-                case '<<=': out = (typeof L === 'bigint' || typeof R === 'bigint') ? (toBigInt(L) << toBigInt(R)) : (((asNumber(L)|0) << (asNumber(R)&31)) >>> 0); break;
-                case '>>=': out = (typeof L === 'bigint' || typeof R === 'bigint') ? (toBigInt(L) >> toBigInt(R)) : (((asNumber(L)|0) >> (asNumber(R)&31)) >>> 0); break;
+                case '<<=': out = shlVals(L, R); break;
+                case '>>=': out = sarVals(L, R); break;
                 case '&=': out = andVals(L, R); break;
                 case '^=': out = xorVals(L, R); break;
                 case '|=': out = orVals(L, R); break;
@@ -305,14 +286,8 @@ export function evalNode(node: ASTNode, ctx: EvalContext): any {
         case 'CallExpression': {
             const c = node as CallExpression;
             const args = c.args.map(a => evalNode(a, ctx));
-            // Prefer external function table BEFORE reading callee symbol value
-            if (c.callee.kind === 'Identifier') {
-                const name = (c.callee as Identifier).name;
-                const ext = ctx.functions[name];
-                if (typeof ext === 'function') return ext(...args);
-            }
-            const fnVal = evalNode(c.callee, ctx); // may throw if missing/undefined
-            if (typeof fnVal === 'function') return fnVal(...args);
+            const fnVal = evalNode(c.callee, ctx);
+            if (typeof fnVal === 'function') return (fnVal as Function)(...args);
             throw new Error('Callee is not callable.');
         }
 
@@ -360,8 +335,8 @@ function evalBinary(node: BinaryExpression, ctx: EvalContext): any {
         case '*': return mulVals(a, b);
         case '/': return divVals(a, b);
         case '%': return modVals(a, b);
-        case '<<': return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) << toBigInt(b)) : (((asNumber(a)|0) << (asNumber(b)&31)) >>> 0);
-        case '>>': return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) >> toBigInt(b)) : (((asNumber(a)|0) >> (asNumber(b)&31)) >>> 0);
+        case '<<': return shlVals(a, b);
+        case '>>': return sarVals(a, b);
         case '>>>': return shrVals(a, b);
         case '&': return andVals(a, b);
         case '^': return xorVals(a, b);
@@ -390,6 +365,7 @@ function formatValue(spec: FormatSegment['spec'], v: any, ctx?: EvalContext): st
         case 'x':  return (typeof v === 'bigint') ? (v & U64_MASK).toString(16) : (asNumber(v) >>> 0).toString(16);
         case 't':  return truthy(v) ? 'true' : 'false';
         case 'S':  return typeof v === 'string' ? v : String(v);
+            // Domain-specific passthroughs (print as-is)
         case 'C': case 'E': case 'I': case 'J': case 'N': case 'M': case 'T': case 'U': return String(v);
         case '%':  return '%';
         default:   return String(v);
@@ -397,73 +373,26 @@ function formatValue(spec: FormatSegment['spec'], v: any, ctx?: EvalContext): st
 }
 
 /* =============================================================================
- * Intrinsics routing
+ * Intrinsics routing (strict)
  * ============================================================================= */
 
 function routeIntrinsic(ctx: EvalContext, name: string, args: any[]): any {
     if (typeof ctx.data.evalIntrinsic === 'function') {
-        return ctx.data.evalIntrinsic(name, ctx.container, args);
+        const out = ctx.data.evalIntrinsic(name, ctx.container, args);
+        if (out === undefined) throw new Error(`Intrinsic ${name} returned undefined`);
+        return out;
     }
     const direct = (ctx.data as any)[name];
     if (typeof direct === 'function') {
-        return direct.call(ctx.data, ctx.container, args);
+        const out = direct.call(ctx.data, ctx.container, args);
+        if (out === undefined) throw new Error(`Intrinsic ${name} returned undefined`);
+        return out;
     }
-    return defaultIntrinsic(name, ctx, args);
-}
-
-function defaultIntrinsic(name: string, ctx: EvalContext, args: any[]): any {
-    switch (name) {
-        case '__CalcMemUsed': {
-            const s = ctx.data.stats?.();
-            if (s?.bytesUsed != null) return s.bytesUsed;
-            if (s?.symbols != null) return s.symbols * 16;
-            return 0;
-        }
-        case '__FindSymbol': {
-            // Prefer host override; if we got here, emulate strict behavior
-            const [sym] = args;
-            if (typeof sym !== 'string') throw new Error('Invalid symbol name');
-            const ref = ctx.data.getSymbolRef(ctx.container, sym, false);
-            if (!ref) throw new Error(`Unknown symbol '${sym}'`);
-            const v = ctx.data.readValue(ref);
-            if (v === undefined) throw new Error(`Undefined value for symbol '${sym}'`);
-            return v;
-        }
-        case '__GetRegVal': {
-            const [regName] = args;
-            if (typeof regName !== 'string') throw new Error('Invalid register name');
-            const r = ctx.data.resolveColonPath?.(ctx.container, ['reg', regName]);
-            if (r === undefined) throw new Error(`Unknown register '${regName}'`);
-            return r;
-        }
-        case '__size_of': {
-            const [arg0] = args;
-            if (typeof arg0 === 'string') {
-                switch (arg0) {
-                    case 'uint8_t': case 'int8_t': return 1;
-                    case 'uint16_t': case 'int16_t': return 2;
-                    case 'uint32_t': case 'int32_t': case 'float': return 4;
-                    case 'uint64_t': case 'int64_t': case 'double': return 8;
-                }
-            }
-            return 4;
-        }
-        case '__Symbol_exists': {
-            const [name] = args;
-            if (typeof name !== 'string') return 0;
-            const ref = ctx.data.getSymbolRef(ctx.container, name, false);
-            return ref ? 1 : 0;
-        }
-        case '__Offset_of': {
-            return 0;
-        }
-        default:
-            throw new Error(`Missing intrinsic ${name}`);
-    }
+    throw new Error(`Missing intrinsic ${name}`);
 }
 
 /* =============================================================================
- * Convenience
+ * Top-level convenience
  * ============================================================================= */
 
 function normalizeEvaluateResult(v: any): EvaluateResult {
@@ -482,7 +411,6 @@ export function evaluateParseResult(pr: ParseResult, ctx: EvalContext, container
         const v = evalNode(pr.ast, ctx);
         return normalizeEvaluateResult(v);
     } catch {
-    // Stop evaluation and surface error to caller by returning undefined
         return undefined;
     } finally {
         if (override) ctx.container = prev;
