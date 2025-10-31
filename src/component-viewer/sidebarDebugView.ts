@@ -11,10 +11,12 @@ export class SidebarDebugView implements vscode.TreeDataProvider<vscode.TreeItem
     private readonly _onDidChangeTreeData = new vscode.EventEmitter<void>();
     readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 
-    constructor(private model: ScvdComponentViewer | undefined) {}
+    constructor(private model?: ScvdComponentViewer) {}
 
     public setModel(model: ScvdComponentViewer | undefined) {
-        this.model = model;
+        if(model !== undefined) {
+            this.model = model;
+        }
         this.refresh();
     }
 
