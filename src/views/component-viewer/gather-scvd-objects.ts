@@ -20,15 +20,15 @@ import { ScvdEvalContext } from './scvd-eval-context';
 
 export class GatherScvdObjects {
     private _model: ScvdComponentViewer;
-    private _varEngine: ScvdEvalContext | undefined;
+    private _evalContext: ScvdEvalContext | undefined;
 
     constructor(
         model: ScvdComponentViewer
     ) {
         this._model = model;
-        const varEngine = new ScvdEvalContext(model);
-        this._varEngine = varEngine;
-        this.model.evalContext = varEngine.ctx;
+        const evalContext = new ScvdEvalContext(model);
+        this._evalContext = evalContext;
+        this.model.evalContext = evalContext.ctx;
     }
 
     private get model(): ScvdComponentViewer {
@@ -48,15 +48,15 @@ export class GatherScvdObjects {
         return true;
     }
 
-    public get varEngine(): ScvdEvalContext | undefined {
-        return this._varEngine;
+    public get evalContext(): ScvdEvalContext | undefined {
+        return this._evalContext;
     }
 
     public gatherObject(item: ScvdObject): void {
-        if(item === undefined || this.varEngine === undefined) {
+        if(item === undefined || this.evalContext === undefined) {
             return;
         }
 
-        //item.evalContext = this.varEngine.ctx;
+        //item.evalContext = this.evalContext.ctx;
     }
 }

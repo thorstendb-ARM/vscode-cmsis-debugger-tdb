@@ -160,6 +160,13 @@ export class ScvdBase {
         this._valid = false;
     }
 
+    public invalidateSubtree() {
+        this.invalidate();
+        this._children.forEach( (child: ScvdBase) => {
+            child.invalidateSubtree();
+        });
+    }
+
     /**
      * Applies the provided callback function to each child and returns an array of results.
      * @param callbackfn Function that produces an element of the new array, taking a child and its index.
