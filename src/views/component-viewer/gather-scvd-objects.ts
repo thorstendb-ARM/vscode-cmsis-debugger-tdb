@@ -16,17 +16,17 @@
 
 import { ScvdComponentViewer } from './model/scvd-comonent-viewer';
 import { ScvdObject } from './model/scvd-object';
-import { ScvdVarEngine } from './scvd-var-engine';
+import { ScvdEvalContext } from './scvd-eval-context';
 
 export class GatherScvdObjects {
     private _model: ScvdComponentViewer;
-    private _varEngine: ScvdVarEngine | undefined;
+    private _varEngine: ScvdEvalContext | undefined;
 
     constructor(
         model: ScvdComponentViewer
     ) {
         this._model = model;
-        const varEngine = new ScvdVarEngine(model);
+        const varEngine = new ScvdEvalContext(model);
         this._varEngine = varEngine;
         this.model.evalContext = varEngine.ctx;
     }
@@ -48,7 +48,7 @@ export class GatherScvdObjects {
         return true;
     }
 
-    public get varEngine(): ScvdVarEngine | undefined {
+    public get varEngine(): ScvdEvalContext | undefined {
         return this._varEngine;
     }
 

@@ -32,7 +32,7 @@ const printfHook: PrintfHook = {
     },
 };
 
-export class ScvdVarEngine {
+export class ScvdEvalContext {
     private _model: ScvdComponentViewer;
     private _ctx: EvalContext;
     private _printf: PrintfHook = printfHook;
