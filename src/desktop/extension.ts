@@ -52,6 +52,7 @@ export const activate = async (context: vscode.ExtensionContext): Promise<void> 
     cpuStatesStatusBarItem.activate(context, cpuStates);
     // Live Watch view
     liveWatchTreeDataProvider.activate(gdbtargetDebugTracker);
+    // Component Viewer: SCVD Evaluator
     componentViewer.activate(context);
 
     logger.debug('Extension Pack activated');

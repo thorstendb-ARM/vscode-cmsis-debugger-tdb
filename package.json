@@ -53,22 +53,27 @@
           "id": "cmsis-debugger",
           "title": "Trace and Live View",
           "icon": "media/trace-and-live-dark.svg"
+        },
+        {
+          "id": "cmsis-scvd-explorer",
+          "title": "CMSIS SCVD Explorer",
+          "icon": "$(preferences-open-settings)"
         }
       ]
     },
     "views": {
-      "cmsis": [
-        {
-          "id": "cmsis-scvd-explorer",
-          "name": "CMSIS SCVD Explorer",
-          "icon": "$(preferences-open-settings)"
-        }
-      ],
       "cmsis-debugger": [
         {
           "id": "cmsis-debugger.liveWatch",
           "name": "Live Watch",
           "icon": "media/trace-and-live-light.svg"
+        }
+      ],
+      "cmsis-scvd-explorer": [
+        {
+          "id": "cmsis-scvd-explorer",
+          "name": "CMSIS SCVD Explorer",
+          "icon": "$(preferences-open-settings)"
         }
       ]
     },
