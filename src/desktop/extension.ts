@@ -22,6 +22,7 @@ import { addToolsToPath } from './add-to-path';
 import { CpuStatesStatusBarItem } from '../features/cpu-states/cpu-states-statusbar-item';
 import { CpuStates } from '../features/cpu-states/cpu-states';
 import { CpuStatesCommands } from '../features/cpu-states/cpu-states-commands';
+import { LiveWatchTreeDataProvider } from '../views/live-watch/live-watch';
 import { ComponentViewer } from '../component-viewer/component-viewer-main';
 
 const BUILTIN_TOOLS_PATHS = [
@@ -29,12 +30,16 @@ const BUILTIN_TOOLS_PATHS = [
     'tools/gdb/bin/arm-none-eabi-gdb'
 ];
 
+let liveWatchTreeDataProvider: LiveWatchTreeDataProvider;
+
 export const activate = async (context: vscode.ExtensionContext): Promise<void> => {
     const gdbtargetDebugTracker = new GDBTargetDebugTracker();
     const gdbtargetConfigurationProvider = new GDBTargetConfigurationProvider();
     const cpuStates = new CpuStates();
     const cpuStatesCommands = new CpuStatesCommands();
     const cpuStatesStatusBarItem = new CpuStatesStatusBarItem();
+    // Register the Tree View under the id from package.json
+    liveWatchTreeDataProvider = new LiveWatchTreeDataProvider(context);
     const componentViewer = new ComponentViewer(context);
 
     addToolsToPath(context, BUILTIN_TOOLS_PATHS);
@@ -45,7 +50,17 @@ export const activate = async (context: vscode.ExtensionContext): Promise<void> 
     cpuStates.activate(gdbtargetDebugTracker);
     cpuStatesCommands.activate(context, cpuStates);
     cpuStatesStatusBarItem.activate(context, cpuStates);
+    // Live Watch view
+    liveWatchTreeDataProvider.activate(gdbtargetDebugTracker);
     componentViewer.activate(context);
 
     logger.debug('Extension Pack activated');
+};
+
+export const deactivate = async (): Promise<void> => {
+    // Call deactivate of Live Watch to save its state
+    if (liveWatchTreeDataProvider) {
+        await liveWatchTreeDataProvider.deactivate();
+    }
+    logger.debug('Extension Pack deactivated');
 };
