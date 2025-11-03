@@ -120,6 +120,13 @@ export class ScvdExpression extends ScvdBase {
         }
     }
 
+    public getMinMax(): { min: number | undefined; max: number | undefined } | undefined {
+        if (this._result !== undefined) {
+            return this._result.getMinMax();
+        }
+        return undefined;
+    }
+
     public getResultBoolean(): boolean {
         return this.value !== undefined && this.value.value > 0;
     }

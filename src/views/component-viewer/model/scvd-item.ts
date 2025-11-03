@@ -36,14 +36,20 @@ export class ScvdItem extends ScvdBase {
 
     constructor(
         parent: ScvdBase | undefined,
-        cond: string = '1',
-        bold: string = '0',
-        alert: string = '0',
+        cond?: string, // = '1',
+        bold?: string, // = '0',
+        alert?: string, // = '0',
     ) {
         super(parent);
-        this._cond = new ScvdCondition(this, cond);
-        this._bold = new ScvdCondition(this, bold);
-        this._alert = new ScvdCondition(this, alert);
+        if(cond !== undefined) {
+            this._cond = new ScvdCondition(this, cond);
+        }
+        if(bold !== undefined) {
+            this._bold = new ScvdCondition(this, bold);
+        }
+        if(alert !== undefined) {
+            this._alert = new ScvdCondition(this, alert);
+        }
     }
 
     public readXml(xml: Json): boolean {
@@ -81,11 +87,8 @@ export class ScvdItem extends ScvdBase {
 
     public set property(value: string | undefined) {
         if (value !== undefined) {
-            if( this._property === undefined) {
-                this._property = new ScvdValueOutput(this, value, 'property');
-                return;
-            }
-            this._property.expression = value;
+            this._property = new ScvdValueOutput(this, value, 'property');
+            return;
         }
     }
     public get property(): ScvdValueOutput | undefined {
@@ -97,11 +100,8 @@ export class ScvdItem extends ScvdBase {
     }
     public set value(value: string | undefined) {
         if (value !== undefined) {
-            if( this._value === undefined) {
-                this._value = new ScvdValueOutput(this, value, 'value');
-                return;
-            }
-            this._value.expression = value;
+            this._value = new ScvdValueOutput(this, value, 'value');
+            return;
         }
     }
 
@@ -111,11 +111,8 @@ export class ScvdItem extends ScvdBase {
 
     set cond(value: string | undefined) {
         if (value !== undefined) {
-            if( this._cond === undefined) {
-                this._cond = new ScvdCondition(this, value);
-                return;
-            }
-            this._cond.expression = value;
+            this._cond = new ScvdCondition(this, value);
+            return;
         }
     }
 
@@ -125,11 +122,8 @@ export class ScvdItem extends ScvdBase {
 
     set bold(value: string | undefined) {
         if (value !== undefined) {
-            if( this._bold === undefined) {
-                this._bold = new ScvdCondition(this, value);
-                return;
-            }
-            this._bold.expression = value;
+            this._bold = new ScvdCondition(this, value);
+            return;
         }
     }
 
@@ -139,11 +133,8 @@ export class ScvdItem extends ScvdBase {
 
     set alert(value: string | undefined) {
         if (value !== undefined) {
-            if( this._alert === undefined) {
-                this._alert = new ScvdCondition(this, value);
-                return;
-            }
-            this._alert.expression = value;
+            this._alert = new ScvdCondition(this, value);
+            return;
         }
     }
 
@@ -159,7 +150,7 @@ export class ScvdItem extends ScvdBase {
     }
 
     public addItem(): ScvdItem {
-        const newItem = new ScvdItem(this, '1');
+        const newItem = new ScvdItem(this);
         this._item.push(newItem);
         return newItem;
     }

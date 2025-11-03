@@ -338,5 +338,10 @@ export class NumberType {
             this._value.numMax = max;
         }
     }
+
+    public getMinMax(): { min: number | undefined; max: number | undefined } {
+        return { min: this._value.numMin, max: this._value.numMax };
+    }
+
 }
 

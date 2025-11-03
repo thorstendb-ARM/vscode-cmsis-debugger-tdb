@@ -29,21 +29,20 @@ import { resolveType } from '../resolver';
 // the following use of <readlist name="var"> will use the definition.
 
 export class ScvdReadList extends ScvdRead {
-    private _count: ScvdExpression = new ScvdExpression(this, '1', 'count'); // default is 1
+    private _count: ScvdExpression | undefined; // default is 1
     private _next: string | undefined;  // member name for the .next pointer
     private _init: NumberType = new NumberType(0); // discard prev. read objects? default is 0
     private _based: NumberType = new NumberType(0); // is attribute+offset a pointer? default is 0
 
     private _nextObj: ScvdTypedef | undefined;
 
-    private readonly countMin = 1;
-    private readonly countMax = 1024;
+    static readonly READ_SIZE_MIN = 1;
+    static readonly READ_SIZE_MAX = 1024;
 
     constructor(
         parent: ScvdBase | undefined,
     ) {
         super(parent);
-        this._count.setMinMax(this.countMin, this.countMax);
     }
 
     public readXml(xml: Json): boolean {
@@ -62,10 +61,11 @@ export class ScvdReadList extends ScvdRead {
 
     set count(value: string | undefined) {
         if(value !== undefined) {
-            this._count.expression = value;
+            this._count = new ScvdExpression(this, value, 'count');
+            this._count.setMinMax(ScvdReadList.READ_SIZE_MIN, ScvdReadList.READ_SIZE_MAX);
         }
     }
-    get count(): ScvdExpression {
+    get count(): ScvdExpression | undefined {
         return this._count;
     }
 

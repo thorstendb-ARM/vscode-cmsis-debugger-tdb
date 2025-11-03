@@ -27,7 +27,7 @@ import { ScvdList } from './scvd-list';
 export class ScvdOut extends ScvdBase {
     private _value: ScvdExpression | undefined; // name._value — expression that evaluates to the value of the output.
     private _type: ScvdDataType | undefined;
-    private _cond: ScvdCondition;
+    private _cond: ScvdCondition | undefined;
     private _item: ScvdItem[] = [];
     private _list: ScvdList[] = [];
 
@@ -35,7 +35,6 @@ export class ScvdOut extends ScvdBase {
         parent: ScvdBase | undefined,
     ) {
         super(parent);
-        this._cond = new ScvdCondition(this);
     }
 
     public readXml(xml: Json): boolean {
@@ -87,16 +86,13 @@ export class ScvdOut extends ScvdBase {
         return this._type;
     }
 
-    public get cond(): ScvdCondition {
+    public get cond(): ScvdCondition | undefined {
         return this._cond;
     }
     public set cond(value: string | undefined) {
         if (value !== undefined) {
-            if( this._cond === undefined) {
-                this._cond = new ScvdCondition(this, value);
-                return;
-            }
-            this._cond.expression = value;
+            this._cond = new ScvdCondition(this, value);
+            return;
         }
     }
 
@@ -104,7 +100,7 @@ export class ScvdOut extends ScvdBase {
         return this._item;
     }
     public addItem(): ScvdItem {
-        const newItem = new ScvdItem(this, '1');
+        const newItem = new ScvdItem(this);
         this._item.push(newItem);
         return newItem;
     }

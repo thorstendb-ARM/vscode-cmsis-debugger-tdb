@@ -28,19 +28,19 @@ import { getStringFromJson } from './scvd-utils';
 export class ScvdRead extends ScvdBase {
     private _type: ScvdDataType | undefined;
     private _symbol: ScvdSymbol | undefined;
-    private _offset: ScvdExpression = new ScvdExpression(this, '0', 'offset'); // default is 0
+    private _offset: ScvdExpression | undefined;
     private _const: NumberType = new NumberType(0); // default is 0
-    private _cond: ScvdCondition = new ScvdCondition(this);
-    private _size: ScvdExpression;
+    private _cond: ScvdCondition | undefined;
+    private _size: ScvdExpression | undefined;
     private _endian: ScvdEndian | undefined;
+    static readonly ARRAY_SIZE_MIN = 1;
+    static readonly ARRAY_SIZE_MAX = 512;
 
 
     constructor(
         parent: ScvdBase | undefined,
     ) {
         super(parent);
-        this._size = new ScvdExpression(this, '1', 'size'); // default is 1
-        this._size.setMinMax(1, 512); // Array size must be between 1 and 512
     }
 
     public readXml(xml: Json): boolean {
@@ -81,15 +81,12 @@ export class ScvdRead extends ScvdBase {
 
     set offset(value: string | undefined) {
         if(value !== undefined) {
-            if( this._offset === undefined) {
-                this._offset = new ScvdExpression(this, value, 'offset');
-                return;
-            }
-            this._offset.expression = value;
+            this._offset = new ScvdExpression(this, value, 'offset');
+            return;
         }
     }
 
-    get offset(): ScvdExpression {
+    get offset(): ScvdExpression | undefined {
         return this._offset;
     }
 
@@ -109,28 +106,28 @@ export class ScvdRead extends ScvdBase {
 
     set cond(value: string | undefined) {
         if(value !== undefined) {
-            if( this._cond === undefined) {
-                this._cond = new ScvdCondition(this, value);
-                return;
-            }
-            this._cond.expression = value;
+            this._cond = new ScvdCondition(this, value);
+            return;
         }
     }
 
-    get cond(): ScvdCondition {
+    get cond(): ScvdCondition | undefined {
         return this._cond;
     }
 
     get size(): ScvdExpression | undefined {
         return this._size;
     }
+
+    get minMaxSize(): { min: number; max: number } {
+        const { min, max } = this._size?.getMinMax() ?? {};
+        return { min: min ?? ScvdRead.ARRAY_SIZE_MIN, max: max ?? ScvdRead.ARRAY_SIZE_MAX };
+    }
+
     set size(value: string | undefined) {
         if(value !== undefined) {
-            if( this._size === undefined) {
-                this._size = new ScvdExpression(this, value, 'size');
-                return;
-            }
-            this._size.expression = value;
+            this._size = new ScvdExpression(this, value, 'size');
+            return;
         }
     }
 

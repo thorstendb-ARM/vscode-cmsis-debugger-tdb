@@ -24,10 +24,12 @@ export class ScvdCondition extends ScvdBase {
 
     constructor(
         parent: ScvdBase | undefined,
-        expression: string = '1' // default condition is true
+        expression?: string
     ) {
         super(parent);
-        this._expression = new ScvdExpression(this, expression, 'expression');
+        if(expression !== undefined) {
+            this._expression = new ScvdExpression(this, expression, 'expression');
+        }
     }
 
     public get expression(): ScvdExpression | undefined {

@@ -25,8 +25,8 @@ export class ScvdPrint extends ScvdBase {
     private _cond: ScvdCondition | undefined;
     private _property: ScvdValueOutput | undefined;
     private _value: ScvdValueOutput | undefined;
-    private _bold: ScvdCondition = new ScvdCondition(this, '0');
-    private _alert: ScvdCondition = new ScvdCondition(this, '0');
+    private _bold: ScvdCondition | undefined;   // default 1
+    private _alert: ScvdCondition | undefined;  // default 0
 
     constructor(
         parent: ScvdBase | undefined,
@@ -52,11 +52,8 @@ export class ScvdPrint extends ScvdBase {
     }
     set property(value: string | undefined) {
         if (value !== undefined) {
-            if( this._property === undefined) {
-                this._property = new ScvdValueOutput(this, value, 'property');
-                return;
-            }
-            this._property.expression = value;
+            this._property = new ScvdValueOutput(this, value, 'property');
+            return;
         }
     }
 
@@ -65,11 +62,8 @@ export class ScvdPrint extends ScvdBase {
     }
     set value(value: string | undefined) {
         if (value !== undefined) {
-            if( this._value === undefined) {
-                this._value = new ScvdValueOutput(this, value, 'value');
-                return;
-            }
-            this._value.expression = value;
+            this._value = new ScvdValueOutput(this, value, 'value');
+            return;
         }
     }
 
@@ -78,11 +72,8 @@ export class ScvdPrint extends ScvdBase {
     }
     set cond(value: string | undefined) {
         if (value !== undefined) {
-            if( this._cond === undefined) {
-                this._cond = new ScvdCondition(this, value);
-                return;
-            }
-            this._cond.expression = value;
+            this._cond = new ScvdCondition(this, value);
+            return;
         }
     }
 
@@ -91,11 +82,8 @@ export class ScvdPrint extends ScvdBase {
     }
     set bold(value: string | undefined) {
         if (value !== undefined) {
-            if( this._bold === undefined) {
-                this._bold = new ScvdCondition(this, value);
-                return;
-            }
-            this._bold.expression = value;
+            this._bold = new ScvdCondition(this, value);
+            return;
         }
     }
 
@@ -104,11 +92,8 @@ export class ScvdPrint extends ScvdBase {
     }
     set alert(value: string | undefined) {
         if (value !== undefined) {
-            if( this._alert === undefined) {
-                this._alert = new ScvdCondition(this, value);
-                return;
-            }
-            this._alert.expression = value;
+            this._alert = new ScvdCondition(this, value);
+            return;
         }
     }
 
