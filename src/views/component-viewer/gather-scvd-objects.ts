@@ -26,9 +26,12 @@ export class GatherScvdObjects {
         model: ScvdComponentViewer
     ) {
         this._model = model;
-        const evalContext = new ScvdEvalContext(model);
-        this._evalContext = evalContext;
-        this.model.evalContext = evalContext.ctx;
+        const objects = model.objects;
+        if(objects !== undefined) {
+            const evalContext = new ScvdEvalContext(objects);
+            this._evalContext = evalContext;
+            this.model.evalContext = evalContext.ctx;
+        }
     }
 
     private get model(): ScvdComponentViewer {

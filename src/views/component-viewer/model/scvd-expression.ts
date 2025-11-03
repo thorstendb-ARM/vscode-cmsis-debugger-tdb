@@ -132,8 +132,8 @@ export class ScvdExpression extends ScvdBase {
     }
 
     public evaluate() {
-        if(this.expressionAst !== undefined) {
-            if(this.expressionAst.constValue === undefined) {
+        if(this.expressionAst !== undefined) {  // AST exists
+            if(this.expressionAst.constValue === undefined) {   // not a constant expression
                 const result = this.evaluateExpression();
                 if(result !== undefined) {
                     if(typeof result === 'number') {
@@ -142,7 +142,7 @@ export class ScvdExpression extends ScvdBase {
                         this._resultText = String(result);
                     }
                 }
-            } else {
+            } else {    // constant expression
                 this._result = new NumberType(this.expressionAst.constValue);
             }
         }

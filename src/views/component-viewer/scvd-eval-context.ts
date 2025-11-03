@@ -15,7 +15,7 @@
  */
 
 import { EvalContext } from './evaluator';
-import { ScvdComponentViewer } from './model/scvd-comonent-viewer';
+import { ScvdBase } from './model/scvd-base';
 import { ScvdEvalInterface } from './model/scvd-eval-interface';
 import { ScvdFormatSpecifier } from './model/scvd-format-specifier';
 
@@ -33,31 +33,25 @@ const printfHook: PrintfHook = {
 };
 
 export class ScvdEvalContext {
-    private _model: ScvdComponentViewer;
     private _ctx: EvalContext;
     private _printf: PrintfHook = printfHook;
     private _host: ScvdEvalInterface;
 
     constructor(
-        model: ScvdComponentViewer
+        baseContainer: ScvdBase
     ) {
-        this._model = model;
         // Create the DataHost (stateless; you can reuse a single instance)
         this._host = new ScvdEvalInterface();
 
         // Your model’s root ScvdBase (where symbol resolution starts)
         this._ctx = new EvalContext({
             data: this._host,              // DataHost
-            container: model, // ScvdBase root for symbol resolution
+            container: baseContainer, // ScvdBase root for symbol resolution
             printf: {
                 format: (spec, value, ctx) => this._printf.format(spec, value, ctx),
             },
             // functions: this._host.functions, // optional external callables table
         });
-    }
-
-    public get model(): ScvdComponentViewer {
-        return this._model;
     }
 
     public get ctx(): EvalContext {
