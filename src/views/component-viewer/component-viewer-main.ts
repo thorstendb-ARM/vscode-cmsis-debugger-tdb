@@ -9,9 +9,9 @@
  *********************************************************************/
 import * as vscode from 'vscode';
 import { URI } from 'vscode-uri';
-import { SidebarDebugView } from './sidebarDebugView';
 import path from 'path';
 import { ComponentViewerInstance } from './component-viewer-instance';
+import { SidebarDebugView } from './sidebar-debug-view';
 
 
 const scvdFiles: string[] = [

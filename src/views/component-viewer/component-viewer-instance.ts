@@ -10,10 +10,10 @@
 import * as vscode from 'vscode';
 import { URI } from 'vscode-uri';
 import { parseStringPromise, ParserOptions } from 'xml2js';
-import { Json } from './model/scvdBase';
+import { Json } from './model/scvd-base';
 import { Resolver } from './resolver';
-import { GatherScvdObjects } from './gatherScvdObjects';
-import { ScvdComponentViewer } from './model/scvdComonentViewer';
+import { ScvdComponentViewer } from './model/scvd-comonent-viewer';
+import { GatherScvdObjects } from './gather-scvd-objects';
 
 
 

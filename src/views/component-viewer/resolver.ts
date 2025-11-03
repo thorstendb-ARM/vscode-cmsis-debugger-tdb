@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-import { ScvdBase } from './model/scvdBase';
-import { ScvdComponentViewer } from './model/scvdComonentViewer';
-import { ScvdTypedef } from './model/scvdTypedef';
-import { ScvdTypesCache } from './scvdTypesCache';
+import { ScvdBase } from './model/scvd-base';
+import { ScvdComponentViewer } from './model/scvd-comonent-viewer';
+import { ScvdTypedef } from './model/scvd-typedef';
+import { ScvdTypesCache } from './scvd-types-cache';
 
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 

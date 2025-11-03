@@ -20,7 +20,7 @@ import type {
     ParseResult,
     ColonPath,
 } from './parser';
-import type { ScvdBase } from './model/scvdBase';
+import type { ScvdBase } from './model/scvd-base';
 
 /* =============================================================================
  * Public API
