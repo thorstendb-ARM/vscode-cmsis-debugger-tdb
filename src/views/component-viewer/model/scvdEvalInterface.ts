@@ -7,7 +7,7 @@
  * ============================================================================= */
 
 import { DataHost, CTypeName } from '../evaluator';
-import { registerCache } from '../ScvdCacheRegister';
+import { registerCache } from '../scvdCacheRegister';
 import { ScvdBase } from './scvdBase';
 
 export class ScvdEvalInterface implements DataHost {

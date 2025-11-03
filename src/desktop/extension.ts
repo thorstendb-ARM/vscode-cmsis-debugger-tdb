@@ -23,7 +23,7 @@ import { CpuStatesStatusBarItem } from '../features/cpu-states/cpu-states-status
 import { CpuStates } from '../features/cpu-states/cpu-states';
 import { CpuStatesCommands } from '../features/cpu-states/cpu-states-commands';
 import { LiveWatchTreeDataProvider } from '../views/live-watch/live-watch';
-import { ComponentViewer } from '../component-viewer/component-viewer-main';
+import { ComponentViewer } from '../views/component-viewer/component-viewer-main';
 
 const BUILTIN_TOOLS_PATHS = [
     'tools/pyocd/pyocd',
