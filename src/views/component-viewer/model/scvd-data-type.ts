@@ -68,6 +68,11 @@ export class ScvdDataType extends ScvdBase {
         }
     }
 
+    public getMember(property: string): ScvdBase | undefined {
+        return this._type?.getMember(property);
+    }
+
+
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
 
@@ -180,6 +185,11 @@ export class ScvdComplexDataType extends ScvdBase{
         this._type = item;
         return true;
     }
+
+    public getMember(property: string): ScvdBase | undefined {
+        return this._type?.getMember(property);
+    }
+
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];

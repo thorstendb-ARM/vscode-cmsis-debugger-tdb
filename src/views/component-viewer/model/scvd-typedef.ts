@@ -145,15 +145,13 @@ export class ScvdTypedef extends ScvdBase {
         return this._var;
     }
 
-    // resolves typedef member definition (members and vars)
-    public getSymbol(name: string): ScvdBase | undefined {
+    public getMember(property: string): ScvdBase | undefined {
         return this.symbolsCache(
-            name,
-            this.member.find(s => s.name === name) ??
-            this.var.find(s => s.name === name)
+            property,
+            this.member.find(s => s.name === property) ??
+            this.var.find(s => s.name === property)
         );
     }
-
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];

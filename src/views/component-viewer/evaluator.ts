@@ -72,13 +72,21 @@ export interface DataHost {
   __size_of?(container: RefContainer, args: any[]): any;
   __Symbol_exists?(container: RefContainer, args: any[]): any;
   __Offset_of?(container: RefContainer, args: any[]): any;
+
+  // Additional named intrinsics
+  // __Running is special-cased (no container) and returns 1 or 0 for use in expressions
+  __Running?(): number | undefined;
+
+  // Pseudo-member evaluators used as obj._count / obj._addr; must return numbers
+  _count?(container: RefContainer): number | undefined;
+  _addr?(container: RefContainer): number | undefined;
 }
 
 export interface EvalContextInit {
   data: DataHost;
   /** Starting container for symbol resolution (root model). */
   container: ScvdBase;
-  printf: {
+  printf?: {
     format?: (spec: FormatSegment['spec'], value: any, ctx: EvalContext) => string | undefined;
   };
 }
@@ -87,7 +95,7 @@ export class EvalContext {
     readonly data: DataHost;
     /** Composite container context (root + last member/index/current). */
     container: RefContainer;
-    readonly printf: NonNullable<EvalContextInit['printf']>;
+    readonly printf: { format?: (spec: FormatSegment['spec'], value: any, ctx: EvalContext) => string | undefined };
 
     constructor(init: EvalContextInit) {
         this.data = init.data;
@@ -100,7 +108,7 @@ export class EvalContext {
  * Helpers
  * ============================================================================= */
 
-const U64_MASK = (1n << 64n) - 1n;
+const U64_MASK = (BigInt(1) << BigInt(64)) - BigInt(1);
 
 function truthy(x: any): boolean { return !!x; }
 
@@ -116,11 +124,11 @@ function asNumber(x: any): number {
 function toBigInt(x: any): bigint {
     if (typeof x === 'bigint') return x;
     if (typeof x === 'number') return BigInt(Number.isFinite(x) ? Math.trunc(x) : 0);
-    if (typeof x === 'boolean') return x ? 1n : 0n;
+    if (typeof x === 'boolean') return x ? BigInt(1) : BigInt(0);
     if (typeof x === 'string' && x.trim() !== '') {
         try { return BigInt(x); } catch { return BigInt(Math.trunc(+x) || 0); }
     }
-    return 0n;
+    return BigInt(0);
 }
 
 function addVals(a: any, b: any): any {
@@ -132,7 +140,7 @@ function subVals(a: any, b: any): any { return (typeof a === 'bigint' || typeof 
 function mulVals(a: any, b: any): any { return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) * toBigInt(b)) : (asNumber(a) * asNumber(b)); }
 function divVals(a: any, b: any): any {
     if (typeof a === 'bigint' || typeof b === 'bigint') {
-        const bb = toBigInt(b); if (bb === 0n) throw new Error('Division by zero');
+        const bb = toBigInt(b); if (bb === BigInt(0)) throw new Error('Division by zero');
         return toBigInt(a) / bb;
     }
     const nb = asNumber(b); if (nb === 0) throw new Error('Division by zero');
@@ -140,7 +148,7 @@ function divVals(a: any, b: any): any {
 }
 function modVals(a: any, b: any): any {
     if (typeof a === 'bigint' || typeof b === 'bigint') {
-        const bb = toBigInt(b); if (bb === 0n) throw new Error('Division by zero');
+        const bb = toBigInt(b); if (bb === BigInt(0)) throw new Error('Division by zero');
         return toBigInt(a) % bb;
     }
     return (asNumber(a) | 0) % (asNumber(b) | 0);
@@ -241,12 +249,15 @@ function lref(node: ASTNode, ctx: EvalContext): LValue {
     // Resolve and set the current target in the container for writes
     mustRef(node, ctx, true);
     return {
-        get: () => { mustRef(node, ctx, false); return mustRead(ctx); },
-        set: (v) => {
+        get(): any {
+            mustRef(node, ctx, false);
+            return mustRead(ctx);
+        },
+        set(v: any): any {
             const out = ctx.data.writeValue(ctx.container, v);
             if (out === undefined) throw new Error('Write returned undefined');
             return out;
-        },
+        }
     };
 }
 
@@ -265,6 +276,23 @@ export function evalNode(node: ASTNode, ctx: EvalContext): any {
         }
 
         case 'MemberAccess': {
+            const ma = node as MemberAccess;
+            // Support pseudo-members that evaluate to numbers: obj._count and obj._addr
+            if (ma.property === '_count' || ma.property === '_addr') {
+                // Resolve the base object reference to establish context
+                const baseRef = mustRef(ma.object, ctx, false);
+                // Record the base used for this member access (hint for host callbacks)
+                ctx.container.member = baseRef;
+                // Ensure current points at the base for host callbacks
+                ctx.container.current = baseRef;
+                const host = ctx.data as any;
+                const fn = host[ma.property] as ((container: RefContainer) => any) | undefined;
+                if (typeof fn !== 'function') throw new Error(`Missing pseudo-member ${ma.property}`);
+                const out = fn.call(ctx.data, ctx.container);
+                if (out === undefined) throw new Error(`Pseudo-member ${ma.property} returned undefined`);
+                return out;
+            }
+            // Default path: resolve member as a reference and read its value
             mustRef(node, ctx, false);
             return mustRead(ctx);
         }
@@ -298,7 +326,7 @@ export function evalNode(node: ASTNode, ctx: EvalContext): any {
             const ref = lref(u.argument, ctx);
             const prev = ref.get();
             const next = (typeof prev === 'bigint')
-                ? (u.operator === '++' ? (toBigInt(prev) + 1n) : (toBigInt(prev) - 1n))
+                ? (u.operator === '++' ? (toBigInt(prev) + BigInt(1)) : (toBigInt(prev) - BigInt(1)))
                 : (u.operator === '++' ? asNumber(prev) + 1 : asNumber(prev) - 1);
             ref.set(next);
             return u.prefix ? ref.get() : prev;
@@ -442,6 +470,13 @@ function routeIntrinsic(ctx: EvalContext, name: string, args: any[]): any {
         const out = fn.call(ctx.data, String(args[0] ?? ''));
         if (out === undefined) throw new Error('Intrinsic __GetRegVal returned undefined');
         return out; // returns number for further calculation
+    }
+    if (name === '__Running') {
+        const fn = (ctx.data as any).__Running as (() => number | undefined) | undefined;
+        if (typeof fn !== 'function') throw new Error('Missing intrinsic __Running');
+        const out = fn.call(ctx.data);
+        if (out === undefined) throw new Error('Intrinsic __Running returned undefined');
+        return out; // returns numeric flag for further calculation
     }
 
     // Generic dispatch paths

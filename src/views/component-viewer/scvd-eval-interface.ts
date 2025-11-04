@@ -28,7 +28,7 @@ export class ScvdEvalInterface implements DataHost {
 
     /** Resolve a property on a ScvdBase node. */
     getMemberRef(container: RefContainer, property: string, _forWrite?: boolean): ScvdBase | undefined {
-        const member = container.base.getMember(property);
+        const member = container.current?.getMember(property);
         if(member === undefined) {
             console.error(`ScvdEvalInterface: getMemberRef: member '${property}' not found in base '${container.base.name}'`);
         }
@@ -97,6 +97,20 @@ export class ScvdEvalInterface implements DataHost {
         if (typeof name !== 'string') return 0;
         return container.base.getSymbol(name) ? 1 : 0;
     }
+
+    __Running(): number | undefined {
+        return 1;
+    }
+
+    // Pseudo-member evaluators used as obj._count / obj._addr; must return numbers
+    _count(_container: RefContainer): number | undefined {
+        return 1; //container.base.getNumOfElements();
+    }
+
+    _addr(_container: RefContainer): number | undefined {
+        return 1; //container.base.getAddress();
+    }
+
 }
 
 // ---- local helper for sizeof ----

@@ -144,6 +144,9 @@ export class ScvdRead extends ScvdBase {
         }
     }
 
+    public getMember(property: string): ScvdBase | undefined {
+        return this._type?.getMember(property);
+    }
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];

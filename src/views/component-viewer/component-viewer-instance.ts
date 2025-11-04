@@ -68,16 +68,17 @@ export class ComponentViewerInstance {
         const modelConfiguredTime = Date.now();
         this.model.validateAll(true);
         const modelValidatedTime = Date.now();
+
+        const resolver = new Resolver(this.model);
+        resolver.resolve();
+        const resolveAndLinkTime = Date.now();
+
         const gatherObjects = new GatherScvdObjects(this.model);
         gatherObjects.gatherObjects();
         const modelGatherObjectsTime = Date.now();
 
         this.model.debugAll();
         const modelDebuggedTime = Date.now();
-
-        const resolver = new Resolver(this.model);
-        resolver.resolve();
-        const resolveAndLinkTime = Date.now();
 
         console.log(`SCVD file read in ${resolveAndLinkTime - startTime} ms:`,
             `\n  read: ${readTime - startTime} ms,`,
