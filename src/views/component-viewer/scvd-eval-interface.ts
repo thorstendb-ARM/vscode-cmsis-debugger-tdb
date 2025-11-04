@@ -74,12 +74,8 @@ export class ScvdEvalInterface implements DataHost {
         return ref;
     }
 
-    __GetRegVal(_container: RefContainer, args: any[]): number | bigint | undefined {
-        const [regName] = args ?? [];
-        if (typeof regName === 'string' && regName) {
-            return registerCache.readRegister(regName);
-        }
-        return undefined;
+    __GetRegVal(regName: string): number | undefined {
+        return registerCache.readRegister(regName);
     }
 
     __Offset_of(_container: RefContainer, _args: any[]): number {
