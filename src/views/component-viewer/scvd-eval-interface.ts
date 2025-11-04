@@ -35,11 +35,6 @@ export class ScvdEvalInterface implements DataHost {
         return member;
     }
 
-    /** Resolve an indexed child on a ScvdBase node (arrays/tuples/etc). */
-    getIndexRef(container: RefContainer, index: number, _forWrite?: boolean): ScvdBase | undefined {
-        return container.base.getIndexRef(index);
-    }
-
     /** Read/write concrete value at a ScvdBase reference. */
     readValue(container: RefContainer): number | string | undefined {
         return container.base.getValue();

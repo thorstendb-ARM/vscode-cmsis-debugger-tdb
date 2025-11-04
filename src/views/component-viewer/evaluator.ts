@@ -40,12 +40,12 @@ export type CTypeName =
 export interface RefContainer {
   /** Root model where identifier lookups begin. */
   base: ScvdBase;
-  /** Current ref resolved by the last get*Ref call; used by readValue/writeValue. */
+  /** Current ref resolved by the last resolution step; used by readValue/writeValue. */
   current?: ScvdBase | undefined;
   /** Most recent base for member access (e.g., foo in foo.bar). */
   member?: ScvdBase | undefined;
-  /** Most recent base for index access (e.g., arr in arr[0]). */
-  index?: ScvdBase | undefined;
+  /** Most recent numeric index for array access (e.g., arr[3]). */
+  index?: number | undefined;
 }
 
 /** Host contract used by the evaluator (implemented by ScvdEvalInterface). */
@@ -53,7 +53,8 @@ export interface DataHost {
   // Resolution APIs — must set container.current to the resolved ref on success
   getSymbolRef(container: RefContainer, name: string, forWrite?: boolean): ScvdBase | undefined;
   getMemberRef(container: RefContainer, property: string, forWrite?: boolean): ScvdBase | undefined;
-  getIndexRef(container: RefContainer, index: number, forWrite?: boolean): ScvdBase | undefined;
+  // Array element access: evaluator sets container.index (number) and container.current to the array ref; host read/write uses those.
+  /** @deprecated Not used by the evaluator anymore. Array element access is performed via `container.current` (the array ref) + `container.index` (number). Kept for legacy hosts. */
 
   // Value access acts on container.current
   readValue(container: RefContainer): any;                  // may return undefined -> error
@@ -200,6 +201,8 @@ function mustRef(node: ASTNode, ctx: EvalContext, forWrite = false): ScvdBase {
             const baseRef = mustRef(ma.object, ctx, forWrite);
             // Record the base used for this member access
             ctx.container.member = baseRef;
+            // Clear any array index hint when doing member access
+            ctx.container.index = undefined;
             const child = ctx.data.getMemberRef(ctx.container, ma.property, forWrite);
             if (!child) throw new Error(`Missing member '${ma.property}'`);
             // Set the current target for subsequent read/write
@@ -211,13 +214,13 @@ function mustRef(node: ASTNode, ctx: EvalContext, forWrite = false): ScvdBase {
             const baseRef = mustRef(ai.array, ctx, forWrite);
             const idxVal = evalNode(ai.index, ctx);
             const idx = asNumber(idxVal) | 0;
-            // Record the base used for this index access
-            ctx.container.index = baseRef;
-            const child = ctx.data.getIndexRef(ctx.container, idx, forWrite);
-            if (!child) throw new Error(`Missing index [${idx}]`);
-            // Set the current target for subsequent read/write
-            ctx.container.current = child;
-            return child;
+            // Record the numeric index used for this access; host will use it in read/write
+            ctx.container.index = idx;
+            // Clear member hint for array index
+            ctx.container.member = undefined;
+            // The current target is the array itself; host read/write will use index
+            ctx.container.current = baseRef;
+            return baseRef;
         }
         case 'EvalPointCall': {
             const ep = node as EvalPointCall;
@@ -285,6 +288,8 @@ export function evalNode(node: ASTNode, ctx: EvalContext): any {
                 ctx.container.member = baseRef;
                 // Ensure current points at the base for host callbacks
                 ctx.container.current = baseRef;
+                // Clear any array index hint
+                ctx.container.index = undefined;
                 const host = ctx.data as any;
                 const fn = host[ma.property] as ((container: RefContainer) => any) | undefined;
                 if (typeof fn !== 'function') throw new Error(`Missing pseudo-member ${ma.property}`);

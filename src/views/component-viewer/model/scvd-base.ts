@@ -287,11 +287,6 @@ export class ScvdBase {
         return undefined;
     }
 
-    public getIndexRef(_index: number): ScvdBase | undefined {
-        return undefined;
-    }
-
-
     private getLineNoInfo(item: ScvdBase | undefined): string | undefined {
         if(item === undefined) {
             return undefined;
