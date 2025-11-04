@@ -46,8 +46,7 @@ export class ScvdBase {
     private _valid: boolean = false;
 
     static #_evalContext?: EvalContext | undefined;
-    private _scvdTreeContextContainer: ScvdBase | undefined;
-
+    private _symbolsCache: Map<string, ScvdBase> | undefined;
 
     constructor(
         parent: ScvdBase | undefined,
@@ -90,12 +89,25 @@ export class ScvdBase {
         return true;
     }
 
-    public get scvdTreeContextContainer(): ScvdBase | undefined {
-        return this._scvdTreeContextContainer;
+    protected symbolsCache(key: string, value: ScvdBase | undefined): ScvdBase | undefined {
+        return this._symbolsCache?.get(key) ?? (value !== undefined ? ((this._symbolsCache ??= new Map()).set(key, value), value) : undefined);
     }
 
+    protected clearSymbolsCache(): void {
+        this._symbolsCache = undefined; // let GC reclaim the Map
+    }
+
+    public addToSymbolContext(name: string | undefined, symbol: ScvdBase): void {
+        this.parent?.addToSymbolContext(name, symbol);
+    }
+
+    // search for symbol in parent chain
     public getSymbol(name: string): ScvdBase | undefined {
-        console.error('ScvdBase: getSymbol not implemented for: ', name);
+        return this.parent?.getSymbol(name);
+    }
+
+    // search a member (member, var) in typedef
+    public getMember(_property: string): ScvdBase | undefined {
         return undefined;
     }
 

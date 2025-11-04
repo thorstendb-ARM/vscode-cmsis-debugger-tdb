@@ -74,7 +74,7 @@ export class ScvdExpression extends ScvdBase {
         if(this.expressionAst === undefined || this.evalContext === undefined) {
             return undefined;
         }
-        const result = evaluateParseResult(this.expressionAst, this.evalContext, this.scvdTreeContextContainer);
+        const result = evaluateParseResult(this.expressionAst, this.evalContext /*, this*/); // pass 'this' for local variable resolution
         return result;
     }
 
@@ -196,7 +196,15 @@ export class ScvdExpression extends ScvdBase {
         return super.debug();
     }
 
-
+    public getResultString(): string | undefined {
+        if(this._resultText !== undefined) {
+            return this._resultText;
+        }
+        if(this._result !== undefined) {
+            return this._result.getDisplayText();
+        }
+        return undefined;
+    }
 
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
@@ -207,12 +215,7 @@ export class ScvdExpression extends ScvdBase {
         if (this.expression) {
             info.push({ name: 'Expression', value: this.expression });
         }
-        if(this.result) {
-            info.push({ name: 'Result', value: this.result.getDisplayText() });
-        }
-        if(this.resultText) {
-            info.push({ name: 'Result Text', value: this.resultText });
-        }
+        info.push({ name: 'Result', value: this.getResultString() ?? 'undefined' });
         if (this.value) {
             info.push({ name: 'Value', value: this.value.getDisplayText() });
         }

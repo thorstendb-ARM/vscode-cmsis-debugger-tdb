@@ -98,4 +98,14 @@ export class ScvdVar extends ScvdBase {
         info.push(...itemInfo);
         return super.getExplorerInfo(info);
     }
+
+    public getExplorerDisplayName(): string {
+        const propertyName = super.getExplorerDisplayName();
+        const valueStr = this.value?.getResultString();
+        if(valueStr !== undefined && valueStr.length > 0) {
+            return `${propertyName} = ${valueStr}`;
+        }
+        return propertyName;
+    }
+
 }

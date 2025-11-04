@@ -21,7 +21,7 @@ import { ScvdEvents } from './scvd-events';
 import { ExplorerInfo, Json, ScvdBase } from './scvd-base';
 import { ScvdObjects } from './scvd-object';
 import { ScvdTypedefs } from './scvd-typedef';
-import { getArrayFromJson, getObjectFromJson } from './scvd-utils';
+import { /*getArrayFromJson,*/ getObjectFromJson } from './scvd-utils';
 
 export class ScvdComponentViewer extends ScvdBase {
     private _componentIdentifier: ScvdComponentIdentifier | undefined;
@@ -75,19 +75,18 @@ export class ScvdComponentViewer extends ScvdBase {
             this._typedefs.readXml(typedefsContainer);
         }
 
-        const events = getArrayFromJson(componentViewer?.events);
+        // disable for now
+        /*const events = getArrayFromJson(componentViewer?.events);
         if(events !== undefined) {
             this._events = new ScvdEvents(this);
             this._events.readXml(events);
-        }
+        }*/
 
         return super.readXml(xml);
     }
 
-    // fallback for global model symbol resolution
-    public getSymbol(name: string): ScvdBase | undefined {
-        const symbol = this.objects?.getSymbol(name);
-        return symbol;
+    public getSymbol(_name: string): ScvdBase | undefined {
+        return undefined;
     }
 
     public get component(): ScvdComponentIdentifier | undefined {

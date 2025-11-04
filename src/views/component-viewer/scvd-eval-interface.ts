@@ -6,9 +6,9 @@
  * - Intrinsics implemented (default behaviors), __GetRegVal via registerCache
  * ============================================================================= */
 
-import { DataHost, CTypeName } from '../evaluator';
-import { registerCache } from '../scvd-cache-register';
-import { ScvdBase } from './scvd-base';
+import { DataHost, CTypeName, RefContainer } from './evaluator';
+import { registerCache } from './scvd-cache-register';
+import { ScvdBase } from './model/scvd-base';
 
 export class ScvdEvalInterface implements DataHost {
     /** Optional function table you can populate from your model. */
@@ -18,30 +18,38 @@ export class ScvdEvalInterface implements DataHost {
     // =============================
 
     /** Resolve a top-level symbol by name, relative to the given root container. */
-    getSymbolRef(root: ScvdBase, name: string, _forWrite?: boolean): ScvdBase | undefined {
-        return root.getSymbol(name);
+    getSymbolRef(container: RefContainer, name: string, _forWrite?: boolean): ScvdBase | undefined {
+        const symbol = container.base.getSymbol(name);
+        if(symbol === undefined) {
+            console.error(`ScvdEvalInterface: getSymbolRef: symbol '${name}' not found in root '${container.base.name}'`);
+        }
+        return symbol;
     }
 
     /** Resolve a property on a ScvdBase node. */
-    getMemberRef(base: ScvdBase, property: string, _forWrite?: boolean): ScvdBase | undefined {
-        return base.getSymbol(property);
+    getMemberRef(container: RefContainer, property: string, _forWrite?: boolean): ScvdBase | undefined {
+        const member = container.base.getMember(property);
+        if(member === undefined) {
+            console.error(`ScvdEvalInterface: getMemberRef: member '${property}' not found in base '${container.base.name}'`);
+        }
+        return member;
     }
 
     /** Resolve an indexed child on a ScvdBase node (arrays/tuples/etc). */
-    getIndexRef(base: ScvdBase, index: number, _forWrite?: boolean): ScvdBase | undefined {
-        return base.getIndexRef(index);
+    getIndexRef(container: RefContainer, index: number, _forWrite?: boolean): ScvdBase | undefined {
+        return container.base.getIndexRef(index);
     }
 
     /** Read/write concrete value at a ScvdBase reference. */
-    readValue(ref: ScvdBase): number | string | undefined {
-        return ref.getValue();
+    readValue(container: RefContainer): number | string | undefined {
+        return container.base.getValue();
     }
-    writeValue(ref: ScvdBase, value: number | string): number | string | undefined {
-        return ref.setValue(value);
+    writeValue(container: RefContainer, value: number | string): number | string | undefined {
+        return container.base.setValue(value);
     }
 
     // Optional hooks
-    resolveColonPath(_root: ScvdBase, _parts: string[]): ScvdBase | number | string | undefined {
+    resolveColonPath(_container: RefContainer, _parts: string[]): ScvdBase | number | string | undefined {
         return undefined;
     }
     stats(): { symbols?: number; bytesUsed?: number } {
@@ -52,21 +60,21 @@ export class ScvdEvalInterface implements DataHost {
     // =====================
     // Intrinsics (DataHost)
     // =====================
-    __CalcMemUsed(_root: ScvdBase, _args: any[]): number {
+    __CalcMemUsed(_container: RefContainer, _args: any[]): number {
         const s = this.stats?.();
         if (s?.bytesUsed != null) return s.bytesUsed;
         if (s?.symbols != null) return s.symbols * 16; // bytes-ish; tune for your domain
         return 0;
     }
 
-    __FindSymbol(root: ScvdBase, args: any[]): number | string | undefined {
+    __FindSymbol(container: RefContainer, args: any[]): ScvdBase | undefined {
         const [name] = args ?? [];
         if (typeof name !== 'string') return undefined;
-        const ref = root.getSymbol(name);
-        return ref !== undefined ? this.readValue(ref) : undefined; // <- no 0 fallback
+        const ref = container.base.getSymbol(name);
+        return ref;
     }
 
-    __GetRegVal(_root: ScvdBase, args: any[]): number | bigint | undefined {
+    __GetRegVal(_container: RefContainer, args: any[]): number | bigint | undefined {
         const [regName] = args ?? [];
         if (typeof regName === 'string' && regName) {
             return registerCache.readRegister(regName);
@@ -74,12 +82,12 @@ export class ScvdEvalInterface implements DataHost {
         return undefined;
     }
 
-    __Offset_of(_root: ScvdBase, _args: any[]): number {
+    __Offset_of(_container: RefContainer, _args: any[]): number {
     // Domain-specific; return 0 by default.
         return 0;
     }
 
-    __size_of(_root: ScvdBase, args: any[]): number {
+    __size_of(_container: RefContainer, args: any[]): number {
         const [arg0] = args ?? [];
         if (typeof arg0 === 'string') {
             const sz = sizeOfTypeName(arg0 as CTypeName | string);
@@ -88,10 +96,10 @@ export class ScvdEvalInterface implements DataHost {
         return 4;
     }
 
-    __Symbol_exists(root: ScvdBase, args: any[]): number {
+    __Symbol_exists(container: RefContainer, args: any[]): number {
         const [name] = args ?? [];
         if (typeof name !== 'string') return 0;
-        return root.getSymbol(name) ? 1 : 0;
+        return container.base.getSymbol(name) ? 1 : 0;
     }
 }
 

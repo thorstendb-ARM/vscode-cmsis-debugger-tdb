@@ -1,4 +1,5 @@
-// evaluator.ts — ScvdBase-only containers; strict errors on missing refs/values; no defaults
+// evaluator.ts — ScvdBase-only, single container context (base/member/index/current)
+// Strict error semantics: any unresolved ref/value causes throw; top-level returns undefined
 
 import type {
     ASTNode,
@@ -35,29 +36,47 @@ export type CTypeName =
   | 'uint64_t' | 'int64_t'
   | 'float' | 'double';
 
+/** Container context carried during evaluation. */
+export interface RefContainer {
+  /** Root model where identifier lookups begin. */
+  base: ScvdBase;
+  /** Current ref resolved by the last get*Ref call; used by readValue/writeValue. */
+  current?: ScvdBase | undefined;
+  /** Most recent base for member access (e.g., foo in foo.bar). */
+  member?: ScvdBase | undefined;
+  /** Most recent base for index access (e.g., arr in arr[0]). */
+  index?: ScvdBase | undefined;
+}
+
 /** Host contract used by the evaluator (implemented by ScvdEvalInterface). */
 export interface DataHost {
-  getSymbolRef(root: ScvdBase, name: string, forWrite?: boolean): ScvdBase | undefined;
-  getMemberRef(base: ScvdBase, property: string, forWrite?: boolean): ScvdBase | undefined;
-  getIndexRef(base: ScvdBase, index: number, forWrite?: boolean): ScvdBase | undefined;
-  readValue(ref: ScvdBase): any;                  // may return undefined -> error
-  writeValue(ref: ScvdBase, value: any): any;     // may return undefined -> error
-  resolveColonPath?(root: ScvdBase, parts: string[]): any; // undefined => not found
-  stats?(): { symbols?: number; bytesUsed?: number };
-  evalIntrinsic?(name: string, root: ScvdBase, args: any[]): any;     // undefined => not handled
+  // Resolution APIs — must set container.current to the resolved ref on success
+  getSymbolRef(container: RefContainer, name: string, forWrite?: boolean): ScvdBase | undefined;
+  getMemberRef(container: RefContainer, property: string, forWrite?: boolean): ScvdBase | undefined;
+  getIndexRef(container: RefContainer, index: number, forWrite?: boolean): ScvdBase | undefined;
 
-  // Optional named intrinsic methods (same calling convention as evalIntrinsic)
-  __CalcMemUsed?(root: ScvdBase, args: any[]): any;
-  __FindSymbol?(root: ScvdBase, args: any[]): any;
-  __GetRegVal?(root: ScvdBase, args: any[]): any;
-  __size_of?(root: ScvdBase, args: any[]): any;
-  __Symbol_exists?(root: ScvdBase, args: any[]): any;
-  __Offset_of?(root: ScvdBase, args: any[]): any;
+  // Value access acts on container.current
+  readValue(container: RefContainer): any;                  // may return undefined -> error
+  writeValue(container: RefContainer, value: any): any;     // may return undefined -> error
+
+  // Optional: advanced lookups / intrinsics use the whole container context
+  resolveColonPath?(container: RefContainer, parts: string[]): any; // undefined => not found
+  stats?(): { symbols?: number; bytesUsed?: number };
+  evalIntrinsic?(name: string, container: RefContainer, args: any[]): any; // undefined => not handled
+
+  // Optional named intrinsics (same calling convention as evalIntrinsic)
+  __CalcMemUsed?(container: RefContainer, args: any[]): any;
+  __FindSymbol?(container: RefContainer, args: any[]): any;
+  __GetRegVal?(container: RefContainer, args: any[]): any;
+  __size_of?(container: RefContainer, args: any[]): any;
+  __Symbol_exists?(container: RefContainer, args: any[]): any;
+  __Offset_of?(container: RefContainer, args: any[]): any;
 }
 
 export interface EvalContextInit {
   data: DataHost;
-  container: ScvdBase; // starting reference for symbol resolution
+  /** Starting container for symbol resolution (root model). */
+  container: ScvdBase;
   printf: {
     format?: (spec: FormatSegment['spec'], value: any, ctx: EvalContext) => string | undefined;
   };
@@ -65,12 +84,13 @@ export interface EvalContextInit {
 
 export class EvalContext {
     readonly data: DataHost;
-    container: ScvdBase;
+    /** Composite container context (root + last member/index/current). */
+    container: RefContainer;
     readonly printf: NonNullable<EvalContextInit['printf']>;
 
     constructor(init: EvalContextInit) {
         this.data = init.data;
-        this.container = init.container;
+        this.container = { base: init.container };
         this.printf = init.printf ?? {};
     }
 }
@@ -147,7 +167,7 @@ function gtVals(a: any, b: any): boolean { return (typeof a === 'bigint' || type
 function gteVals(a: any, b: any): boolean { return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) >= toBigInt(b)) : (asNumber(a) >= asNumber(b)); }
 
 /* =============================================================================
- * Strict ref/value utilities
+ * Strict ref/value utilities (single-root + contextual hints)
  * ============================================================================= */
 
 type LValue = { get(): any; set(v: any): any };
@@ -156,15 +176,25 @@ function mustRef(node: ASTNode, ctx: EvalContext, forWrite = false): ScvdBase {
     switch (node.kind) {
         case 'Identifier': {
             const id = node as Identifier;
+            // Identifier lookup always starts from the root base
             const ref = ctx.data.getSymbolRef(ctx.container, id.name, forWrite);
             if (!ref) throw new Error(`Unknown symbol '${id.name}'`);
+            // Reset last-context hints for a plain identifier
+            ctx.container.member = undefined;
+            ctx.container.index = undefined;
+            // Set the current target for subsequent read/write
+            ctx.container.current = ref;
             return ref;
         }
         case 'MemberAccess': {
             const ma = node as MemberAccess;
             const baseRef = mustRef(ma.object, ctx, forWrite);
-            const child = ctx.data.getMemberRef(baseRef, ma.property, forWrite);
+            // Record the base used for this member access
+            ctx.container.member = baseRef;
+            const child = ctx.data.getMemberRef(ctx.container, ma.property, forWrite);
             if (!child) throw new Error(`Missing member '${ma.property}'`);
+            // Set the current target for subsequent read/write
+            ctx.container.current = child;
             return child;
         }
         case 'ArrayIndex': {
@@ -172,8 +202,12 @@ function mustRef(node: ASTNode, ctx: EvalContext, forWrite = false): ScvdBase {
             const baseRef = mustRef(ai.array, ctx, forWrite);
             const idxVal = evalNode(ai.index, ctx);
             const idx = asNumber(idxVal) | 0;
-            const child = ctx.data.getIndexRef(baseRef, idx, forWrite);
+            // Record the base used for this index access
+            ctx.container.index = baseRef;
+            const child = ctx.data.getIndexRef(ctx.container, idx, forWrite);
             if (!child) throw new Error(`Missing index [${idx}]`);
+            // Set the current target for subsequent read/write
+            ctx.container.current = child;
             return child;
         }
         default:
@@ -181,18 +215,19 @@ function mustRef(node: ASTNode, ctx: EvalContext, forWrite = false): ScvdBase {
     }
 }
 
-function mustRead(ref: ScvdBase, ctx: EvalContext, label?: string): any {
-    const v = ctx.data.readValue(ref);
+function mustRead(ctx: EvalContext, label?: string): any {
+    const v = ctx.data.readValue(ctx.container);
     if (v === undefined) throw new Error(label ? `Undefined value for ${label}` : 'Undefined value');
     return v;
 }
 
 function lref(node: ASTNode, ctx: EvalContext): LValue {
-    const ref = mustRef(node, ctx, true);
+    // Resolve and set the current target in the container for writes
+    mustRef(node, ctx, true);
     return {
-        get: () => mustRead(ref, ctx),
+        get: () => { mustRef(node, ctx, false); return mustRead(ctx); },
         set: (v) => {
-            const out = ctx.data.writeValue(ref, v);
+            const out = ctx.data.writeValue(ctx.container, v);
             if (out === undefined) throw new Error('Write returned undefined');
             return out;
         },
@@ -209,18 +244,18 @@ export function evalNode(node: ASTNode, ctx: EvalContext): any {
         case 'StringLiteral':  return (node as StringLiteral).value;
 
         case 'Identifier': {
-            const r = mustRef(node, ctx, false);
-            return mustRead(r, ctx, (node as Identifier).name);
+            mustRef(node, ctx, false);
+            return mustRead(ctx, (node as Identifier).name);
         }
 
         case 'MemberAccess': {
-            const r = mustRef(node, ctx, false);
-            return mustRead(r, ctx);
+            mustRef(node, ctx, false);
+            return mustRead(ctx);
         }
 
         case 'ArrayIndex': {
-            const r = mustRef(node, ctx, false);
-            return mustRead(r, ctx);
+            mustRef(node, ctx, false);
+            return mustRead(ctx);
         }
 
         case 'ColonPath': {
@@ -373,7 +408,7 @@ function formatValue(spec: FormatSegment['spec'], v: any, ctx?: EvalContext): st
 }
 
 /* =============================================================================
- * Intrinsics routing (strict)
+ * Intrinsics routing (strict, single-root)
  * ============================================================================= */
 
 function routeIntrinsic(ctx: EvalContext, name: string, args: any[]): any {
@@ -404,9 +439,9 @@ function normalizeEvaluateResult(v: any): EvaluateResult {
 }
 
 export function evaluateParseResult(pr: ParseResult, ctx: EvalContext, container?: ScvdBase): EvaluateResult {
-    const prev = ctx.container;
-    const override = (container !== undefined);
-    if (override) ctx.container = container as ScvdBase;
+    const prevBase = ctx.container.base;
+    const override = container !== undefined;
+    if (override) ctx.container.base = container as ScvdBase;
     try {
         const v = evalNode(pr.ast, ctx);
         return normalizeEvaluateResult(v);
@@ -414,6 +449,6 @@ export function evaluateParseResult(pr: ParseResult, ctx: EvalContext, container
         console.error('Error evaluating parse result:', pr, e);
         return undefined;
     } finally {
-        if (override) ctx.container = prev;
+        if (override) ctx.container.base = prevBase;
     }
 }

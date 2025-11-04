@@ -57,14 +57,8 @@ export class ScvdObjects extends ScvdBase {
         return this._objects;
     }
 
-    // fallback for global model symbol resolution
-    public getSymbol(name: string): ScvdBase | undefined {
-        for(const obj of this._objects) {
-            const sym = obj.getSymbol(name);
-            if(sym !== undefined) {
-                return sym;
-            }
-        }
+    // currently no global context above object level
+    public getSymbol(_name: string): ScvdBase | undefined {
         return undefined;
     }
 
@@ -76,13 +70,13 @@ export class ScvdObjects extends ScvdBase {
 }
 
 export class ScvdObject extends ScvdBase {
-    private _vars: ScvdVar[] = [];
-    private _calcs: ScvdCalc[] = [];
+    private _var: ScvdVar[] = [];
+    private _calc: ScvdCalc[] = [];
     private _list: ScvdList[] = [];
     private _read: ScvdRead[] = [];
     private _readList: ScvdReadList[] = [];
     private _out: ScvdOut[] = [];
-    private _symbolsCache = new Map<string, ScvdBase>();
+    private _symbolContext: Map<string, ScvdBase> = new Map<string, ScvdBase>();
 
     constructor(
         parent: ScvdBase | undefined,
@@ -99,6 +93,7 @@ export class ScvdObject extends ScvdBase {
         vars?.forEach( (v: Json) => {
             const varItem = this.addVar();
             varItem.readXml(v);
+            this.addToSymbolContext(varItem.name, varItem);
         });
 
         const calcs = getArrayFromJson(xml?.calc);
@@ -117,12 +112,14 @@ export class ScvdObject extends ScvdBase {
         reads?.forEach( (r: Json) => {
             const readItem = this.addRead();
             readItem.readXml(r);
+            this.addToSymbolContext(readItem.name, readItem);
         });
 
         const readLists = getArrayFromJson(xml?.readlist);
         readLists?.forEach( (rl: Json) => {
             const readListItem = this.addReadList();
             readListItem.readXml(rl);
+            this.addToSymbolContext(readListItem.name, readListItem);
         });
 
         const outs = getArrayFromJson(xml?.out);
@@ -146,41 +143,32 @@ export class ScvdObject extends ScvdBase {
         return this._readList;
     }
 
-    private get symbolsCache(): Map<string, ScvdBase> {
-        return this._symbolsCache;
-    }
-    private addToSymbolsCache(name: string, item: ScvdBase): void {
-        this.symbolsCache.set(name, item);
-    }
-    private getFromSymbolsCache(name: string): ScvdBase | undefined {
-        return this.symbolsCache.get(name);
+    public get var(): ScvdVar[] {
+        return this._var;
     }
 
+    public get out(): ScvdOut[] {
+        return this._out;
+    }
+
+    public get symbolContext(): Map<string, ScvdBase> {
+        return this._symbolContext;
+    }
+
+    public addToSymbolContext(name: string | undefined, symbol: ScvdBase): void {
+        if(name !== undefined && this.symbolContext.has(name) === false) {
+            this.symbolContext.set(name, symbol);
+        }
+    }
+
+    // all symbols are stored in object context, except vars in typedefs
     public getSymbol(name: string): ScvdBase | undefined {
-        // look in cache (vars, reads, ...)
-        const cachedSymbol = this.getFromSymbolsCache(name);
-        if(cachedSymbol !== undefined) {
-            return cachedSymbol;
-        }
-
-        const varSymbol = this.vars.find( v => v.name === name);
-        if(varSymbol !== undefined) {
-            this.addToSymbolsCache(name, varSymbol);
-            return varSymbol;
-        }
-
-        const readSymbol = this.reads.find( r => r.name === name);
-        if(readSymbol !== undefined) {
-            this.addToSymbolsCache(name, readSymbol);
-            return readSymbol;
-        }
-
-        return undefined;
+        const symbol = this.symbolContext.get(name);
+        return symbol;
     }
-
 
     public getVar(name: string): ScvdVar | undefined {
-        for(const v of this._vars) {
+        for(const v of this._var) {
             if(v.name === name) {
                 return v;
             }
@@ -202,20 +190,20 @@ export class ScvdObject extends ScvdBase {
 
     public addVar(): ScvdVar {
         const varItem = new ScvdVar(this);
-        this._vars.push(varItem);
+        this._var.push(varItem);
         return varItem;
     }
     public get vars(): ScvdVar[] {
-        return this._vars;
+        return this._var;
     }
 
     public addCalc(): ScvdCalc {
         const calcItem = new ScvdCalc(this);
-        this._calcs.push(calcItem);
+        this._calc.push(calcItem);
         return calcItem;
     }
     public get calcs(): ScvdCalc[] {
-        return this._calcs;
+        return this._calc;
     }
 
     public addList(): ScvdList {
@@ -223,17 +211,12 @@ export class ScvdObject extends ScvdBase {
         this._list.push(listItem);
         return listItem;
     }
-    public get lists(): ScvdList[] {
-        return this._list;
-    }
+
 
     public addRead(): ScvdRead {
         const readItem = new ScvdRead(this);
         this._read.push(readItem);
         return readItem;
-    }
-    public get reads(): ScvdRead[] {
-        return this._read;
     }
 
     public addReadList(): ScvdReadList {
@@ -241,17 +224,11 @@ export class ScvdObject extends ScvdBase {
         this._readList.push(readListItem);
         return readListItem;
     }
-    public get readLists(): ScvdReadList[] {
-        return this._readList;
-    }
 
     public addOut(): ScvdOut {
         const outItem = new ScvdOut(this);
         this._out.push(outItem);
         return outItem;
-    }
-    public get out(): ScvdOut[] {
-        return this._out;
     }
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {

@@ -63,18 +63,21 @@ export class ScvdList extends ScvdBase {
         readLists?.forEach(readList => {
             const readListItem = this.addReadList();
             readListItem.readXml(readList);
+            this.addToSymbolContext(readListItem.name, readListItem);
         });
 
         const reads = getArrayFromJson(xml.read);
         reads?.forEach(read => {
             const readItem = this.addRead();
             readItem.readXml(read);
+            this.addToSymbolContext(readItem.name, readItem);
         });
 
         const vars = getArrayFromJson(xml.var);
         vars?.forEach(v => {
             const varItem = this.addVar();
             varItem.readXml(v);
+            this.addToSymbolContext(varItem.name, varItem);
         });
 
         const calcs = getArrayFromJson(xml.calc);
@@ -160,7 +163,7 @@ export class ScvdList extends ScvdBase {
         return listItem;
     }
 
-    public get lists(): ScvdList[] {
+    public get list(): ScvdList[] {
         return this._list;
     }
 
@@ -170,7 +173,7 @@ export class ScvdList extends ScvdBase {
         return readListItem;
     }
 
-    public get readLists(): ScvdReadList[] {
+    public get readList(): ScvdReadList[] {
         return this._readlist;
     }
 
@@ -198,6 +201,16 @@ export class ScvdList extends ScvdBase {
     public get calc(): ScvdCalc[] {
         return this._calc;
     }
+
+    public getSymbol(name: string): ScvdBase | undefined {
+        return this.symbolsCache(
+            name,
+            this.var.find(s => s.name === name) ??
+            this.read.find(s => s.name === name) ??
+            this.readList.find(s => s.name === name)
+        ) ?? this.parent?.getSymbol(name);
+    }
+
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];

@@ -16,8 +16,8 @@
 
 import { EvalContext } from './evaluator';
 import { ScvdBase } from './model/scvd-base';
-import { ScvdEvalInterface } from './model/scvd-eval-interface';
 import { ScvdFormatSpecifier } from './model/scvd-format-specifier';
+import { ScvdEvalInterface } from './scvd-eval-interface';
 
 
 export type PrintfHook = {
