@@ -13,7 +13,7 @@ import { parseStringPromise, ParserOptions } from 'xml2js';
 import { Json } from './model/scvd-base';
 import { Resolver } from './resolver';
 import { ScvdComponentViewer } from './model/scvd-comonent-viewer';
-import { GatherScvdObjects } from './gather-scvd-objects';
+import { EvalContext } from './eval-context';
 
 
 
@@ -73,8 +73,8 @@ export class ComponentViewerInstance {
         resolver.resolve();
         const resolveAndLinkTime = Date.now();
 
-        const gatherObjects = new GatherScvdObjects(this.model);
-        gatherObjects.gatherObjects();
+        const gatherObjects = new EvalContext(this.model);
+        gatherObjects.init();
         const modelGatherObjectsTime = Date.now();
 
         this.model.debugAll();
