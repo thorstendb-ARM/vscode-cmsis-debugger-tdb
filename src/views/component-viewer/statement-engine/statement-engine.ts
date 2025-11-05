@@ -15,18 +15,26 @@
  */
 
 import { ScvdBase } from '../model/scvd-base';
-import { StatementBase } from './statement-item';
-
+import { ScvdComponentViewer } from '../model/scvd-comonent-viewer';
+import { StatementBase } from './statement-base';
+import { StatementCalc } from './statement-calc';
+import { StatementItem } from './statement-item';
+import { StatementList } from './statement-list';
+import { StatementObject } from './statement-object';
+import { StatementOut } from './statement-out';
+import { StatementRead } from './statement-read';
+import { StatementReadList } from './statement-readList';
+import { StatementVar } from './statement-var';
 
 export class StatementEngine {
-    private _model: ScvdBase;
+    private _model: ScvdComponentViewer;
     private _statementTree: StatementBase | undefined;
 
-    constructor(model: ScvdBase) {
+    constructor(model: ScvdComponentViewer) {
         this._model = model;
     }
 
-    get model(): ScvdBase {
+    get model(): ScvdComponentViewer {
         return this._model;
     }
 
@@ -34,4 +42,80 @@ export class StatementEngine {
         return this._statementTree;
     }
 
+    private buildStatement(item: ScvdBase, parent: StatementBase | undefined) : StatementBase | undefined {
+        const ctorName = item.constructor?.name;
+
+        switch (ctorName) {
+            case 'ScvdObject':
+                // Object-specific logic
+                return new StatementObject(item, parent);
+            case 'ScvdVar':
+                // Variable-specific logic.
+                return new StatementVar(item, parent);
+            case 'ScvdCalc':
+                // Calculation-specific logic.
+                return new StatementCalc(item, parent);
+            case 'ScvdReadList':
+                // ReadList-specific logic.
+                return new StatementReadList(item, parent);
+            case 'ScvdRead':
+                // Read-specific logic.
+                return new StatementRead(item, parent);
+            case 'ScvdList':
+                // List-specific logic.
+                return new StatementList(item, parent);
+            case 'ScvdOut':
+                // Output-specific logic.
+                return new StatementOut(item, parent);
+            case 'ScvdItem':
+                // Item-specific logic.
+                return new StatementItem(item, parent);
+            default:
+                // Generic logic for other item types.
+                return undefined;
+        }
+    }
+
+    public addChildrenFromScvd(item: ScvdBase, parent: StatementBase | undefined): StatementBase | undefined {
+
+        const statement = this.buildStatement(item, parent);
+        if(statement === undefined) {
+            return undefined;
+        }
+
+        for (const child of item.children) {
+            this.addChildrenFromScvd(child, statement);
+        }
+
+        return statement;
+    }
+
+
+    public initialize(): boolean {
+        const objects = this._model.objects;
+        if(objects === undefined || objects.objects.length === 0) {
+            return false;
+        }
+
+        const object = objects.objects[0];
+        if(object === undefined) {
+            return false;
+        }
+
+        const statementTree = this.addChildrenFromScvd(object, undefined);
+        if(statementTree !== undefined) {
+            statementTree.sortChildren();
+            this._statementTree = statementTree;
+        }
+
+        return true;
+    }
+
+    public executeAll(): void {
+        // Execute all statements in the statement tree.
+        // This is a placeholder implementation.
+        if (this._statementTree) {
+            console.log('Executing statements in the statement tree...');
+        }
+    }
 }

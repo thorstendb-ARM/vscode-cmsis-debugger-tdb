@@ -14,6 +14,7 @@ import { Json } from './model/scvd-base';
 import { Resolver } from './resolver';
 import { ScvdComponentViewer } from './model/scvd-comonent-viewer';
 import { EvalContext } from './eval-context';
+import { StatementEngine } from './statement-engine/statement-engine';
 
 
 
@@ -77,6 +78,12 @@ export class ComponentViewerInstance {
         gatherObjects.init();
         const modelGatherObjectsTime = Date.now();
 
+        const statementEngine = new StatementEngine(this.model);
+        statementEngine.initialize();
+        const statementEngineInitializedTime = Date.now();
+        statementEngine.executeAll();
+        const statementEngineExecuteAllTime = Date.now();
+
         this.model.debugAll();
         const modelDebuggedTime = Date.now();
 
@@ -88,7 +95,9 @@ export class ComponentViewerInstance {
             `\n  configure: ${modelConfiguredTime - modelTime} ms,`,
             `\n  validate: ${modelValidatedTime - modelConfiguredTime} ms,`,
             `\n  gatherObjects: ${modelGatherObjectsTime - modelValidatedTime} ms,`,
-            `\n  debug: ${modelDebuggedTime - modelGatherObjectsTime} ms,`,
+            `\n  statementEngineInitialize: ${statementEngineInitializedTime - modelGatherObjectsTime} ms,`,
+            `\n  statementEngineExecuteAll: ${statementEngineExecuteAllTime - statementEngineInitializedTime} ms,`,
+            `\n  debug: ${modelDebuggedTime - statementEngineExecuteAllTime} ms,`,
             `\n  resolveAndLink: ${resolveAndLinkTime - modelDebuggedTime} ms`);
     }
 

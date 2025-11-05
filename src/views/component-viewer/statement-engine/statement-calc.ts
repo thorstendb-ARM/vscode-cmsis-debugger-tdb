@@ -15,12 +15,12 @@
  */
 
 import { ScvdBase } from '../model/scvd-base';
-import { StatementBase } from './statement-item';
+import { StatementBase } from './statement-base';
 
 
 export class StatementCalc extends StatementBase {
 
-    constructor(item: ScvdBase, parent?: StatementBase) {
+    constructor(item: ScvdBase, parent: StatementBase | undefined) {
         super(item, parent);
     }
 

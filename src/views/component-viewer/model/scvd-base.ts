@@ -280,11 +280,11 @@ export class ScvdBase {
 
     // expanded values
     public getValue(): string | number | undefined {
-        return undefined;
+        return 0;   // TODO: change to undefined to indicate no value
     }
 
-    public setValue(_val: number | string): number | string | undefined {
-        return undefined;
+    public setValue(val: number | string): number | string | undefined {
+        return val;
     }
 
     private getLineNoInfo(item: ScvdBase | undefined): string | undefined {
