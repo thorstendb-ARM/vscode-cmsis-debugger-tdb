@@ -26,16 +26,16 @@ export class StatementRead extends StatementBase {
     }
 
     protected onExecute(): void {
-        if (!(this.scvdItem instanceof ScvdRead)) {
-            throw new Error(`Expected ScvdRead, got ${this.scvdItem.constructor?.name ?? 'unknown'}`);
-        }
-        const scvdRead: ScvdRead = this.scvdItem;
-
-        const conditionResult = scvdRead.getConditionResult();
+        const conditionResult = this.scvdItem.getConditionResult();
         console.log(`  condition result: ${conditionResult}`);
         if (!conditionResult) {
             return;
         }
+
+        if (!(this.scvdItem instanceof ScvdRead)) {
+            throw new Error(`Expected ScvdRead, got ${this.scvdItem.constructor?.name ?? 'unknown'}`);
+        }
+        const scvdRead: ScvdRead = this.scvdItem;
 
         const symbolName = scvdRead.symbol?.symbol;
         const offsetExpr = scvdRead.offset;

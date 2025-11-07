@@ -130,6 +130,10 @@ export class ScvdBase {
         ScvdBase.initEvalContext(_ctx);
     }
 
+    // default condition always true
+    public getConditionResult(): boolean {
+        return true;
+    }
 
     public set tag(value: string | undefined) {
         this._tag = value;

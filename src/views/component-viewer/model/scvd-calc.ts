@@ -62,7 +62,7 @@ export class ScvdCalc extends ScvdBase {
     }
 
     public getConditionResult(): boolean {
-        return this._cond ? this._cond.result : true;
+        return this._cond?.result ?? super.getConditionResult();
     }
 
     get expression(): ScvdExpression[] {
