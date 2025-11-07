@@ -96,6 +96,10 @@ export class ScvdOut extends ScvdBase {
         }
     }
 
+    public getConditionResult(): boolean {
+        return this._cond ? this._cond.result : true;
+    }
+
     public get item(): ScvdItem[] {
         return this._item;
     }

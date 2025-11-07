@@ -16,7 +16,7 @@
 
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
-import { resolveType } from '../resolver';
+import { ResolveSymbolCb } from '../resolver';
 import { NumberType } from './number-type';
 import { ExplorerInfo, Json, ScvdBase } from './scvd-base';
 import { ScvdEventId } from './scvd-event-id';
@@ -71,7 +71,7 @@ export class ScvdEvent extends ScvdBase {
         return super.readXml(xml);
     }
 
-    public resolveAndLink(_resolveFunc: (name: string, type: resolveType) => ScvdBase | undefined): boolean {
+    public resolveAndLink(_resolveFunc: ResolveSymbolCb): boolean {
         // TODO: this._state = this.findReference(ScvdEventState, this._state?.name);
         return false;
     }

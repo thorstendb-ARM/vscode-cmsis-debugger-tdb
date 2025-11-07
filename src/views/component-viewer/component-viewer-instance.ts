@@ -85,7 +85,7 @@ export class ComponentViewerInstance {
         const statementEngineExecuteAllTime = Date.now();
 
         //this.model.debugAll();
-        const modelDebuggedTime = Date.now();
+        //const modelDebuggedTime = Date.now();
 
         console.log(`SCVD file read in ${resolveAndLinkTime - startTime} ms:`,
             `\n  read: ${readTime - startTime} ms,`,
@@ -97,8 +97,8 @@ export class ComponentViewerInstance {
             `\n  gatherObjects: ${modelGatherObjectsTime - modelValidatedTime} ms,`,
             `\n  statementEngineInitialize: ${statementEngineInitializedTime - modelGatherObjectsTime} ms,`,
             `\n  statementEngineExecuteAll: ${statementEngineExecuteAllTime - statementEngineInitializedTime} ms,`,
-            `\n  debug: ${modelDebuggedTime - statementEngineExecuteAllTime} ms,`,
-            `\n  resolveAndLink: ${resolveAndLinkTime - modelDebuggedTime} ms`);
+            //`\n  debug: ${modelDebuggedTime - statementEngineExecuteAllTime} ms,`,
+            `\n  resolveAndLink: ${resolveAndLinkTime - statementEngineExecuteAllTime /*modelDebuggedTime*/} ms`);
     }
 
     private async readFileToBuffer(filePath: URI): Promise<Buffer> {

@@ -22,7 +22,8 @@ import { ExplorerInfo, Json, ScvdBase } from './scvd-base';
 import { ScvdTypedef } from './scvd-typedef';
 import { ScvdRead } from './scvd-read';
 import { getStringFromJson } from './scvd-utils';
-import { resolveType } from '../resolver';
+import { ResolveSymbolCb, ResolveType } from '../resolver';
+import { ScvdMember } from './scvd-member';
 
 
 // readlist defines a list of variables or arrays. The first instance of <readlist name="var"> will define 'var',
@@ -109,11 +110,18 @@ export class ScvdReadList extends ScvdRead {
         return this._nextObj;
     }
 
-    public resolveAndLink(resolveFunc: (name: string, type: resolveType) => ScvdBase | undefined): boolean {
+    public resolveAndLink(resolveFunc: ResolveSymbolCb): boolean {
         if (this._next !== undefined) {
-            const foundNext = resolveFunc(this._next, resolveType.target);
-            if (foundNext) {
-                ; //this.nextObj = foundNext;
+            const resolvedTypedef = resolveFunc(this._next, ResolveType.localType);
+            if (resolvedTypedef && resolvedTypedef instanceof ScvdTypedef) {
+                const typedef: ScvdTypedef = resolvedTypedef as ScvdTypedef;
+                const resolvedMember = resolveFunc(this._next, ResolveType.localMember, typedef);
+                if (resolvedMember && resolvedMember instanceof ScvdMember) {     // found a typedef member
+                    const member: ScvdMember = resolvedMember as ScvdMember;
+                    console.log(`  ReadList '${this.name}' .next linked to member '${member.name}' in typedef '${typedef.name}'`);
+                    //this.nextObj = member;
+                }
+
             }
         }
         return super.resolveAndLink(resolveFunc);

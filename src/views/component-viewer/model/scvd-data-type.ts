@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { resolveType } from '../resolver';
+import { ResolveSymbolCb, ResolveType } from '../resolver';
 import { NumberType } from './number-type';
 import { ExplorerInfo, ScvdBase } from './scvd-base';
 import { ScvdTypedef } from './scvd-typedef';
@@ -167,7 +167,7 @@ export class ScvdComplexDataType extends ScvdBase{
         this._isPointer = value;
     }
 
-    public resolveAndLink(resolveFunc: (name: string, type: resolveType) => ScvdBase | undefined): boolean {
+    public resolveAndLink(resolveFunc: ResolveSymbolCb): boolean {
         const typeName = this.typeName?.replace(/\*/g, '').trim();
         if(typeName === undefined) {
             return false;
@@ -177,7 +177,7 @@ export class ScvdComplexDataType extends ScvdBase{
             this.isPointer = true;
         }
 
-        const item = resolveFunc(typeName, resolveType.local);
+        const item = resolveFunc(typeName, ResolveType.localType);
         if(item === undefined || !(item instanceof ScvdTypedef)) {
             console.error('Failed to resolve complex data type:', typeName);
             return false;

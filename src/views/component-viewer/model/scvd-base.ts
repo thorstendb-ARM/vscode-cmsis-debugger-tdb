@@ -15,7 +15,7 @@
  */
 
 import { EvalContext } from '../evaluator';
-import { resolveType } from '../resolver';
+import { ResolveSymbolCb } from '../resolver';
 import { NumberType } from './number-type';
 import { getLineNumberFromJson, getStringFromJson } from './scvd-utils';
 
@@ -209,7 +209,7 @@ export class ScvdBase {
     }
 
     // Member function available to all ScvdItems and derived classes
-    public resolveAndLink(_resolveFunc: (name: string, type: resolveType) => ScvdBase | undefined): boolean {
+    public resolveAndLink(_resolveFunc: ResolveSymbolCb): boolean {
         // Default implementation does nothing, can be overridden by subclasses
         return false;
     }

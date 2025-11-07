@@ -26,10 +26,10 @@ import { ScvdBase } from '../model/scvd-base';
 export class StatementBase {
     private _parent: StatementBase | undefined;
     private _children: StatementBase[] = [];
-    private _item: ScvdBase;
+    private _scvdItem: ScvdBase;
 
     constructor(item: ScvdBase, parent: StatementBase | undefined) {
-        this._item = item;
+        this._scvdItem = item;
         this._parent = parent;
         parent?.addChild(this);
     }
@@ -42,8 +42,8 @@ export class StatementBase {
         return this._children;
     }
 
-    private get item(): ScvdBase {
-        return this._item;
+    public get scvdItem(): ScvdBase {
+        return this._scvdItem;
     }
 
     /** Append a child and return it. */
@@ -56,7 +56,7 @@ export class StatementBase {
 
     /** Numeric line for this node, derived from underlying item. */
     public get line(): number {
-        const lineNo = Number(this.item.lineNo);
+        const lineNo = Number(this.scvdItem.lineNo);
         return isNaN(lineNo) ? 0 : lineNo;
     }
 
@@ -76,7 +76,7 @@ export class StatementBase {
             child.sortChildren();
         }
     }
-    /** Execute this node, then its children in current order. */
+
     public executeStatement(): void {
         this.onExecute();
         for (const child of this._children) {
@@ -87,7 +87,8 @@ export class StatementBase {
     /** Override in subclasses to perform work for this node. */
     protected onExecute(): void {
         // no-op in base
-        console.log(`Executing statement ${this.line}: ${this.item.constructor.name}, ${this.item.getExplorerDisplayName()}`);
+        //console.log(`${this.line}: Executing "${this.scvdItem.constructor.name}", ${this.scvdItem.getExplorerDisplayName()}`);
+        console.log(`${this.line}: ${this.scvdItem.constructor.name}`);
         return;
     }
 }

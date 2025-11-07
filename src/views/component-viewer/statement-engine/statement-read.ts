@@ -15,6 +15,7 @@
  */
 
 import { ScvdBase } from '../model/scvd-base';
+import { ScvdRead } from '../model/scvd-read';
 import { StatementBase } from './statement-base';
 
 
@@ -23,5 +24,29 @@ export class StatementRead extends StatementBase {
     constructor(item: ScvdBase, parent: StatementBase | undefined) {
         super(item, parent);
     }
+
+    protected onExecute(): void {
+        if (!(this.scvdItem instanceof ScvdRead)) {
+            throw new Error(`Expected ScvdRead, got ${this.scvdItem.constructor?.name ?? 'unknown'}`);
+        }
+        const scvdRead: ScvdRead = this.scvdItem;
+
+        const conditionResult = scvdRead.getConditionResult();
+        console.log(`  condition result: ${conditionResult}`);
+        if (!conditionResult) {
+            return;
+        }
+
+        const symbolName = scvdRead.symbol?.symbol;
+        const offsetExpr = scvdRead.offset;
+        if(symbolName === undefined && offsetExpr === undefined) {
+            console.error(`${this.line} Executing "read": ${scvdRead.name}, no symbol or offset defined`);
+            return;
+        }
+
+        console.log(`${this.line} Executing "read": ${scvdRead.name}, symbol: ${symbolName}, offset: ${offsetExpr?.expression}`);
+        return;
+    }
+
 
 }

@@ -115,6 +115,10 @@ export class ScvdRead extends ScvdBase {
         return this._cond;
     }
 
+    public getConditionResult(): boolean {
+        return this._cond ? this._cond.result : true;
+    }
+
     get size(): ScvdExpression | undefined {
         return this._size;
     }
