@@ -67,6 +67,11 @@
           "id": "cmsis-debugger.liveWatch",
           "name": "Live Watch",
           "icon": "media/trace-and-live-light.svg"
+        },
+        {
+          "id": "cmsis-debugger.componentViewer",
+          "name": "Component Viewer",
+          "icon": "${rocket}"
         }
       ],
       "cmsis-scvd-explorer": [
