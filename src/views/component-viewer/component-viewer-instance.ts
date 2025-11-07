@@ -84,7 +84,7 @@ export class ComponentViewerInstance {
         statementEngine.executeAll();
         const statementEngineExecuteAllTime = Date.now();
 
-        this.model.debugAll();
+        //this.model.debugAll();
         const modelDebuggedTime = Date.now();
 
         console.log(`SCVD file read in ${resolveAndLinkTime - startTime} ms:`,

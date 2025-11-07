@@ -116,6 +116,7 @@ export class StatementEngine {
         // This is a placeholder implementation.
         if (this._statementTree) {
             console.log('Executing statements in the statement tree...');
+            this._statementTree.executeStatement();
         }
     }
 }

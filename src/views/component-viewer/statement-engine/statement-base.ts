@@ -87,6 +87,7 @@ export class StatementBase {
     /** Override in subclasses to perform work for this node. */
     protected onExecute(): void {
         // no-op in base
+        console.log(`Executing statement ${this.line}: ${this.item.constructor.name}, ${this.item.getExplorerDisplayName()}`);
         return;
     }
 }
