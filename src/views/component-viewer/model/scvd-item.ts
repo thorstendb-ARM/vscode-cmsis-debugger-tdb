@@ -174,11 +174,9 @@ export class ScvdItem extends ScvdBase {
         return propertyName ?? '';
     }
 
-    public getDisplayValue(): string {
-        const value = this.value?.getDisplayResult();
-        return value ?? '';
+    public getDisplayValue(): string | undefined {
+        return this.value?.getDisplayResult();
     }
-
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];

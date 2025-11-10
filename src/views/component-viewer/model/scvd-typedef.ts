@@ -157,7 +157,7 @@ export class ScvdTypedef extends ScvdBase {
         if (this._size !== undefined) {
             info.push({ name: 'Size', value: this._size.expression ?? '' });
             if (this._size.value !== undefined) {
-                info.push({ name: 'Size Value', value: this._size.getDisplayValue() });
+                info.push({ name: 'Size Value', value: this._size.getDisplayValue() ?? 'undefined' });
             }
         }
         if (this._import !== undefined) {

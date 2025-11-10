@@ -288,7 +288,7 @@ export abstract class ScvdBase {
         return this.name ?? '';
     }
 
-    public getDisplayValue(): string {
+    public getDisplayValue(): string | undefined {
         const val = this.getValue();
         if (val !== undefined) {
             if(typeof val === 'number') {
@@ -297,7 +297,7 @@ export abstract class ScvdBase {
                 return val;
             }
         }
-        return '';
+        return undefined;
     }
 
     private getLineNoInfo(item: ScvdBase | undefined): string | undefined {

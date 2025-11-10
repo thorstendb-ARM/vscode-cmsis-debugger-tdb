@@ -208,7 +208,7 @@ export class ScvdExpression extends ScvdBase {
         }
         info.push({ name: 'Result', value: this.getResultString() ?? 'undefined' });
         if (this.value) {
-            info.push({ name: 'Value', value: this.getDisplayValue() });
+            info.push({ name: 'Value', value: this.getDisplayValue() ?? 'undefined' });
         }
         info.push(...itemInfo);
         return super.getExplorerInfo(info);
