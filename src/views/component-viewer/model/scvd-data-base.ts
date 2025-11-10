@@ -24,9 +24,9 @@ export class ScvdDataBase extends ScvdBase {
      * <readlist> manages two predefined member variables with the following names:
      * https://arm-software.github.io/CMSIS-View/main/elem_readlist.html
      */
-    private _addr: NumberType | undefined = undefined;  // name[index]._addr — start address of the list item that was read from target memory.
-    private _size: NumberType | undefined = undefined;  // name[index]._size — size of the list item that was read from target memory.
-    private _count: NumberType | undefined = undefined; // name._count — number of list items. Used as index limit, valid index values are: (0 .. number-1).
+    private _addr: number | undefined = undefined;  // name[index]._addr — start address of the list item that was read from target memory.
+    private _size: number | undefined = undefined;  // name[index]._size — size of the list item that was read from target memory.
+    private _count: number | undefined = undefined; // name._count — number of list items. Used as index limit, valid index values are: (0 .. number-1).
 
     constructor(
         parent: ScvdBase | undefined,
@@ -46,46 +46,46 @@ export class ScvdDataBase extends ScvdBase {
         return super.readXml(xml);
     }
 
-    get addr(): NumberType | undefined {
+    get addr(): number | undefined {
         return this._addr;
     }
 
     set addr(value: string | undefined) {
         if( value !== undefined) {
-            this._addr = new NumberType(value);
+            this._addr = new NumberType(value).value;
         }
     }
 
-    get size(): NumberType | undefined {
+    get size(): number | undefined {
         return this._size;
     }
 
     set size(value: string | undefined) {
         if( value !== undefined) {
-            this._size = new NumberType(value);
+            this._size = new NumberType(value).value;
         }
     }
 
-    get count(): NumberType | undefined {
+    get count(): number | undefined {
         return this._count;
     }
 
     set count(value: string | undefined) {
         if( value !== undefined) {
-            this._count = new NumberType(value);
+            this._count = new NumberType(value).value;
         }
     }
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
         if (this._addr !== undefined) {
-            info.push({ name: 'Address', value: this._addr.getDisplayText() });
+            info.push({ name: 'Address', value: this._addr.toString() });
         }
         if (this._size !== undefined) {
-            info.push({ name: 'Size', value: this._size.getDisplayText() });
+            info.push({ name: 'Size', value: this._size.toString() });
         }
         if (this._count !== undefined) {
-            info.push({ name: 'Count', value: this._count.getDisplayText() });
+            info.push({ name: 'Count', value: this._count.toString() });
         }
         info.push(...itemInfo);
         return super.getExplorerInfo(info);

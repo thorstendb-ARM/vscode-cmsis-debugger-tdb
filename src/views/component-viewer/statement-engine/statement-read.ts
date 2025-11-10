@@ -26,25 +26,40 @@ export class StatementRead extends StatementBase {
     }
 
     protected onExecute(): void {
-        const conditionResult = this.scvdItem.getConditionResult();
-        console.log(`  condition result: ${conditionResult}`);
-        if (!conditionResult) {
+        const scvdRead = this.scvdItem.castToDerived(ScvdRead);
+        if (scvdRead === undefined) {
             return;
         }
 
-        if (!(this.scvdItem instanceof ScvdRead)) {
-            throw new Error(`Expected ScvdRead, got ${this.scvdItem.constructor?.name ?? 'unknown'}`);
+        const type = scvdRead.type;
+        if(type === undefined) {
+            console.error(`${this.line} Executing "read": ${scvdRead.name}, no type defined`);
+            return;
         }
-        const scvdRead: ScvdRead = this.scvdItem;
+        const size = scvdRead.size;
+        let readLength: number = 4;
+        if(size !== undefined) {
+            const sizeValue = size.value;
+            if(typeof sizeValue === 'number') {
+                readLength = sizeValue;
+                console.log(`${this.line} Executing "read": ${scvdRead.name}, size expression: ${size.expression}, value: ${readLength}`);
+            }
+        }
 
-        const symbolName = scvdRead.symbol?.symbol;
+
+        const symbol = scvdRead.symbol;
+        //const offset = scvdRead.offset;
+        //const endian = scvdRead.endian;
+
+
+
         const offsetExpr = scvdRead.offset;
-        if(symbolName === undefined && offsetExpr === undefined) {
+        if(symbol?.name === undefined && offsetExpr === undefined) {
             console.error(`${this.line} Executing "read": ${scvdRead.name}, no symbol or offset defined`);
             return;
         }
 
-        console.log(`${this.line} Executing "read": ${scvdRead.name}, symbol: ${symbolName}, offset: ${offsetExpr?.expression}`);
+        console.log(`${this.line} Executing "read": ${scvdRead.name}, symbol: ${symbol?.name}, offset: ${offsetExpr?.expression}`);
         return;
     }
 

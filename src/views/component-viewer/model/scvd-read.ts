@@ -29,7 +29,7 @@ export class ScvdRead extends ScvdBase {
     private _type: ScvdDataType | undefined;
     private _symbol: ScvdSymbol | undefined;
     private _offset: ScvdExpression | undefined;
-    private _const: NumberType = new NumberType(0); // default is 0
+    private _const: number = 0; // default is 0
     private _cond: ScvdCondition | undefined;
     private _size: ScvdExpression | undefined;
     private _endian: ScvdEndian | undefined;
@@ -92,15 +92,11 @@ export class ScvdRead extends ScvdBase {
 
     set const(value: string | undefined) {
         if(value !== undefined) {
-            if( this._const === undefined) {
-                this._const = new NumberType(value);
-                return;
-            }
-            this._const.value = value;
+            this._const = new NumberType(value).value;
         }
     }
 
-    get const(): NumberType {
+    get const(): number {
         return this._const;
     }
 
@@ -158,7 +154,7 @@ export class ScvdRead extends ScvdBase {
             info.push({ name: 'Symbol', value: this.symbol.getExplorerDisplayName() });
         }
         if (this.const) {
-            info.push({ name: 'Const', value: this.const.getDisplayText() });
+            info.push({ name: 'Const', value: this.const.toString() });
         }
         info.push(...itemInfo);
         return super.getExplorerInfo(info);

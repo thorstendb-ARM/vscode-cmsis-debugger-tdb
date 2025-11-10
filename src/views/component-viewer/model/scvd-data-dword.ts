@@ -20,7 +20,7 @@ import { ScvdDataBase } from './scvd-data-base';
 
 
 export class ScvdDataDword extends ScvdDataBase {
-    private _data: NumberType | undefined;
+    private _data: number | undefined;
 
     constructor(
         parent: ScvdBase | undefined,
@@ -28,23 +28,19 @@ export class ScvdDataDword extends ScvdDataBase {
         super(parent);
     }
 
-    public get data(): NumberType | undefined {
+    public get data(): number | undefined {
         return this._data;
     }
     public set data(value: string | undefined) {
         if( value !== undefined) {
-            if( this._data === undefined) {
-                this._data = new NumberType(value);
-                return;
-            }
-            this._data.value = value;
+            this._data = new NumberType(value).value;
         }
     }
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
         if (this._data !== undefined) {
-            info.push({ name: 'Data', value: this._data.getDisplayText() });
+            info.push({ name: 'Data', value: this._data.toString() });
         }
         info.push(...itemInfo);
         return super.getExplorerInfo(info);

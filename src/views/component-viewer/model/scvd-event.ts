@@ -34,7 +34,7 @@ export class ScvdEvent extends ScvdBase {
     private _property: ScvdValueOutput | undefined;
     private _value: ScvdValueOutput | undefined;
     private _doc: string | undefined;
-    private _handle: NumberType | undefined;
+    private _handle: number | undefined;
     private _hname: ScvdExpression | undefined;
     private _stateName : string | undefined; // name of referenced state
     private _state: ScvdEventState | undefined; // reference
@@ -127,16 +127,12 @@ export class ScvdEvent extends ScvdBase {
         this._doc = value;
     }
 
-    public get handle(): NumberType | undefined {
+    public get handle(): number | undefined {
         return this._handle;
     }
     public set handle(value: string | undefined) {
         if( value !== undefined ) {
-            if( this._handle === undefined ) {
-                this._handle = new NumberType(value);
-                return;
-            }
-            this._handle.value = value;
+            this._handle = new NumberType(value).value;
         }
     }
 
@@ -198,7 +194,7 @@ export class ScvdEvent extends ScvdBase {
             info.push({ name: 'Doc', value: this.doc });
         }
         if (this.handle) {
-            info.push({ name: 'Handle', value: this.handle.getDisplayText() });
+            info.push({ name: 'Handle', value: this.handle.toString() });
         }
         if (this.stateName) {
             info.push({ name: 'State', value: this.stateName });

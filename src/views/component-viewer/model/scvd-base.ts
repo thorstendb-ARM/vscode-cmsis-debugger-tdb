@@ -16,7 +16,6 @@
 
 import { EvalContext } from '../evaluator';
 import { ResolveSymbolCb } from '../resolver';
-import { NumberType } from './number-type';
 import { getLineNumberFromJson, getStringFromJson } from './scvd-utils';
 
 // add linter exception for Json
@@ -31,7 +30,9 @@ export type ExplorerInfo = {
     icon?: string;
 };
 
-export class ScvdBase {
+type AnyScvdCtor = abstract new (...args: any[]) => ScvdBase;
+
+export abstract class ScvdBase {
     private _parent: ScvdBase | undefined;
     private _children: ScvdBase[] = [];
     private _nodeId: number = 0;
@@ -58,6 +59,14 @@ export class ScvdBase {
             this._parent = parent;
         }
         this._parent?._children.push(this);
+    }
+
+    castToDerived<C extends AnyScvdCtor>(ctor: C): InstanceType<C> | undefined {
+        return this instanceof ctor ? (this as InstanceType<C>) : undefined;
+    }
+
+    isDerived<C extends AnyScvdCtor>(ctor: C): this is InstanceType<C> {
+        return this instanceof ctor;
     }
 
     public readXml(xml: Json): boolean {
@@ -223,23 +232,6 @@ export class ScvdBase {
         return true;
     }
 
-    public funcRunning(): NumberType | undefined {
-        // Default implementation returns undefined, can be overridden by subclasses
-        return undefined;
-    }
-
-    public funcCount(): NumberType | undefined {
-        // Default implementation returns undefined, can be overridden by subclasses
-        return undefined;
-    }
-
-    public funcAddr(): NumberType | undefined {
-        // Default implementation returns undefined, can be overridden by subclasses
-        return undefined;
-    }
-
-
-
     public get parent(): ScvdBase | undefined {
         return this._parent;
     }
@@ -289,6 +281,23 @@ export class ScvdBase {
 
     public setValue(val: number | string): number | string | undefined {
         return val;
+    }
+
+    // Main Display functions
+    public getDisplayName(): string {
+        return this.name ?? '';
+    }
+
+    public getDisplayValue(): string {
+        const val = this.getValue();
+        if (val !== undefined) {
+            if(typeof val === 'number') {
+                return val.toString();
+            } else if(typeof val === 'string') {
+                return val;
+            }
+        }
+        return '';
     }
 
     private getLineNoInfo(item: ScvdBase | undefined): string | undefined {

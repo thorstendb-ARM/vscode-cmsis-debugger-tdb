@@ -32,8 +32,8 @@ import { ScvdMember } from './scvd-member';
 export class ScvdReadList extends ScvdRead {
     private _count: ScvdExpression | undefined; // default is 1
     private _next: string | undefined;  // member name for the .next pointer
-    private _init: NumberType = new NumberType(0); // discard prev. read objects? default is 0
-    private _based: NumberType = new NumberType(0); // is attribute+offset a pointer? default is 0
+    private _init: number = 0; // discard prev. read objects? default is 0
+    private _based: number = 0; // is attribute+offset a pointer? default is 0
 
     private _nextObj: ScvdTypedef | undefined;
 
@@ -79,27 +79,19 @@ export class ScvdReadList extends ScvdRead {
 
     set init(value: NumberTypeInput | undefined) {
         if(value !== undefined) {
-            if( this._init === undefined) {
-                this._init = new NumberType(value);
-                return;
-            }
-            this._init.value = value;
+            this._init = new NumberType(value).value;
         }
     }
-    get init(): NumberType {
+    get init(): number {
         return this._init;
     }
 
     set based(value: NumberTypeInput | undefined) {
         if(value !== undefined) {
-            if( this._based === undefined) {
-                this._based = new NumberType(value);
-                return;
-            }
-            this._based.value = value;
+            this._based = new NumberType(value).value;
         }
     }
-    get based(): NumberType {
+    get based(): number {
         return this._based;
     }
 
@@ -128,7 +120,7 @@ export class ScvdReadList extends ScvdRead {
     }
 
     public applyInit(): boolean {
-        if(this.init.value === 1) {
+        if(this.init === 1) {
             // Discard previous read objects
             return true;
         }
@@ -142,10 +134,10 @@ export class ScvdReadList extends ScvdRead {
             info.push({ name: 'Next', value: this._next });
         }
         if (this._init) {
-            info.push({ name: 'Init', value: this._init.getDisplayText() });
+            info.push({ name: 'Init', value: this._init.toString() });
         }
         if (this._based) {
-            info.push({ name: 'Based', value: this._based.getDisplayText() });
+            info.push({ name: 'Based', value: this._based.toString() });
         }
         if (this._nextObj) {
             info.push({ name: 'NextObj', value: this._nextObj.name ?? '' });

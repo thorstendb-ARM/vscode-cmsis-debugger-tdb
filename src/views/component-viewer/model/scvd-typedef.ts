@@ -16,7 +16,6 @@
 
 // https://arm-software.github.io/CMSIS-View/main/elem_typedefs.html
 
-import { NumberType } from './number-type';
 import { ScvdExpression } from './scvd-expression';
 import { ExplorerInfo, Json, ScvdBase } from './scvd-base';
 import { ScvdMember } from './scvd-member';
@@ -101,8 +100,8 @@ export class ScvdTypedef extends ScvdBase {
         return super.readXml(xml);
     }
 
-    get size(): NumberType | undefined {
-        return this._size?.value;
+    get size(): number | undefined {
+        return this._size?.getValue();
     }
     set size(value: string | undefined) {
         if(value !== undefined) {
@@ -158,7 +157,7 @@ export class ScvdTypedef extends ScvdBase {
         if (this._size !== undefined) {
             info.push({ name: 'Size', value: this._size.expression ?? '' });
             if (this._size.value !== undefined) {
-                info.push({ name: 'Size Value', value: this._size.value.getDisplayText() });
+                info.push({ name: 'Size Value', value: this._size.getDisplayValue() });
             }
         }
         if (this._import !== undefined) {

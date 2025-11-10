@@ -78,6 +78,12 @@ export class StatementBase {
     }
 
     public executeStatement(): void {
+        const conditionResult = this.scvdItem.getConditionResult();
+        if (conditionResult === false) {
+            console.log(`  Skipping ${this.scvdItem.getExplorerDisplayName()} for condition result: ${conditionResult}`);
+            return;
+        }
+
         this.onExecute();
         for (const child of this._children) {
             child.executeStatement();

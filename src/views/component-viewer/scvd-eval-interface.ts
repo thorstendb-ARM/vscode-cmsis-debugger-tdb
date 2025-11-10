@@ -6,7 +6,7 @@
  * - Intrinsics implemented (default behaviors), __GetRegVal via registerCache
  * ============================================================================= */
 
-import { DataHost, CTypeName, RefContainer } from './evaluator';
+import { DataHost, RefContainer } from './evaluator';
 import { registerCache } from './scvd-cache-register';
 import { ScvdBase } from './model/scvd-base';
 
@@ -35,12 +35,15 @@ export class ScvdEvalInterface implements DataHost {
         return member;
     }
 
+    /*
+     class for variables: name, value array, ...
+    */
     /** Read/write concrete value at a ScvdBase reference. */
     readValue(container: RefContainer): number | string | undefined {
-        return container.base.getValue();
+        return container.member?.getValue() ?? 1;
     }
     writeValue(container: RefContainer, value: number | string): number | string | undefined {
-        return container.base.setValue(value);
+        return container.member?.setValue(value);
     }
 
     // Optional hooks
@@ -80,10 +83,7 @@ export class ScvdEvalInterface implements DataHost {
 
     __size_of(_container: RefContainer, args: any[]): number {
         const [arg0] = args ?? [];
-        if (typeof arg0 === 'string') {
-            const sz = sizeOfTypeName(arg0 as CTypeName | string);
-            if (sz !== undefined) return sz;
-        }
+        console.log(`__size_of called with arg: ${arg0}`);
         return 4;
     }
 
@@ -108,13 +108,3 @@ export class ScvdEvalInterface implements DataHost {
 
 }
 
-// ---- local helper for sizeof ----
-function sizeOfTypeName(name: CTypeName | string): number | undefined {
-    switch (name) {
-        case 'uint8_t': case 'int8_t': return 1;
-        case 'uint16_t': case 'int16_t': return 2;
-        case 'uint32_t': case 'int32_t': case 'float': return 4;
-        case 'uint64_t': case 'int64_t': case 'double': return 8;
-        default: return undefined;
-    }
-}

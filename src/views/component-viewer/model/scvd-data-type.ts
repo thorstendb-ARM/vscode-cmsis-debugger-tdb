@@ -15,7 +15,6 @@
  */
 
 import { ResolveSymbolCb, ResolveType } from '../resolver';
-import { NumberType } from './number-type';
 import { ExplorerInfo, ScvdBase } from './scvd-base';
 import { ScvdTypedef } from './scvd-typedef';
 
@@ -47,7 +46,7 @@ export class ScvdDataType extends ScvdBase {
         this.type = type;
     }
 
-    public get size(): NumberType | undefined {
+    public get size(): number | undefined {
         return this._type?.size;
     }
 
@@ -110,10 +109,10 @@ export class ScvdScalarDataType extends ScvdBase {
         }
     }
 
-    public get size(): NumberType | undefined {
+    public get size(): number | undefined {
         const info = this._type && ScvdScalarDataTypeMap[this._type];
         const value = info ? info[0] / 8 : undefined;
-        return value as NumberType | undefined;
+        return value;
     }
 
     public get type(): string | undefined {
@@ -156,7 +155,7 @@ export class ScvdComplexDataType extends ScvdBase{
         return this._typeName;
     }
 
-    public get size(): NumberType | undefined {
+    public get size(): number | undefined {
         return this._type?.size;
     }
 

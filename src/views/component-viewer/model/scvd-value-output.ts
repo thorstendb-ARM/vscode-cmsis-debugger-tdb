@@ -45,25 +45,23 @@ export class ScvdValueOutput extends ScvdBase {
         this._expression.expression = value;
     }
 
-
-    public getValue(): string | undefined {
-        if(!this.expression) {
-            return undefined;
-        }
-        return this.expression.resultText;
+    public getDisplayResult(): string {
+        const expression = this.expression;
+        const propertyName = expression?.getResultString();
+        return propertyName ?? '';
     }
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
         const value = this.getValue();
         if (value !== undefined) {
-            info.push({ name: 'Value', value });
+            info.push({ name: 'Value', value: this.getDisplayResult() });
         }
         info.push(...itemInfo);
         return super.getExplorerInfo(info);
     }
 
     public getExplorerDisplayName(): string {
-        return this.getValue() ?? this.expression?.expression ?? super.getExplorerDisplayName();
+        return this.getDisplayResult() ?? this.expression?.expression ?? super.getExplorerDisplayName();
     }
 }

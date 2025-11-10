@@ -29,20 +29,13 @@ import type { ScvdBase } from './model/scvd-base';
 
 export type EvaluateResult = number | string | undefined;
 
-export type CTypeName =
-  | 'uint8_t' | 'int8_t'
-  | 'uint16_t' | 'int16_t'
-  | 'uint32_t' | 'int32_t'
-  | 'uint64_t' | 'int64_t'
-  | 'float' | 'double';
-
 /** Container context carried during evaluation. */
 export interface RefContainer {
   /** Root model where identifier lookups begin. */
   base: ScvdBase;
   /** Current ref resolved by the last resolution step; used by readValue/writeValue. */
   current?: ScvdBase | undefined;
-  /** Most recent base for member access (e.g., foo in foo.bar). */
+  /** Most recent resolved member reference (child). */
   member?: ScvdBase | undefined;
   /** Most recent numeric index for array access (e.g., arr[3]). */
   index?: number | undefined;
@@ -198,15 +191,22 @@ function mustRef(node: ASTNode, ctx: EvalContext, forWrite = false): ScvdBase {
         }
         case 'MemberAccess': {
             const ma = node as MemberAccess;
+            // Resolve the base of the member chain first
             const baseRef = mustRef(ma.object, ctx, forWrite);
-            // Record the base used for this member access
-            ctx.container.member = baseRef;
-            // Clear any array index hint when doing member access
+            // Clear array index hint when doing member access
             ctx.container.index = undefined;
+            // For host member lookup, many hosts expect container.member to carry the *base*
+            // Use that convention temporarily to resolve the child reference
+            //const prevMember = ctx.container.member;
+            ctx.container.member = baseRef;
             const child = ctx.data.getMemberRef(ctx.container, ma.property, forWrite);
             if (!child) throw new Error(`Missing member '${ma.property}'`);
-            // Set the current target for subsequent read/write
-            ctx.container.current = child;
+            // Finalize container hints for new semantics:
+            // - current: base object (for subsequent read/write)
+            // - member:  resolved child reference
+            ctx.container.current = baseRef;
+            ctx.container.member = child;
+            // Return the child so chained accesses treat it as the next baseRef
             return child;
         }
         case 'ArrayIndex': {
