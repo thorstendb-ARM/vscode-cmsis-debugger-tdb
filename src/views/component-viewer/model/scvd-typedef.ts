@@ -16,7 +16,6 @@
 
 // https://arm-software.github.io/CMSIS-View/main/elem_typedefs.html
 
-import { NumberType } from './number-type';
 import { ScvdExpression } from './scvd-expression';
 import { ExplorerInfo, Json, ScvdBase } from './scvd-base';
 import { ScvdMember } from './scvd-member';
@@ -101,8 +100,8 @@ export class ScvdTypedef extends ScvdBase {
         return super.readXml(xml);
     }
 
-    get size(): NumberType | undefined {
-        return this._size?.value;
+    get size(): number | undefined {
+        return this._size?.getValue();
     }
     set size(value: string | undefined) {
         if(value !== undefined) {
@@ -145,22 +144,20 @@ export class ScvdTypedef extends ScvdBase {
         return this._var;
     }
 
-    // resolves typedef member definition (members and vars)
-    public getSymbol(name: string): ScvdBase | undefined {
+    public getMember(property: string): ScvdBase | undefined {
         return this.symbolsCache(
-            name,
-            this.member.find(s => s.name === name) ??
-            this.var.find(s => s.name === name)
+            property,
+            this.member.find(s => s.name === property) ??
+            this.var.find(s => s.name === property)
         );
     }
-
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
         if (this._size !== undefined) {
             info.push({ name: 'Size', value: this._size.expression ?? '' });
             if (this._size.value !== undefined) {
-                info.push({ name: 'Size Value', value: this._size.value.getDisplayText() });
+                info.push({ name: 'Size Value', value: this._size.getDisplayValue() ?? 'undefined' });
             }
         }
         if (this._import !== undefined) {

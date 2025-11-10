@@ -16,7 +16,7 @@
 
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
-import { NumberType } from './number-type';
+import { NumberType, NumberTypeInput } from './number-type';
 import { ExplorerInfo, Json, ScvdBase } from './scvd-base';
 import { ScvdEndian } from './scvd-endian';
 import { ScvdExpression } from './scvd-expression';
@@ -29,7 +29,7 @@ export class ScvdRead extends ScvdBase {
     private _type: ScvdDataType | undefined;
     private _symbol: ScvdSymbol | undefined;
     private _offset: ScvdExpression | undefined;
-    private _const: NumberType = new NumberType(0); // default is 0
+    private _const: number = 0; // default is 0
     private _cond: ScvdCondition | undefined;
     private _size: ScvdExpression | undefined;
     private _endian: ScvdEndian | undefined;
@@ -90,17 +90,13 @@ export class ScvdRead extends ScvdBase {
         return this._offset;
     }
 
-    set const(value: string | undefined) {
+    set const(value: NumberTypeInput | undefined) {
         if(value !== undefined) {
-            if( this._const === undefined) {
-                this._const = new NumberType(value);
-                return;
-            }
-            this._const.value = value;
+            this._const = new NumberType(value).value;
         }
     }
 
-    get const(): NumberType {
+    get const(): number {
         return this._const;
     }
 
@@ -113,6 +109,10 @@ export class ScvdRead extends ScvdBase {
 
     get cond(): ScvdCondition | undefined {
         return this._cond;
+    }
+
+    public getConditionResult(): boolean {
+        return this._cond?.result ?? super.getConditionResult();
     }
 
     get size(): ScvdExpression | undefined {
@@ -144,6 +144,9 @@ export class ScvdRead extends ScvdBase {
         }
     }
 
+    public getMember(property: string): ScvdBase | undefined {
+        return this._type?.getMember(property);
+    }
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
@@ -151,7 +154,7 @@ export class ScvdRead extends ScvdBase {
             info.push({ name: 'Symbol', value: this.symbol.getExplorerDisplayName() });
         }
         if (this.const) {
-            info.push({ name: 'Const', value: this.const.getDisplayText() });
+            info.push({ name: 'Const', value: this.const.toString() });
         }
         info.push(...itemInfo);
         return super.getExplorerInfo(info);

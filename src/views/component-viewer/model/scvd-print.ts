@@ -77,6 +77,10 @@ export class ScvdPrint extends ScvdBase {
         }
     }
 
+    public getConditionResult(): boolean {
+        return this._cond?.result ?? super.getConditionResult();
+    }
+
     get bold(): ScvdCondition | undefined {
         return this._bold;
     }

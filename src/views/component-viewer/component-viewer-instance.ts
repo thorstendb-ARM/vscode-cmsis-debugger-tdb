@@ -13,7 +13,8 @@ import { parseStringPromise, ParserOptions } from 'xml2js';
 import { Json } from './model/scvd-base';
 import { Resolver } from './resolver';
 import { ScvdComponentViewer } from './model/scvd-comonent-viewer';
-import { GatherScvdObjects } from './gather-scvd-objects';
+import { EvalContext } from './eval-context';
+import { StatementEngine } from './statement-engine/statement-engine';
 
 
 
@@ -68,16 +69,23 @@ export class ComponentViewerInstance {
         const modelConfiguredTime = Date.now();
         this.model.validateAll(true);
         const modelValidatedTime = Date.now();
-        const gatherObjects = new GatherScvdObjects(this.model);
-        gatherObjects.gatherObjects();
-        const modelGatherObjectsTime = Date.now();
-
-        this.model.debugAll();
-        const modelDebuggedTime = Date.now();
 
         const resolver = new Resolver(this.model);
         resolver.resolve();
         const resolveAndLinkTime = Date.now();
+
+        const gatherObjects = new EvalContext(this.model);
+        gatherObjects.init();
+        const modelGatherObjectsTime = Date.now();
+
+        const statementEngine = new StatementEngine(this.model);
+        statementEngine.initialize();
+        const statementEngineInitializedTime = Date.now();
+        statementEngine.executeAll();
+        const statementEngineExecuteAllTime = Date.now();
+
+        //this.model.debugAll();
+        //const modelDebuggedTime = Date.now();
 
         console.log(`SCVD file read in ${resolveAndLinkTime - startTime} ms:`,
             `\n  read: ${readTime - startTime} ms,`,
@@ -87,8 +95,10 @@ export class ComponentViewerInstance {
             `\n  configure: ${modelConfiguredTime - modelTime} ms,`,
             `\n  validate: ${modelValidatedTime - modelConfiguredTime} ms,`,
             `\n  gatherObjects: ${modelGatherObjectsTime - modelValidatedTime} ms,`,
-            `\n  debug: ${modelDebuggedTime - modelGatherObjectsTime} ms,`,
-            `\n  resolveAndLink: ${resolveAndLinkTime - modelDebuggedTime} ms`);
+            `\n  statementEngineInitialize: ${statementEngineInitializedTime - modelGatherObjectsTime} ms,`,
+            `\n  statementEngineExecuteAll: ${statementEngineExecuteAllTime - statementEngineInitializedTime} ms,`,
+            //`\n  debug: ${modelDebuggedTime - statementEngineExecuteAllTime} ms,`,
+            `\n  resolveAndLink: ${resolveAndLinkTime - statementEngineExecuteAllTime /*modelDebuggedTime*/} ms`);
     }
 
     private async readFileToBuffer(filePath: URI): Promise<Buffer> {

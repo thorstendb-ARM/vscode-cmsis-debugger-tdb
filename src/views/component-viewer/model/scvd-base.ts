@@ -15,8 +15,7 @@
  */
 
 import { EvalContext } from '../evaluator';
-import { resolveType } from '../resolver';
-import { NumberType } from './number-type';
+import { ResolveSymbolCb } from '../resolver';
 import { getLineNumberFromJson, getStringFromJson } from './scvd-utils';
 
 // add linter exception for Json
@@ -31,7 +30,9 @@ export type ExplorerInfo = {
     icon?: string;
 };
 
-export class ScvdBase {
+type AnyScvdCtor = abstract new (...args: any[]) => ScvdBase;
+
+export abstract class ScvdBase {
     private _parent: ScvdBase | undefined;
     private _children: ScvdBase[] = [];
     private _nodeId: number = 0;
@@ -58,6 +59,14 @@ export class ScvdBase {
             this._parent = parent;
         }
         this._parent?._children.push(this);
+    }
+
+    castToDerived<C extends AnyScvdCtor>(ctor: C): InstanceType<C> | undefined {
+        return this instanceof ctor ? (this as InstanceType<C>) : undefined;
+    }
+
+    isDerived<C extends AnyScvdCtor>(ctor: C): this is InstanceType<C> {
+        return this instanceof ctor;
     }
 
     public readXml(xml: Json): boolean {
@@ -130,6 +139,10 @@ export class ScvdBase {
         ScvdBase.initEvalContext(_ctx);
     }
 
+    // default condition always true
+    public getConditionResult(): boolean {
+        return true;
+    }
 
     public set tag(value: string | undefined) {
         this._tag = value;
@@ -209,7 +222,7 @@ export class ScvdBase {
     }
 
     // Member function available to all ScvdItems and derived classes
-    public resolveAndLink(_resolveFunc: (name: string, type: resolveType) => ScvdBase | undefined): boolean {
+    public resolveAndLink(_resolveFunc: ResolveSymbolCb): boolean {
         // Default implementation does nothing, can be overridden by subclasses
         return false;
     }
@@ -218,23 +231,6 @@ export class ScvdBase {
         // Default implementation does nothing, can be overridden by subclasses
         return true;
     }
-
-    public funcRunning(): NumberType | undefined {
-        // Default implementation returns undefined, can be overridden by subclasses
-        return undefined;
-    }
-
-    public funcCount(): NumberType | undefined {
-        // Default implementation returns undefined, can be overridden by subclasses
-        return undefined;
-    }
-
-    public funcAddr(): NumberType | undefined {
-        // Default implementation returns undefined, can be overridden by subclasses
-        return undefined;
-    }
-
-
 
     public get parent(): ScvdBase | undefined {
         return this._parent;
@@ -280,17 +276,29 @@ export class ScvdBase {
 
     // expanded values
     public getValue(): string | number | undefined {
-        return undefined;
+        return 0;   // TODO: change to undefined to indicate no value
     }
 
-    public setValue(_val: number | string): number | string | undefined {
-        return undefined;
+    public setValue(val: number | string): number | string | undefined {
+        return val;
     }
 
-    public getIndexRef(_index: number): ScvdBase | undefined {
-        return undefined;
+    // Main Display functions
+    public getDisplayName(): string {
+        return this.name ?? '';
     }
 
+    public getDisplayValue(): string | undefined {
+        const val = this.getValue();
+        if (val !== undefined) {
+            if(typeof val === 'number') {
+                return val.toString();
+            } else if(typeof val === 'string') {
+                return val;
+            }
+        }
+        return undefined;
+    }
 
     private getLineNoInfo(item: ScvdBase | undefined): string | undefined {
         if(item === undefined) {

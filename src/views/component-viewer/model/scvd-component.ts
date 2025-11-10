@@ -17,14 +17,14 @@
 // /component_viewer/events
 // https://arm-software.github.io/CMSIS-View/main/elem_events.html
 
-import { NumberType } from './number-type';
+import { NumberType, NumberTypeInput } from './number-type';
 import { ExplorerInfo, Json, ScvdBase } from './scvd-base';
 import { ScvdEventState } from './scvd-event-state';
 import { getArrayFromJson, getStringFromJson } from './scvd-utils';
 
 export class ScvdComponent extends ScvdBase {
     private _brief: string | undefined;
-    private _no: NumberType | undefined;
+    private _no: number | undefined;
     private _prefix: string | undefined; // hyperlink
     private _state: ScvdEventState[] = [];
 
@@ -60,17 +60,14 @@ export class ScvdComponent extends ScvdBase {
         return this._brief;
     }
 
-    public set no(value: string | undefined) {
-        if( value !== undefined) {
-            if( this._no === undefined) {
-                this._no = new NumberType(value);
-                return;
-            }
-            this._no.value = value;
+    public set no(value: NumberTypeInput | undefined) {
+        if( value === undefined) {
+            return;
         }
+        this._no = new NumberType(value).value;
     }
 
-    public get no(): NumberType | undefined {
+    public get no(): number | undefined {
         return this._no;
     }
 
@@ -97,7 +94,7 @@ export class ScvdComponent extends ScvdBase {
             info.push({ name: 'Brief', value: this.brief });
         }
         if (this.no) {
-            info.push({ name: 'No', value: this.no.getDisplayText() });
+            info.push({ name: 'No', value: this.no.toString() });
         }
         if (this.prefix) {
             info.push({ name: 'Prefix', value: this.prefix });

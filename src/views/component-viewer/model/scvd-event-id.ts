@@ -16,15 +16,14 @@
 
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
-import { NumberType } from './number-type';
 import { ExplorerInfo, ScvdBase } from './scvd-base';
 import { ScvdExpression } from './scvd-expression';
 
 export class ScvdEventId extends ScvdBase {
     private _id: ScvdExpression;
-    private _messageNumber: NumberType | undefined;
-    private _componentNumber: NumberType | undefined;
-    private _level: NumberType | undefined;
+    private _messageNumber: number | undefined;
+    private _componentNumber: number | undefined;
+    private _level: number | undefined;
 
     constructor(
         parent: ScvdBase | undefined,
@@ -38,15 +37,15 @@ export class ScvdEventId extends ScvdBase {
         return this._id;
     }
 
-    get messageNumber(): NumberType | undefined {
+    get messageNumber(): number | undefined {
         return this._messageNumber;
     }
 
-    get componentNumber(): NumberType | undefined {
+    get componentNumber(): number | undefined {
         return this._componentNumber;
     }
 
-    get level(): NumberType | undefined {
+    get level(): number | undefined {
         return this._level;
     }
 
@@ -55,11 +54,11 @@ export class ScvdEventId extends ScvdBase {
         if(id !== undefined ) {
             id.configure();
             id.evaluate();
-            const value = this._id.value?.value;
+            const value = this._id.getValue();
             if( value !== undefined ) {
-                this._messageNumber = new NumberType(value & 0xFF);
-                this._componentNumber = new NumberType((value >> 8) & 0xFF);
-                this._level = new NumberType((value >> 16) & 0x3);
+                this._messageNumber = value & 0xFF;
+                this._componentNumber = (value >> 8) & 0xFF;
+                this._level = (value >> 16) & 0x3;
             }
         }
 
@@ -73,9 +72,9 @@ export class ScvdEventId extends ScvdBase {
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
         info.push({ name: 'ID', value: this._id.expression ?? '' });
-        info.push({ name: 'MessageNumber', value: this._messageNumber?.getDisplayText() ?? 'undefined' });
-        info.push({ name: 'ComponentNumber', value: this._componentNumber?.getDisplayText() ?? 'undefined' });
-        info.push({ name: 'Level', value: this._level?.getDisplayText() ?? 'undefined' });
+        info.push({ name: 'MessageNumber', value: this._messageNumber?.toString() ?? 'undefined' });
+        info.push({ name: 'ComponentNumber', value: this._componentNumber?.toString() ?? 'undefined' });
+        info.push({ name: 'Level', value: this._level?.toString() ?? 'undefined' });
         info.push(...itemInfo);
         return super.getExplorerInfo(info);
     }

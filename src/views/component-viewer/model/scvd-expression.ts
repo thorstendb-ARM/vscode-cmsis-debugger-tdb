@@ -20,17 +20,17 @@
 import { parseExpression, ParseResult } from '../parser';
 import {  evaluateParseResult, EvaluateResult } from '../evaluator';
 
-import { NumberType } from './number-type';
 import { ExplorerInfo, ScvdBase } from './scvd-base';
 
 
 export class ScvdExpression extends ScvdBase {
     private _expression: string | undefined;
-    private _result: NumberType | undefined;
-    private _resultText: string | undefined;
+    private _result: number | string | undefined;
     private _scvdVarName: string | undefined;
     private _expressionAst: ParseResult | undefined;
     private _isPrintExpression: boolean = false;
+    private _rangeMin: number | undefined;
+    private _rangeMax: number | undefined;
 
     constructor(
         parent: ScvdBase | undefined,
@@ -67,7 +67,6 @@ export class ScvdExpression extends ScvdBase {
         this._expression = expression;
         this._expressionAst = undefined;
         this._result = undefined;
-        this._resultText = undefined;
     }
 
     public evaluateExpression(): EvaluateResult {
@@ -78,15 +77,11 @@ export class ScvdExpression extends ScvdBase {
         return result;
     }
 
-    public get result(): NumberType | undefined {
+    public get result(): number | string | undefined {
         return this._result;
     }
 
-    public get resultText(): string | undefined {
-        return this._resultText;
-    }
-
-    public get value(): NumberType | undefined {
+    public get value(): number | string | undefined {
         if( this._result === undefined) {
             this.evaluate();
         }
@@ -94,12 +89,12 @@ export class ScvdExpression extends ScvdBase {
     }
 
     public getValue(): number | undefined {
-        return this.value?.value;
+        return (typeof this.value === 'number') ? this.value : undefined;
     }
 
     public setValue(val: number): number | undefined {
-        if(this._result) {
-            this._result.value = val;
+        if(typeof this._result === 'number') {
+            this._result = val;
         } else {
             this.expression = val.toString();
             this.configure();
@@ -115,20 +110,16 @@ export class ScvdExpression extends ScvdBase {
     }
 
     public setMinMax(min: number | undefined, max: number | undefined) {
-        if (this._result !== undefined) {
-            this._result.setMinMax(min, max);
-        }
+        this._rangeMin = min;
+        this._rangeMax = max;
     }
 
     public getMinMax(): { min: number | undefined; max: number | undefined } | undefined {
-        if (this._result !== undefined) {
-            return this._result.getMinMax();
-        }
-        return undefined;
+        return { min: this._rangeMin, max: this._rangeMax };
     }
 
     public getResultBoolean(): boolean {
-        return this.value !== undefined && this.value.value > 0;
+        return typeof this.value === 'number' && this.value > 0;
     }
 
     public evaluate() {
@@ -136,14 +127,10 @@ export class ScvdExpression extends ScvdBase {
             if(this.expressionAst.constValue === undefined) {   // not a constant expression
                 const result = this.evaluateExpression();
                 if(result !== undefined) {
-                    if(typeof result === 'number') {
-                        this._result = new NumberType(result);
-                    } else {
-                        this._resultText = String(result);
-                    }
+                    this._result = result;
                 }
             } else {    // constant expression
-                this._result = new NumberType(this.expressionAst.constValue);
+                this._result = this.expressionAst.constValue;
             }
         }
     }
@@ -191,17 +178,21 @@ export class ScvdExpression extends ScvdBase {
 
     public debug(): boolean {
         this.evaluate();
-        console.log(this.getLineInfoStr(), 'Expr:', this.expression, '\nResult:', this.result?.getDisplayText() ?? this._resultText);
+        console.log(this.getLineInfoStr(), 'Expr:', this.expression, '\nResult:', this.getResultString());
 
         return super.debug();
     }
 
     public getResultString(): string | undefined {
-        if(this._resultText !== undefined) {
-            return this._resultText;
+        if(this._result === undefined) {
+            this.evaluate();
         }
         if(this._result !== undefined) {
-            return this._result.getDisplayText();
+            if (typeof this._result === 'number') {
+                return this._result.toString();
+            } else if (typeof this._result === 'string') {
+                return this._result;
+            }
         }
         return undefined;
     }
@@ -217,7 +208,7 @@ export class ScvdExpression extends ScvdBase {
         }
         info.push({ name: 'Result', value: this.getResultString() ?? 'undefined' });
         if (this.value) {
-            info.push({ name: 'Value', value: this.value.getDisplayText() });
+            info.push({ name: 'Value', value: this.getDisplayValue() ?? 'undefined' });
         }
         info.push(...itemInfo);
         return super.getExplorerInfo(info);

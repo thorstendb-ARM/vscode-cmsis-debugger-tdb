@@ -22,10 +22,17 @@ import { ScvdTypesCache } from './scvd-types-cache';
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
 
-export enum resolveType {
-    local = 'local',
-    target = 'target',
+export enum ResolveType {
+    localType = 'localType',
+    localMember = 'localMember',
+    targetType = 'targetType',
 }
+
+export type ResolveSymbolCb = (
+  name: string,
+  resolveType: ResolveType,
+  scvdObject?: ScvdBase
+) => ScvdBase | undefined;
 
 export class Resolver {
     private _model: ScvdComponentViewer | undefined;
@@ -56,7 +63,7 @@ export class Resolver {
         this._typesCache.createCache();
     }
 
-    private resolveLocalSymbol(name: string): ScvdBase | undefined {
+    private resolveLocalType(name: string): ScvdBase | undefined {
         const typeItem = this.typesCache?.findTypeByName(name);
         if(typeItem !== undefined && typeItem instanceof ScvdTypedef) {
             return typeItem;
@@ -64,26 +71,41 @@ export class Resolver {
         return undefined;
     }
 
-    private resolveTargetSymbol(_name: string): ScvdBase | undefined {
-        // resolve using debugger interface
+    private resolveLocalMember(name: string, scvdObject?: ScvdBase): ScvdBase | undefined {
+        if(scvdObject === undefined) {
+            return undefined;
+        }
+        const memberItem = scvdObject.getSymbol(name);
+        if(memberItem !== undefined) {
+            return memberItem;
+        }
         return undefined;
     }
 
-    public resolveSymbolCb(name: string, type: resolveType) : ScvdBase | undefined {
-        switch(type) {
-            case resolveType.local: {
-                return this.resolveLocalSymbol(name);
-            }
-            case resolveType.target: {
-                return this.resolveTargetSymbol(name);
-            }
-            default: {
+    private resolveTargetType(_name: string): ScvdBase | undefined {
+        // resolve using debugger interface
+        console.log(`  Resolving target symbol: ${_name}`);
+        return undefined;
+    }
+
+    public resolveSymbolCb(
+        name: string,
+        resolveType: ResolveType,
+        scvdObject?: ScvdBase
+    ): ScvdBase | undefined {
+        switch(resolveType) {
+            case ResolveType.localType:
+                return this.resolveLocalType(name);
+            case ResolveType.targetType:
+                return this.resolveTargetType(name);
+            case ResolveType.localMember:
+                return this.resolveLocalMember(name, scvdObject);
+            default:
                 return undefined;
-            }
         }
     }
 
-    private resolveRecursive(item: ScvdBase, resolveFunc: (name: string, type: resolveType) => ScvdBase | undefined): boolean {
+    private resolveRecursive(item: ScvdBase, resolveFunc: ResolveSymbolCb): boolean {
         const resolvedItem = item.resolveAndLink(resolveFunc);
         if(resolvedItem) {
             console.log('Resolved item:', item.getExplorerDisplayName());

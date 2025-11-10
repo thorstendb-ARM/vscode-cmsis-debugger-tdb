@@ -16,7 +16,7 @@
 
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
-import { resolveType } from '../resolver';
+import { ResolveSymbolCb, ResolveType } from '../resolver';
 import { ExplorerInfo, ScvdBase } from './scvd-base';
 import { ScvdDebugTarget } from './scvd-debug-target';
 
@@ -46,12 +46,12 @@ export class ScvdSymbol extends ScvdBase {
         this._debugTarget = value;
     }
 
-    public resolveAndLink(resolveFunc: (name: string, type: resolveType) => ScvdBase | undefined): boolean {
+    public resolveAndLink(resolveFunc: ResolveSymbolCb): boolean {
         if(this.symbol === undefined) {
             return false;
         }
 
-        const item = resolveFunc(this.symbol, resolveType.target);
+        const item = resolveFunc(this.symbol, ResolveType.targetType);
         if(item === undefined ) {
             return false;
         }

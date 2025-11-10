@@ -116,6 +116,11 @@ export class ScvdItem extends ScvdBase {
         }
     }
 
+    public getConditionResult(): boolean {
+        return this._cond?.result ?? super.getConditionResult();
+    }
+
+
     get bold(): ScvdCondition | undefined {
         return this._bold;
     }
@@ -164,22 +169,31 @@ export class ScvdItem extends ScvdBase {
         return item;
     }
 
+    public getDisplayName(): string {
+        const propertyName = this.property?.getDisplayResult();
+        return propertyName ?? '';
+    }
+
+    public getDisplayValue(): string | undefined {
+        return this.value?.getDisplayResult();
+    }
+
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
 
         if(this.value !== undefined) {
-            info.push({ name: 'Value', value: this.value.getExplorerDisplayName() });
+            info.push({ name: 'Value', value: this.value?.getDisplayResult() ?? this.value.getExplorerDisplayName() });
         }
         info.push(...itemInfo);
         return super.getExplorerInfo(info);
     }
 
     public getExplorerDisplayName(): string {
-        const propertyName = this.property?.getExplorerDisplayName() ?? super.getExplorerDisplayName();
-        const valueStr = this.value?.getExplorerDisplayName();
-        if(valueStr !== undefined && valueStr.length > 0) {
+        const propertyName = this.getDisplayName() ?? this.property?.getExplorerDisplayName();
+        const valueStr = this.value?.getDisplayResult() ?? this.value?.getExplorerDisplayName();
+        if(propertyName != undefined && valueStr !== undefined && valueStr.length > 0 && propertyName != valueStr) {
             return `${propertyName} = ${valueStr}`;
         }
-        return propertyName;
+        return propertyName ?? super.getExplorerDisplayName();
     }
 }

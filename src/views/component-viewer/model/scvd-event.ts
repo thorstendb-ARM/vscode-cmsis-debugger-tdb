@@ -16,8 +16,8 @@
 
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
-import { resolveType } from '../resolver';
-import { NumberType } from './number-type';
+import { ResolveSymbolCb } from '../resolver';
+import { NumberType, NumberTypeInput } from './number-type';
 import { ExplorerInfo, Json, ScvdBase } from './scvd-base';
 import { ScvdEventId } from './scvd-event-id';
 import { ScvdEventLevel } from './scvd-event-level';
@@ -34,7 +34,7 @@ export class ScvdEvent extends ScvdBase {
     private _property: ScvdValueOutput | undefined;
     private _value: ScvdValueOutput | undefined;
     private _doc: string | undefined;
-    private _handle: NumberType | undefined;
+    private _handle: number | undefined;
     private _hname: ScvdExpression | undefined;
     private _stateName : string | undefined; // name of referenced state
     private _state: ScvdEventState | undefined; // reference
@@ -71,7 +71,7 @@ export class ScvdEvent extends ScvdBase {
         return super.readXml(xml);
     }
 
-    public resolveAndLink(_resolveFunc: (name: string, type: resolveType) => ScvdBase | undefined): boolean {
+    public resolveAndLink(_resolveFunc: ResolveSymbolCb): boolean {
         // TODO: this._state = this.findReference(ScvdEventState, this._state?.name);
         return false;
     }
@@ -127,16 +127,12 @@ export class ScvdEvent extends ScvdBase {
         this._doc = value;
     }
 
-    public get handle(): NumberType | undefined {
+    public get handle(): number | undefined {
         return this._handle;
     }
-    public set handle(value: string | undefined) {
+    public set handle(value: NumberTypeInput | undefined) {
         if( value !== undefined ) {
-            if( this._handle === undefined ) {
-                this._handle = new NumberType(value);
-                return;
-            }
-            this._handle.value = value;
+            this._handle = new NumberType(value).value;
         }
     }
 
@@ -198,7 +194,7 @@ export class ScvdEvent extends ScvdBase {
             info.push({ name: 'Doc', value: this.doc });
         }
         if (this.handle) {
-            info.push({ name: 'Handle', value: this.handle.getDisplayText() });
+            info.push({ name: 'Handle', value: this.handle.toString() });
         }
         if (this.stateName) {
             info.push({ name: 'State', value: this.stateName });

@@ -28,7 +28,7 @@ import { getArrayFromJson, getStringFromJson } from './scvd-utils';
 export class ScvdMember extends ScvdBase {
     private _type: ScvdDataType | undefined;
     private _offset: ScvdExpression | undefined;
-    private _size: NumberType | undefined;
+    private _size: number | undefined;
     private _enum: ScvdEnum[] = [];
 
     constructor(
@@ -79,17 +79,13 @@ export class ScvdMember extends ScvdBase {
         }
     }
 
-    get size(): NumberType | undefined {
+    get size(): number | undefined {
         return this._size;
     }
 
     set size(value: NumberTypeInput | undefined) {
         if(value !== undefined) {
-            if( this._size === undefined) {
-                this._size = new NumberType(value);
-                return;
-            }
-            this._size.value = value;
+            this._size = new NumberType(value).value;
         }
     }
 
@@ -103,15 +99,15 @@ export class ScvdMember extends ScvdBase {
         return this._enum;
     }
 
-    public getEnum(index: NumberType): ScvdEnum | undefined {
-        const enumItem = this._enum.find((item) => item.value?.value?.value === index.value);
+    public getEnum(index: number): ScvdEnum | undefined {
+        const enumItem = this._enum.find((item) => item.value?.getValue() === index);
         return enumItem;
     }
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
         if (this._size) {
-            info.push({ name: 'Size', value: this._size.getDisplayText() });
+            info.push({ name: 'Size', value: this._size.toString() });
         }
         info.push(...itemInfo);
         return super.getExplorerInfo(info);

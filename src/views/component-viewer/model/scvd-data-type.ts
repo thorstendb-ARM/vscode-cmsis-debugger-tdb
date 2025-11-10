@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-import { resolveType } from '../resolver';
-import { NumberType } from './number-type';
+import { ResolveSymbolCb, ResolveType } from '../resolver';
 import { ExplorerInfo, ScvdBase } from './scvd-base';
 import { ScvdTypedef } from './scvd-typedef';
 
@@ -47,7 +46,7 @@ export class ScvdDataType extends ScvdBase {
         this.type = type;
     }
 
-    public get size(): NumberType | undefined {
+    public get size(): number | undefined {
         return this._type?.size;
     }
 
@@ -67,6 +66,11 @@ export class ScvdDataType extends ScvdBase {
             }
         }
     }
+
+    public getMember(property: string): ScvdBase | undefined {
+        return this._type?.getMember(property);
+    }
+
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
@@ -105,10 +109,10 @@ export class ScvdScalarDataType extends ScvdBase {
         }
     }
 
-    public get size(): NumberType | undefined {
+    public get size(): number | undefined {
         const info = this._type && ScvdScalarDataTypeMap[this._type];
         const value = info ? info[0] / 8 : undefined;
-        return value as NumberType | undefined;
+        return value;
     }
 
     public get type(): string | undefined {
@@ -151,7 +155,7 @@ export class ScvdComplexDataType extends ScvdBase{
         return this._typeName;
     }
 
-    public get size(): NumberType | undefined {
+    public get size(): number | undefined {
         return this._type?.size;
     }
 
@@ -162,7 +166,7 @@ export class ScvdComplexDataType extends ScvdBase{
         this._isPointer = value;
     }
 
-    public resolveAndLink(resolveFunc: (name: string, type: resolveType) => ScvdBase | undefined): boolean {
+    public resolveAndLink(resolveFunc: ResolveSymbolCb): boolean {
         const typeName = this.typeName?.replace(/\*/g, '').trim();
         if(typeName === undefined) {
             return false;
@@ -172,7 +176,7 @@ export class ScvdComplexDataType extends ScvdBase{
             this.isPointer = true;
         }
 
-        const item = resolveFunc(typeName, resolveType.local);
+        const item = resolveFunc(typeName, ResolveType.localType);
         if(item === undefined || !(item instanceof ScvdTypedef)) {
             console.error('Failed to resolve complex data type:', typeName);
             return false;
@@ -180,6 +184,11 @@ export class ScvdComplexDataType extends ScvdBase{
         this._type = item;
         return true;
     }
+
+    public getMember(property: string): ScvdBase | undefined {
+        return this._type?.getMember(property);
+    }
+
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];

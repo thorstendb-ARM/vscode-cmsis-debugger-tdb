@@ -180,6 +180,7 @@ export class ScvdList extends ScvdBase {
     public addRead(): ScvdRead {
         const readItem = new ScvdRead(this);
         this._read.push(readItem);
+        this.addToSymbolContext(readItem.name, readItem);
         return readItem;
     }
     public get read(): ScvdRead[] {
