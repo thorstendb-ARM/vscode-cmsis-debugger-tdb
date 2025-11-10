@@ -17,7 +17,7 @@
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
 import { ResolveSymbolCb } from '../resolver';
-import { NumberType } from './number-type';
+import { NumberType, NumberTypeInput } from './number-type';
 import { ExplorerInfo, Json, ScvdBase } from './scvd-base';
 import { ScvdEventId } from './scvd-event-id';
 import { ScvdEventLevel } from './scvd-event-level';
@@ -130,7 +130,7 @@ export class ScvdEvent extends ScvdBase {
     public get handle(): number | undefined {
         return this._handle;
     }
-    public set handle(value: string | undefined) {
+    public set handle(value: NumberTypeInput | undefined) {
         if( value !== undefined ) {
             this._handle = new NumberType(value).value;
         }

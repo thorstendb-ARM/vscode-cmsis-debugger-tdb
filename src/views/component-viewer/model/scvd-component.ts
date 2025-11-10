@@ -17,7 +17,7 @@
 // /component_viewer/events
 // https://arm-software.github.io/CMSIS-View/main/elem_events.html
 
-import { NumberType } from './number-type';
+import { NumberType, NumberTypeInput } from './number-type';
 import { ExplorerInfo, Json, ScvdBase } from './scvd-base';
 import { ScvdEventState } from './scvd-event-state';
 import { getArrayFromJson, getStringFromJson } from './scvd-utils';
@@ -60,7 +60,7 @@ export class ScvdComponent extends ScvdBase {
         return this._brief;
     }
 
-    public set no(value: number | string | undefined) {
+    public set no(value: NumberTypeInput | undefined) {
         if( value === undefined) {
             return;
         }

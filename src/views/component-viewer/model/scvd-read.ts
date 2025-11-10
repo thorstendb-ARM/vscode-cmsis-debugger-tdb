@@ -16,7 +16,7 @@
 
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
-import { NumberType } from './number-type';
+import { NumberType, NumberTypeInput } from './number-type';
 import { ExplorerInfo, Json, ScvdBase } from './scvd-base';
 import { ScvdEndian } from './scvd-endian';
 import { ScvdExpression } from './scvd-expression';
@@ -90,7 +90,7 @@ export class ScvdRead extends ScvdBase {
         return this._offset;
     }
 
-    set const(value: string | undefined) {
+    set const(value: NumberTypeInput | undefined) {
         if(value !== undefined) {
             this._const = new NumberType(value).value;
         }
