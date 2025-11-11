@@ -2,9 +2,9 @@
  * Fast, reusable, error-tolerant expression parser with:
  *  - Assignment '=' (right-associative) and C-style compound assignments: +=, -=, *=, /=, %=, <<=, >>=, &=, ^=, |=
  *  - ++ / -- (both prefix and postfix)
- *  - Printf-like formatting segments: `%spec[ expr ]` and `%%`
+ *  - Printf-like formatting segments: `%spec[ expr ]` and `%%` (with nested bracket + string awareness)
  *  - Intrinsic evaluation-point calls:
- *      __CalcMemUsed, __FindSymbol, __GetRegVal, __Offset_of, __size_of, __Symbol_exists
+ *      __CalcMemUsed, __FindSymbol, __GetRegVal, __Offset_of, __size_of, __Symbol_exists, __Running
  *  - Constant folding (assignment expression value = RHS const value when foldable)
  *  - External symbol collection
  *  - Colon selector operators `typedef_name:member` and `typedef_name:member:enum`
@@ -46,7 +46,7 @@ export interface ColonPath extends BaseNode {
   parts: string[]; // e.g., ["MyType","field"] or ["MyType","field","EnumVal"]
 }
 
-export type IntrinsicName = '__CalcMemUsed'|'__FindSymbol'|'__GetRegVal'|'__Offset_of'|'__size_of'|'__Symbol_exists';
+export type IntrinsicName = '__CalcMemUsed'|'__FindSymbol'|'__GetRegVal'|'__Offset_of'|'__size_of'|'__Symbol_exists'|'__Running';
 export interface CallExpression extends BaseNode { kind:'CallExpression'; callee:ASTNode; args:ASTNode[]; intrinsic?: undefined; }
 export interface EvalPointCall extends BaseNode { kind:'EvalPointCall'; callee:ASTNode; args:ASTNode[]; intrinsic:IntrinsicName; }
 export type FormatSpec = 'd'|'u'|'t'|'x'|'C'|'E'|'I'|'J'|'N'|'M'|'S'|'T'|'U'|'%';
@@ -162,7 +162,7 @@ class Tokenizer {
 /* ---------------- Parser ---------------- */
 
 const INTRINSICS: Set<string> = new Set([
-    '__CalcMemUsed','__FindSymbol','__GetRegVal','__Offset_of','__size_of','__Symbol_exists'
+    '__CalcMemUsed','__FindSymbol','__GetRegVal','__Offset_of','__size_of','__Symbol_exists','__Running'
 ]);
 const FORMAT_SPECS = new Set(Array.from('dutxCEIJNMSTU%'));
 
@@ -313,6 +313,7 @@ export class Parser {
         const n = s.length;
         let i = 0;
         const segments: (TextSegment|FormatSegment)[] = [];
+
         while (i < n) {
             const j = s.indexOf('%', i);
             if (j === -1) {
@@ -320,34 +321,54 @@ export class Parser {
                 break;
             }
             if (j > i) segments.push({ kind:'TextSegment', text:s.slice(i,j), ...span(i,j) });
+
+            // Handle escaped percent
             if (j+1 < n && s[j+1] === '%') {
                 segments.push({ kind:'TextSegment', text:'%', ...span(j,j+2) });
                 i = j+2; continue;
             }
+
             const spec = (j+1 < n) ? s[j+1] : '';
             if (FORMAT_SPECS.has(spec) && spec !== '%') {
                 let k = j+2;
                 while (k<n && /\s/.test(s[k]!)) k++;
                 if (k>=n || s[k] !== '[') {
+                    // Not a bracketed spec; treat as literal "%X"
                     segments.push({ kind:'TextSegment', text:'%'+spec, ...span(j,j+2) });
                     i = j+2; continue;
                 }
+
+                // Balanced scan for %[ ... ] with string awareness
                 const exprStart = k+1;
-                let depth = 1, m = exprStart;
+                let depth = 1;
+                let m = exprStart;
+                let inString: '"'|'\''|null = null;
+                let escaped = false;
                 while (m < n && depth > 0) {
                     const c = s[m]!;
-                    if (c === '[') depth++;
-                    else if (c === ']') { depth--; if (depth === 0) break; }
+                    if (inString) {
+                        if (escaped) { escaped = false; m++; continue; }
+                        if (c === '\\') { escaped = true; m++; continue; }
+                        if (c === inString) { inString = null; m++; continue; }
+                        m++; continue;
+                    }
+                    if (c === '"' || c === '\'') { inString = c as any; m++; continue; }
+                    if (c === '[') { depth++; m++; continue; }
+                    if (c === ']') { depth--; if (depth === 0) break; m++; continue; }
                     m++;
                 }
+
                 let exprEnd = m;
                 if (depth !== 0) { this.warn('Unclosed formatter bracket; treating rest as expression.', j, n); exprEnd = n; }
+
                 const inner = this.parseSubexpression(s.slice(exprStart, exprEnd), exprStart);
                 const seg: FormatSegment = { kind:'FormatSegment', spec: spec as FormatSpec, value: inner, ...span(j, depth===0? exprEnd+1 : n) };
                 segments.push(seg);
                 i = (depth===0? exprEnd+1 : n);
                 continue;
             }
+
+            // Lone '%'
             segments.push({ kind:'TextSegment', text:'%', ...span(j,j+1) });
             i = j+1;
         }

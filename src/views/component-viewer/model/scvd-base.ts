@@ -279,7 +279,7 @@ export abstract class ScvdBase {
         return 0;   // TODO: change to undefined to indicate no value
     }
 
-    public setValue(val: number | string): number | string | undefined {
+    public setValue(val: number | string | bigint): number | string | bigint | undefined {
         return val;
     }
 
@@ -328,6 +328,64 @@ export abstract class ScvdBase {
         const lineNo = this.getLineNoInfo(this);
         return lineNo !== undefined ? lineNo : '';
     }
+
+    public writeAt(byteOffset: number, widthBits: number, value: number | string | bigint): number | string | bigint | undefined {
+        console.log(`WriteAt not implemented: item=${this.getExplorerDisplayName()}, offset=${byteOffset}, width=${widthBits}, value=${value}`);
+        return 1;
+    }
+
+    public readAt(byteOffset: number, widthBits: number): number | bigint | string | undefined {
+        console.log(`ReadAt not implemented: item=${this.getExplorerDisplayName()}, offset=${byteOffset}, width=${widthBits}`);
+        return 1;
+    }
+
+    // size of array type, to skip one instance to the next. Can be sizeof, or gaps
+    // byte distance between adjacent elements in your model’s actual layout (not necessarily sizeof if there are hardware gaps).
+    public getElementStride(): number {
+        console.log(`GetElementStride not implemented: item=${this.getExplorerDisplayName()}`);
+        return 4;
+    }
+
+    // Pseudo-members usable as obj._count / obj._addr
+    public getElementCount(): number | undefined {
+        console.log(`GetElementCount not implemented: item=${this.getExplorerDisplayName()}`);
+        return 1;
+    }
+
+    // _addr intrinsic
+    public getAddress(): number | undefined {
+        console.log(`GetAddress not implemented: item=${this.getExplorerDisplayName()}`);
+        return 0;
+    }
+
+    // __size_of intrinsic
+    public getSize(): number | undefined {
+        console.log(`GetSize not implemented: item=${this.getExplorerDisplayName()}`);
+        return 4;
+    }
+
+    public getTypeSize(_typeName: string): number {
+        console.log(`GetTypeSize not implemented: item=${this.getExplorerDisplayName()}`);
+        return 4;
+    }
+
+    // __Offset_of intrinsic
+    public getMemberOffset(member: ScvdBase | undefined): number {
+        console.log(`GetMemberOffset not implemented: item=${this.getExplorerDisplayName()}, member=${member?.getExplorerDisplayName()}`);
+        return 0;
+    }
+
+    public getBitWidth(): number {
+        console.log(`GetBitWidth not implemented: item=${this.getExplorerDisplayName()}`);
+        return 32;
+    }
+
+    public getElementBitWidth(): number {
+        console.log(`GetElementBitWidth not implemented: item=${this.getExplorerDisplayName()}`);
+        return 32;
+    }
+
+
 
     // ---------- Explorer Info ------------
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
