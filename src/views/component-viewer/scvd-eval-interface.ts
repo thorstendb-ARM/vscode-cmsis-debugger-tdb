@@ -156,18 +156,18 @@ export class ScvdEvalInterface implements DataHost {
         return 1; // domain-specific: 1 = running, 0 = halted
     }
 
-    // Pseudo-member evaluators: obj._count and obj._addr
+    // Counts the number of items in readlist and read elements.
     _count(container: RefContainer): number | undefined {
         const target: ScvdBase | undefined = container.current ?? container.anchor;
         if (!target) return undefined;
         return target.getElementCount();
     }
 
+    // Returns the memory address of a readlist member.
     _addr(container: RefContainer): number | undefined {
         const anchor: ScvdBase | undefined = container.anchor ?? container.current;
         if (!anchor) return undefined;
         const base = anchor.getAddress();
-        const off = container.offsetBytes ?? 0;
-        return base ? base + off : undefined;
+        return base ?? undefined;
     }
 }

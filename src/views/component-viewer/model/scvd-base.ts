@@ -346,15 +346,15 @@ export abstract class ScvdBase {
         return 4;
     }
 
-    // Pseudo-members usable as obj._count / obj._addr
+    // _count intrinsic: Counts the number of items in readlist and read elements.
     public getElementCount(): number | undefined {
-        console.log(`GetElementCount not implemented: item=${this.getExplorerDisplayName()}`);
+        console.log(`_count not implemented: item=${this.getExplorerDisplayName()}`);
         return 1;
     }
 
-    // _addr intrinsic
+    // _addr intrinsic: Returns the memory address of a readlist member.
     public getAddress(): number | undefined {
-        console.log(`GetAddress not implemented: item=${this.getExplorerDisplayName()}`);
+        console.log(`_addr via MS-DAP not implemented: item=${this.getExplorerDisplayName()}`);
         return 0;
     }
 
