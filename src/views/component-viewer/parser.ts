@@ -46,7 +46,9 @@ export interface ColonPath extends BaseNode {
   parts: string[]; // e.g., ["MyType","field"] or ["MyType","field","EnumVal"]
 }
 
-export type IntrinsicName = '__CalcMemUsed'|'__FindSymbol'|'__GetRegVal'|'__Offset_of'|'__size_of'|'__Symbol_exists'|'__Running';
+export type IntrinsicName =
+  '__CalcMemUsed'|'__FindSymbol'|'__GetRegVal'|'__Offset_of'|'__size_of'|'__Symbol_exists'|'__Running';
+
 export interface CallExpression extends BaseNode { kind:'CallExpression'; callee:ASTNode; args:ASTNode[]; intrinsic?: undefined; }
 export interface EvalPointCall extends BaseNode { kind:'EvalPointCall'; callee:ASTNode; args:ASTNode[]; intrinsic:IntrinsicName; }
 export type FormatSpec = 'd'|'u'|'t'|'x'|'C'|'E'|'I'|'J'|'N'|'M'|'S'|'T'|'U'|'%';
@@ -230,30 +232,49 @@ export class Parser {
     private diagnostics: Diagnostic[] = [];
     private externals: Set<string> = new Set();
 
+    /* ---------- lifecycle ---------- */
+
+    /** Preferred initializer used internally. */
+    private reinit(s:string) {
+        this.s = s;
+        this.tok.reset(s);
+        this.cur = this.tok.next();
+        this.diagnostics = [];
+        this.externals.clear();
+    }
+    /** Public alias so external callers can use it (avoids TS6133 on private). */
+    public reset(s:string) { this.reinit(s); }
+
+    /* ---------- public API ---------- */
+
     parse(input: string, isPrintExpression: boolean): ParseResult {
-        this.reset(input);
-        const isPrintf = this.looksLikePrintf(input);
+        this.reinit?.(input) ?? this.reset(input); // support either initializer
+
         let ast: ASTNode;
+        let isPrintf = false;
 
-        if (isPrintf || isPrintExpression) {
-            // Parse printf-style template directly from the raw string.
+        if (isPrintExpression) {
+            // Always treat as printf, even if it's pure text like "foobar"
             ast = this.parsePrintfExpression();
+            isPrintf = true;
 
-            // IMPORTANT: In printf-mode we didn't consume tokens from the tokenizer,
-            // so don't run tokenizer-based "extra tokens" checks.
-            // Optionally force EOF so any downstream logic won't see stray tokens.
-            this.cur = { kind: 'EOF', value: '', start: this.s.length, end: this.s.length } as Token;
+            // Force EOF so tokenizer-based trailing checks don't run in printf mode
+            this.cur = { kind: 'EOF', value: '', start: input.length, end: input.length } as any;
+
+        } else if (this.looksLikePrintf(input)) {
+            // Auto-detect printf only when not explicitly forced
+            ast = this.parsePrintfExpression();
+            isPrintf = true;
+            this.cur = { kind: 'EOF', value: '', start: input.length, end: input.length } as any;
+
         } else {
-            // Normal expression mode
+            // Normal expression parsing
             ast = this.parseExpression();
-
-            // Accept optional trailing semicolons; warn on any other trailing tokens.
             while (this.cur.kind === 'PUNCT' && this.cur.value === ';') this.eat('PUNCT',';');
-            if (this.cur.kind !== 'EOF') {
-                this.warn('Extra tokens after expression', this.cur.start, this.cur.end);
-            }
+            if (this.cur.kind !== 'EOF') this.warn('Extra tokens after expression', this.cur.start, this.cur.end);
         }
 
+        // Constant folding only for non-printf ASTs
         ast = this.fold(ast);
         const constValue = isPrintf ? undefined : (ast as any).constValue;
 
@@ -262,16 +283,10 @@ export class Parser {
             diagnostics: this.diagnostics.slice(),
             externalSymbols: Array.from(this.externals).sort(),
             isPrintf,
-            constValue
+            constValue,
         };
     }
-    private reset(s:string) {
-        this.s = s;
-        this.tok.reset(s);
-        this.cur = this.tok.next();
-        this.diagnostics = [];
-        this.externals.clear();
-    }
+    /* ---------- diagnostics & token helpers ---------- */
 
     private error(msg:string, start:number, end:number) { this.diagnostics.push({ type:'error', message:msg, start, end }); }
     private warn(msg:string, start:number, end:number) { this.diagnostics.push({ type:'warning', message:msg, start, end }); }
@@ -290,8 +305,6 @@ export class Parser {
         if (t.kind === kind && (value === undefined || t.value === value)) { this.cur = this.tok.next(); return t; }
         return undefined;
     }
-
-    /** Helper to avoid TS flow-narrowing pitfalls on this.cur.kind */
     private curIs(kind: TokenKind, value?: string): boolean {
         const t = this.cur;
         return t.kind === kind && (value === undefined || t.value === value);
@@ -306,8 +319,9 @@ export class Parser {
         return n.kind === 'Identifier' || n.kind === 'MemberAccess' || n.kind === 'ArrayIndex';
     }
 
-    /* ---- printf ---- */
+    /* ---------- printf parsing ---------- */
 
+    /** Parse a printf-style template from the raw input string into segments. */
     private parsePrintfExpression(): PrintfExpression {
         const s = this.s;
         const n = s.length;
@@ -375,26 +389,35 @@ export class Parser {
         return { kind:'PrintfExpression', segments, resultType:'string', ...span(0,n) };
     }
 
+    /** Parse a subexpression with a fresh tokenizer, adjust diagnostics offsets. */
     private parseSubexpression(exprSrc: string, baseOffset: number): ASTNode {
-        const savedS = this.s, savedTok = this.tok, savedCur = this.cur, savedDiag = this.diagnostics;
+        const savedS = this.s, savedTok = this.tok, savedCur = this.cur, savedDiag = this.diagnostics, savedExt = this.externals;
         const t = new Tokenizer(exprSrc);
         (this as any).s = exprSrc;
         (this as any).tok = t;
         (this as any).cur = t.next();
         const tmp: Diagnostic[] = [];
         (this as any).diagnostics = tmp;
+        (this as any).externals = new Set<string>();
+
         const node = this.parseExpression();
         const folded = this.fold(node);
+
+        // consume optional semicolons and check for trailing junk
+        while (this.cur.kind === 'PUNCT' && this.cur.value === ';') this.eat('PUNCT',';');
+        if (this.cur.kind !== 'EOF') tmp.push({ type:'warning', message:'Extra tokens after expression', start:this.cur.start + baseOffset, end:this.cur.end + baseOffset });
+
         const adj = tmp.map(d => ({ ...d, start: d.start + baseOffset, end: d.end + baseOffset }));
         savedDiag.push(...adj);
         (this as any).s = savedS;
         (this as any).tok = savedTok;
         (this as any).cur = savedCur;
         (this as any).diagnostics = savedDiag;
+        (this as any).externals = savedExt;
         return folded;
     }
 
-    /* ---- expression ---- */
+    /* ---------- expression parsing ---------- */
 
     private parseExpression(): ASTNode { return this.parseAssignment(); }
 
@@ -434,7 +457,7 @@ export class Parser {
             if (isAssignOp) {
                 this.eat('PUNCT', op);
                 if (!this.isAssignable(left)) this.error('Invalid assignment target', (left as any).start, (left as any).end);
-                if (left.kind === 'Identifier') this.externals.delete(left.name);
+                if (left.kind === 'Identifier') this.externals.delete((left as Identifier).name);
                 const right = this.parseAssignment(); // right-assoc
                 return { kind:'AssignmentExpression', operator: op as any, left, right, ...span((left as any).start, (right as any).end) };
             }
@@ -593,7 +616,7 @@ export class Parser {
         return { kind:'ErrorNode', message:'Unexpected token', ...span(t.start,t.end) };
     }
 
-    /* ---- constant folding ---- */
+    /* ---------- constant folding ---------- */
 
     private fold(node: ASTNode): ASTNode {
         const k = node.kind;
@@ -707,4 +730,6 @@ export class Parser {
 /* -------- Convenience singleton and API -------- */
 
 export const defaultParser = new Parser();
-export function parseExpression(expr: string, isPrintExpression: boolean): ParseResult { return defaultParser.parse(expr, isPrintExpression); }
+export function parseExpression(expr: string, isPrintExpression: boolean): ParseResult {
+    return defaultParser.parse(expr, isPrintExpression);
+}

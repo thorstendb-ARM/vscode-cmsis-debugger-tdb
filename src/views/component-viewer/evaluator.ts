@@ -34,11 +34,11 @@ export interface RefContainer {
   /** Root model where identifier lookups begin. */
   base: ScvdBase;
 
-  /** NEW: Top-level anchor for the final read (e.g., TCB). */
+  /** Top-level anchor for the final read (e.g., TCB). */
   anchor?: ScvdBase | undefined;
-  /** NEW: Accumulated byte offset from the anchor. */
+  /** Accumulated byte offset from the anchor. */
   offsetBytes?: number | undefined;
-  /** NEW: Final read width in bits (host may ignore if unknown). */
+  /** Final read width in bits (host may ignore if unknown). */
   widthBits?: number | undefined;
 
   /** Current ref resolved by the last resolution step (for chaining). */
@@ -299,6 +299,17 @@ function lref(node: ASTNode, ctx: EvalContext): LValue {
  * Evaluation
  * ============================================================================= */
 
+// Belt-and-braces: value-returning intrinsics that may be written as CallExpression(Identifier(...))
+// We still prefer EvalPointCall from the parser, but this keeps us robust.
+const VALUE_INTRINSICS = new Set<string>([
+    '__GetRegVal',
+    '__Running',
+    '__CalcMemUsed',
+    '__size_of',
+    '__Symbol_exists',
+    '__Offset_of',
+]);
+
 export function evalNode(node: ASTNode, ctx: EvalContext): any {
     switch (node.kind) {
         case 'NumberLiteral':  return (node as NumberLiteral).value;
@@ -400,6 +411,18 @@ export function evalNode(node: ASTNode, ctx: EvalContext): any {
         case 'CallExpression': {
             const c = node as CallExpression;
             const args = c.args.map(a => evalNode(a, ctx));
+
+            // Fallback: allow value-returning intrinsics even if AST arrived as CallExpression
+            if (c.callee.kind === 'Identifier') {
+                const name = (c.callee as Identifier).name;
+                if (VALUE_INTRINSICS.has(name)) {
+                    return routeIntrinsic(ctx, name, args);
+                }
+                if (name === '__FindSymbol') {
+                    throw new Error('__FindSymbol returns a reference and must be used in reference context.');
+                }
+            }
+
             const fnVal = evalNode(c.callee, ctx);
             if (typeof fnVal === 'function') return (fnVal as Function)(...args);
             throw new Error('Callee is not callable.');
@@ -550,10 +573,12 @@ export function evaluateParseResult(pr: ParseResult, ctx: EvalContext, container
         const v = evalNode(pr.ast, ctx);
         return normalizeEvaluateResult(v);
     } catch (e) {
+    // Intentionally swallow and surface as undefined for strict error semantics.
+    // (During debugging, consider rethrowing or logging more detail here.)
         console.error('Error evaluating parse result:', pr, e);
         return undefined;
     } finally {
-        // Restore base and clear transient addressing state
+    // Restore base and clear transient addressing state
         if (override) ctx.container.base = prevBase;
         ctx.container.anchor = saved.anchor;
         ctx.container.offsetBytes = saved.offsetBytes;

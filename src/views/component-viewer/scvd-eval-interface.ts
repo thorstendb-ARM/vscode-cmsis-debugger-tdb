@@ -12,13 +12,50 @@
  * ============================================================================= */
 
 import { DataHost, RefContainer } from './evaluator';
-import { registerCache } from './scvd-cache-register';
 import { ScvdBase } from './model/scvd-base';
+import type { TargetFetchFn } from './scvd-cache-base';
+import { ScvdCacheRegister, MockRegisterTarget } from './scvd-cache-register';
+import { ScvdCacheVariable, MockMemoryTarget } from './scvd-cache-variable';
+
+/** Build a register cache wired to a mock Cortex-M register target. */
+export function createRegisterCacheWithMock(initial?: Partial<Record<string, number>>) {
+    const regTarget = new MockRegisterTarget(initial);
+    const regFetch: TargetFetchFn = (expr) => regTarget.fetch(expr);
+    const regCache = new ScvdCacheRegister(regFetch);
+    return { regCache, regFetch, regTarget };
+}
+
+/** Build a variable cache wired to a mock memory target, seeding optional symbols. */
+export function createVariableCacheWithMock(seed?: Record<string, Uint8Array>) {
+    const memTarget = new MockMemoryTarget();
+    if (seed) {
+        for (const [name, bytes] of Object.entries(seed)) memTarget.seed(name, bytes);
+    }
+    const memFetch: TargetFetchFn = (expr) => memTarget.fetch(expr);
+    const varCache = new ScvdCacheVariable(memFetch);
+    return { varCache, memFetch, memTarget };
+}
 
 export class ScvdEvalInterface implements DataHost {
-    /* =============================
-   * Resolution (symbol/member)
-   * ============================= */
+    private _registerCache: ScvdCacheRegister;
+    private _variableCache: ScvdCacheVariable;
+
+    constructor(
+    ) {
+        const { regCache } = createRegisterCacheWithMock();
+        this._registerCache = regCache;
+
+        const { varCache } = createVariableCacheWithMock();
+        this._variableCache = varCache;
+    }
+
+    get registerCache(): ScvdCacheRegister {
+        return this._registerCache;
+    }
+
+    get variableCache(): ScvdCacheVariable {
+        return this._variableCache;
+    }
 
     getSymbolRef(container: RefContainer, name: string, _forWrite?: boolean): ScvdBase | undefined {
         console.log(`GetSymbolRef: name=${name}, base=${container.base?.getExplorerDisplayName()}`);
@@ -76,8 +113,12 @@ export class ScvdEvalInterface implements DataHost {
             ? Math.max(1, Math.ceil(container.widthBits / 8))
             : Math.max(1, Math.ceil(anchor.getBitWidth() / 8));
 
-        const widthBits = widthBytes * 8;
-        return anchor.readAt(byteOffset, widthBits);
+        const symName = anchor.name;
+        if( symName !== undefined) {
+            const value = this.variableCache.readUint(symName, byteOffset, widthBytes as 1 | 2 | 4);
+            return value;
+        }
+        return undefined;
     }
 
     writeValue(container: RefContainer, value: number | string | bigint): number | string | bigint | undefined {
@@ -90,8 +131,12 @@ export class ScvdEvalInterface implements DataHost {
             ? Math.max(1, Math.ceil(container.widthBits / 8))
             : Math.max(1, Math.ceil(anchor.getBitWidth() / 8));
 
-        const widthBits = widthBytes * 8;
-        return anchor.writeAt(byteOffset, widthBits, value);
+        const symName = anchor.name;
+        if( symName !== undefined) {
+            this.variableCache.writeUint(symName, byteOffset, widthBytes as 1 | 2 | 4, Number(value));
+            return value;
+        }
+        return undefined;
     }
 
     /* =============================
@@ -126,7 +171,14 @@ export class ScvdEvalInterface implements DataHost {
     }
 
     __GetRegVal(regName: string): number | undefined {
-        return registerCache.readRegister(regName);
+        let value = undefined;
+        try {
+            console.log(`__GetRegVal: regName=${regName}`);
+            value = this.registerCache.read(regName);
+        } catch (e) {
+            console.error(`__GetRegVal: regName=${regName}, error=${e}`);
+        }
+        return value;
     }
 
     __Offset_of(container: RefContainer, args: unknown[]): number {
