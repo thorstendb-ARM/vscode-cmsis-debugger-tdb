@@ -170,7 +170,11 @@ export abstract class ScvdBase {
     }
 
     get nodeId(): string {
-        return this.constructor.name + '_' + this._nodeId.toString();
+        return this.classname + '_' + this._nodeId.toString();
+    }
+
+    get classname(): string {
+        return this.constructor.name;
     }
 
     public set valid(value: boolean) {
@@ -330,58 +334,58 @@ export abstract class ScvdBase {
     }
 
     public writeAt(byteOffset: number, widthBits: number, value: number | string | bigint): number | string | bigint | undefined {
-        console.log(`WriteAt not implemented: item=${this.getExplorerDisplayName()}, offset=${byteOffset}, width=${widthBits}, value=${value}`);
+        console.log(`WriteAt not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}, offset=${byteOffset}, width=${widthBits}, value=${value}`);
         return 1;
     }
 
     public readAt(byteOffset: number, widthBits: number): number | bigint | string | undefined {
-        console.log(`ReadAt not implemented: item=${this.getExplorerDisplayName()}, offset=${byteOffset}, width=${widthBits}`);
+        console.log(`ReadAt not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}, offset=${byteOffset}, width=${widthBits}`);
         return 1;
     }
 
     // size of array type, to skip one instance to the next. Can be sizeof, or gaps
     // byte distance between adjacent elements in your model’s actual layout (not necessarily sizeof if there are hardware gaps).
     public getElementStride(): number {
-        console.log(`GetElementStride not implemented: item=${this.getExplorerDisplayName()}`);
+        console.log(`GetElementStride not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
         return 4;
     }
 
     // _count intrinsic: Counts the number of items in readlist and read elements.
     public getElementCount(): number | undefined {
-        console.log(`_count not implemented: item=${this.getExplorerDisplayName()}`);
+        console.log(`_count not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
         return 1;
     }
 
     // _addr intrinsic: Returns the memory address of a readlist member.
     public getAddress(): number | undefined {
-        console.log(`_addr via MS-DAP not implemented: item=${this.getExplorerDisplayName()}`);
+        console.log(`_addr via MS-DAP not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
         return 0;
     }
 
     // __size_of intrinsic
     public getSize(): number | undefined {
-        console.log(`GetSize not implemented: item=${this.getExplorerDisplayName()}`);
+        console.log(`GetSize not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
         return 4;
     }
 
     public getTypeSize(_typeName: string): number {
-        console.log(`GetTypeSize not implemented: item=${this.getExplorerDisplayName()}`);
+        console.log(`GetTypeSize not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
         return 4;
     }
 
     // __Offset_of intrinsic
     public getMemberOffset(member: ScvdBase | undefined): number {
-        console.log(`GetMemberOffset not implemented: item=${this.getExplorerDisplayName()}, member=${member?.getExplorerDisplayName()}`);
+        console.log(`GetMemberOffset not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}, member=${member?.getExplorerDisplayName()}`);
         return 0;
     }
 
     public getBitWidth(): number {
-        console.log(`GetBitWidth not implemented: item=${this.getExplorerDisplayName()}`);
+        console.log(`GetBitWidth not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
         return 32;
     }
 
     public getElementBitWidth(): number {
-        console.log(`GetElementBitWidth not implemented: item=${this.getExplorerDisplayName()}`);
+        console.log(`GetElementBitWidth not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
         return 32;
     }
 
