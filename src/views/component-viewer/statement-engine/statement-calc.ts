@@ -15,6 +15,7 @@
  */
 
 import { ScvdBase } from '../model/scvd-base';
+import { ScvdCalc } from '../model/scvd-calc';
 import { StatementBase } from './statement-base';
 
 
@@ -24,4 +25,16 @@ export class StatementCalc extends StatementBase {
         super(item, parent);
     }
 
+    protected onExecute(): void {
+        const calcItem = this.scvdItem.castToDerived(ScvdCalc);
+        if (!calcItem) {
+            throw new Error('Invalid SCVD item');
+        }
+
+        const expressions = calcItem.expression;
+        expressions.forEach((expr) => {
+            const value = expr.getValue();
+            console.log(`${this.line} Executing "calc": ${expr.expression}, value: ${value}`);
+        });
+    }
 }

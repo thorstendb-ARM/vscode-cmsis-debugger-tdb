@@ -184,9 +184,7 @@ export class ScvdExpression extends ScvdBase {
     }
 
     public getResultString(): string | undefined {
-        if(this._result === undefined) {
-            this.evaluate();
-        }
+        this.evaluate();
         if(this._result !== undefined) {
             if (typeof this._result === 'number') {
                 return this._result.toString();

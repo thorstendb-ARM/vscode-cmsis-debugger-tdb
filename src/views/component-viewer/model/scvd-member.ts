@@ -104,6 +104,16 @@ export class ScvdMember extends ScvdBase {
         return enumItem;
     }
 
+    // search a member (member, var) in typedef
+    public getMember(_property: string): ScvdBase | undefined {
+        const type = this._type;
+        if(type !== undefined) {
+            const typeObj = type.getMember(_property);
+            return typeObj;
+        }
+        return undefined;
+    }
+
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
         if (this._size) {

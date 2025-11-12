@@ -33,7 +33,15 @@ export type EvaluateResult = number | string | undefined;
 export interface RefContainer {
   /** Root model where identifier lookups begin. */
   base: ScvdBase;
-  /** Current ref resolved by the last resolution step; used by readValue/writeValue. */
+
+  /** Top-level anchor for the final read (e.g., TCB). */
+  anchor?: ScvdBase | undefined;
+  /** Accumulated byte offset from the anchor. */
+  offsetBytes?: number | undefined;
+  /** Final read width in bits (host may ignore if unknown). */
+  widthBits?: number | undefined;
+
+  /** Current ref resolved by the last resolution step (for chaining). */
   current?: ScvdBase | undefined;
   /** Most recent resolved member reference (child). */
   member?: ScvdBase | undefined;
@@ -46,10 +54,8 @@ export interface DataHost {
   // Resolution APIs — must set container.current to the resolved ref on success
   getSymbolRef(container: RefContainer, name: string, forWrite?: boolean): ScvdBase | undefined;
   getMemberRef(container: RefContainer, property: string, forWrite?: boolean): ScvdBase | undefined;
-  // Array element access: evaluator sets container.index (number) and container.current to the array ref; host read/write uses those.
-  /** @deprecated Not used by the evaluator anymore. Array element access is performed via `container.current` (the array ref) + `container.index` (number). Kept for legacy hosts. */
 
-  // Value access acts on container.current
+  // Value access acts on container.{anchor,offsetBytes,widthBits}
   readValue(container: RefContainer): any;                  // may return undefined -> error
   writeValue(container: RefContainer, value: any): any;     // may return undefined -> error
 
@@ -57,6 +63,12 @@ export interface DataHost {
   resolveColonPath?(container: RefContainer, parts: string[]): any; // undefined => not found
   stats?(): { symbols?: number; bytesUsed?: number };
   evalIntrinsic?(name: string, container: RefContainer, args: any[]): any; // undefined => not handled
+
+  // Optional metadata (lets evaluator accumulate offsets itself)
+  getElementStride?(ref: ScvdBase): number;                       // bytes per element
+  getMemberOffset?(base: ScvdBase, member: ScvdBase): number;     // bytes
+  getBitWidth?(ref: ScvdBase): number;                            // bits
+  getElementBitWidth?(ref: ScvdBase): number;                     // bits (if array of scalars)
 
   // Optional named intrinsics
   // Note: __GetRegVal(reg) is special-cased (no container); others use the evalIntrinsic convention
@@ -175,6 +187,15 @@ function gteVals(a: any, b: any): boolean { return (typeof a === 'bigint' || typ
 
 type LValue = { get(): any; set(v: any): any };
 
+function addOffset(ctx: EvalContext, bytes: number) {
+    const c = ctx.container;
+    c.offsetBytes = ((c.offsetBytes ?? 0) + bytes);
+}
+
+function setWidth(ctx: EvalContext, bits: number | undefined) {
+    if (bits !== undefined) ctx.container.widthBits = bits;
+}
+
 function mustRef(node: ASTNode, ctx: EvalContext, forWrite = false): ScvdBase {
     switch (node.kind) {
         case 'Identifier': {
@@ -182,10 +203,14 @@ function mustRef(node: ASTNode, ctx: EvalContext, forWrite = false): ScvdBase {
             // Identifier lookup always starts from the root base
             const ref = ctx.data.getSymbolRef(ctx.container, id.name, forWrite);
             if (!ref) throw new Error(`Unknown symbol '${id.name}'`);
+            // Start a new anchor chain at this identifier
+            ctx.container.anchor = ref;
+            ctx.container.offsetBytes = 0;
+            ctx.container.widthBits = ctx.data.getBitWidth?.(ref);
             // Reset last-context hints for a plain identifier
             ctx.container.member = undefined;
             ctx.container.index = undefined;
-            // Set the current target for subsequent read/write
+            // Set the current target for subsequent resolution
             ctx.container.current = ref;
             return ref;
         }
@@ -193,20 +218,19 @@ function mustRef(node: ASTNode, ctx: EvalContext, forWrite = false): ScvdBase {
             const ma = node as MemberAccess;
             // Resolve the base of the member chain first
             const baseRef = mustRef(ma.object, ctx, forWrite);
-            // Clear array index hint when doing member access
-            ctx.container.index = undefined;
-            // For host member lookup, many hosts expect container.member to carry the *base*
-            // Use that convention temporarily to resolve the child reference
-            //const prevMember = ctx.container.member;
-            ctx.container.member = baseRef;
+            // Prepare container for host member lookup
+            ctx.container.current = baseRef;
+            // Resolve child
             const child = ctx.data.getMemberRef(ctx.container, ma.property, forWrite);
             if (!child) throw new Error(`Missing member '${ma.property}'`);
-            // Finalize container hints for new semantics:
-            // - current: base object (for subsequent read/write)
-            // - member:  resolved child reference
-            ctx.container.current = baseRef;
+            // Accumulate member offset if host provides metadata
+            const off = ctx.data.getMemberOffset?.(baseRef, child);
+            if (typeof off === 'number') addOffset(ctx, off);
+            // Update width from child (best-effort)
+            setWidth(ctx, ctx.data.getBitWidth?.(child));
+            // Finalize hinting for chained lookups
             ctx.container.member = child;
-            // Return the child so chained accesses treat it as the next baseRef
+            ctx.container.current = child;
             return child;
         }
         case 'ArrayIndex': {
@@ -214,12 +238,15 @@ function mustRef(node: ASTNode, ctx: EvalContext, forWrite = false): ScvdBase {
             const baseRef = mustRef(ai.array, ctx, forWrite);
             const idxVal = evalNode(ai.index, ctx);
             const idx = asNumber(idxVal) | 0;
-            // Record the numeric index used for this access; host will use it in read/write
-            ctx.container.index = idx;
-            // Clear member hint for array index
-            ctx.container.member = undefined;
-            // The current target is the array itself; host read/write will use index
+            // Consume index into accumulated offset when metadata is available
+            const stride = ctx.data.getElementStride?.(baseRef);
+            if (typeof stride === 'number') addOffset(ctx, idx * stride);
+            // Clear transient index hint (we're doing offset-first)
+            ctx.container.index = undefined;
+            // Current target remains the base for subsequent member access
             ctx.container.current = baseRef;
+            // Update width to element width if host exposes it
+            setWidth(ctx, ctx.data.getElementBitWidth?.(baseRef));
             return baseRef;
         }
         case 'EvalPointCall': {
@@ -232,6 +259,10 @@ function mustRef(node: ASTNode, ctx: EvalContext, forWrite = false): ScvdBase {
                 ctx.container.member = undefined;
                 ctx.container.index = undefined;
                 ctx.container.current = ref;
+                // Treat found symbol as a new anchor
+                ctx.container.anchor = ref;
+                ctx.container.offsetBytes = 0;
+                ctx.container.widthBits = ctx.data.getBitWidth?.(ref);
                 return ref;
             }
             throw new Error('Invalid reference target.');
@@ -268,6 +299,17 @@ function lref(node: ASTNode, ctx: EvalContext): LValue {
  * Evaluation
  * ============================================================================= */
 
+// Belt-and-braces: value-returning intrinsics that may be written as CallExpression(Identifier(...))
+// We still prefer EvalPointCall from the parser, but this keeps us robust.
+const VALUE_INTRINSICS = new Set<string>([
+    '__GetRegVal',
+    '__Running',
+    '__CalcMemUsed',
+    '__size_of',
+    '__Symbol_exists',
+    '__Offset_of',
+]);
+
 export function evalNode(node: ASTNode, ctx: EvalContext): any {
     switch (node.kind) {
         case 'NumberLiteral':  return (node as NumberLiteral).value;
@@ -288,8 +330,7 @@ export function evalNode(node: ASTNode, ctx: EvalContext): any {
                 ctx.container.member = baseRef;
                 // Ensure current points at the base for host callbacks
                 ctx.container.current = baseRef;
-                // Clear any array index hint
-                ctx.container.index = undefined;
+                // NOTE: preserve any accumulated offset; pseudo-members are value-only
                 const host = ctx.data as any;
                 const fn = host[ma.property] as ((container: RefContainer) => any) | undefined;
                 if (typeof fn !== 'function') throw new Error(`Missing pseudo-member ${ma.property}`);
@@ -370,6 +411,18 @@ export function evalNode(node: ASTNode, ctx: EvalContext): any {
         case 'CallExpression': {
             const c = node as CallExpression;
             const args = c.args.map(a => evalNode(a, ctx));
+
+            // Fallback: allow value-returning intrinsics even if AST arrived as CallExpression
+            if (c.callee.kind === 'Identifier') {
+                const name = (c.callee as Identifier).name;
+                if (VALUE_INTRINSICS.has(name)) {
+                    return routeIntrinsic(ctx, name, args);
+                }
+                if (name === '__FindSymbol') {
+                    throw new Error('__FindSymbol returns a reference and must be used in reference context.');
+                }
+            }
+
             const fnVal = evalNode(c.callee, ctx);
             if (typeof fnVal === 'function') return (fnVal as Function)(...args);
             throw new Error('Callee is not callable.');
@@ -513,15 +566,25 @@ function normalizeEvaluateResult(v: any): EvaluateResult {
 
 export function evaluateParseResult(pr: ParseResult, ctx: EvalContext, container?: ScvdBase): EvaluateResult {
     const prevBase = ctx.container.base;
+    const saved = { ...ctx.container } as RefContainer;
     const override = container !== undefined;
     if (override) ctx.container.base = container as ScvdBase;
     try {
         const v = evalNode(pr.ast, ctx);
         return normalizeEvaluateResult(v);
     } catch (e) {
+    // Intentionally swallow and surface as undefined for strict error semantics.
+    // (During debugging, consider rethrowing or logging more detail here.)
         console.error('Error evaluating parse result:', pr, e);
         return undefined;
     } finally {
+    // Restore base and clear transient addressing state
         if (override) ctx.container.base = prevBase;
+        ctx.container.anchor = saved.anchor;
+        ctx.container.offsetBytes = saved.offsetBytes;
+        ctx.container.widthBits = saved.widthBits;
+        ctx.container.current = saved.current;
+        ctx.container.member = saved.member;
+        ctx.container.index = saved.index;
     }
 }

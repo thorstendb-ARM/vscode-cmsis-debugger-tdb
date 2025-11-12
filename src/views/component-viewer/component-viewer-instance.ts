@@ -57,6 +57,11 @@ export class ComponentViewerInstance {
         const xml: Json = await this.parseXml(bufLineNo);
         const parseTime = Date.now();
 
+        if(xml === undefined) {
+            console.error('Failed to parse SCVD XML');
+            return;
+        }
+
         this.model = new ScvdComponentViewer(undefined);
         if(!this.model) {
             console.error('Failed to create SCVD model');
