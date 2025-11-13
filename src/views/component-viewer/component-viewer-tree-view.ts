@@ -34,6 +34,7 @@ export interface childObjectItem {
     condition?: string | undefined;
     bold?: string | undefined;
     alert?: string | undefined;
+    children?: childObjectItem[] | undefined;
 }
 
 export interface childObjectList {
