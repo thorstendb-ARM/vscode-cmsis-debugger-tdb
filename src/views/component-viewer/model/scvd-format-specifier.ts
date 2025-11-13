@@ -38,9 +38,12 @@ export class ScvdFormatSpecifier {
 
     private format_t(value: number | string, _ctx: EvalContext): string {
         if (typeof value === 'number' && Number.isInteger(value)) {
-            return `ReadingStringFrom: 0x${value.toString(16)}`;
+            return `0x${value.toString(16)}`;
         }
-        return `ErrorReadingStringFrom: 0x${value.toString(16)}`;
+        if( typeof value === 'string') {
+            return `${value}`;
+        }
+        return '';
     }
 
     private format_x(value: number | string, _ctx: EvalContext): string {

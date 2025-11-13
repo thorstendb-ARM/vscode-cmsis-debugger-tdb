@@ -169,20 +169,19 @@ export class ScvdItem extends ScvdBase {
         return item;
     }
 
-    public getDisplayName(): string {
-        const propertyName = this.property?.getDisplayResult();
-        return propertyName ?? '';
+    public getDisplayName(): string | undefined {
+        return this.property?.getDisplayValue();
     }
 
     public getDisplayValue(): string | undefined {
-        return this.value?.getDisplayResult();
+        return this.value?.getDisplayValue();
     }
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
 
         if(this.value !== undefined) {
-            info.push({ name: 'Value', value: this.value?.getDisplayResult() ?? this.value.getExplorerDisplayName() });
+            info.push({ name: 'Value', value: this.value?.getDisplayValue() ?? this.value.getExplorerDisplayName() });
         }
         info.push(...itemInfo);
         return super.getExplorerInfo(info);
@@ -190,7 +189,7 @@ export class ScvdItem extends ScvdBase {
 
     public getExplorerDisplayName(): string {
         const propertyName = this.getDisplayName() ?? this.property?.getExplorerDisplayName();
-        const valueStr = this.value?.getDisplayResult() ?? this.value?.getExplorerDisplayName();
+        const valueStr = this.value?.getDisplayValue() ?? this.value?.getExplorerDisplayName();
         if(propertyName != undefined && valueStr !== undefined && valueStr.length > 0 && propertyName != valueStr) {
             return `${propertyName} = ${valueStr}`;
         }

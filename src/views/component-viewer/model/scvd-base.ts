@@ -288,8 +288,12 @@ export abstract class ScvdBase {
     }
 
     // Main Display functions
-    public getDisplayName(): string {
-        return this.name ?? '';
+    public getDisplayEntry(): { name: string | undefined, result: string | undefined } {
+        return { name: this.getDisplayName(), result: this.getDisplayValue() };
+    }
+
+    public getDisplayName(): string | undefined {
+        return this.name;
     }
 
     public getDisplayValue(): string | undefined {

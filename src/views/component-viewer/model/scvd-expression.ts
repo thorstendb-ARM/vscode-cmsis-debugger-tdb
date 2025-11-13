@@ -215,7 +215,8 @@ export class ScvdExpression extends ScvdBase {
     public getExplorerDisplayName(): string {
         const scvdVarName = this.scvdVarName ?? '';
         const expression = this.expression ?? '';
-        const firstIdx = [expression.indexOf('='), expression.indexOf('(')]
+        const resultStr = this.getResultString();
+        /*const firstIdx = [expression.indexOf('='), expression.indexOf('(')]
             .filter(i => i !== -1)
             .reduce((min, i) => (min === -1 || i < min ? i : min), -1);
         if (firstIdx !== -1) {
@@ -223,8 +224,8 @@ export class ScvdExpression extends ScvdBase {
             if (exprStr) {
                 return scvdVarName + ': ' + exprStr;
             }
-        }
-        return scvdVarName + ': ' + expression;
+        }*/
+        return scvdVarName + ': ' + ((resultStr !== '') ? resultStr : expression);
     }
 
 }

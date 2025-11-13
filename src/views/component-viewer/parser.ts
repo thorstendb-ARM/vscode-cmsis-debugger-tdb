@@ -2,7 +2,7 @@
  * Fast, reusable, error-tolerant expression parser with:
  *  - Assignment '=' (right-associative) and C-style compound assignments: +=, -=, *=, /=, %=, <<=, >>=, &=, ^=, |=
  *  - ++ / -- (both prefix and postfix)
- *  - Printf-like formatting segments: `%spec[ expr ]` and `%%` (with nested bracket + string awareness)
+ *  - Printf-like formatting segments: `%x[ expr ]` (x = ANY single non-space char) and `%%` (escaped percent)
  *  - Intrinsic evaluation-point calls:
  *      __CalcMemUsed, __FindSymbol, __GetRegVal, __Offset_of, __size_of, __Symbol_exists, __Running
  *  - Constant folding (assignment expression value = RHS const value when foldable)
@@ -51,7 +51,7 @@ export type IntrinsicName =
 
 export interface CallExpression extends BaseNode { kind:'CallExpression'; callee:ASTNode; args:ASTNode[]; intrinsic?: undefined; }
 export interface EvalPointCall extends BaseNode { kind:'EvalPointCall'; callee:ASTNode; args:ASTNode[]; intrinsic:IntrinsicName; }
-export type FormatSpec = 'd'|'u'|'t'|'x'|'C'|'E'|'I'|'J'|'N'|'M'|'S'|'T'|'U'|'%';
+export type FormatSpec = string; // accept ANY spec char after '%'
 export interface TextSegment extends BaseNode { kind:'TextSegment'; text:string; }
 export interface FormatSegment extends BaseNode { kind:'FormatSegment'; spec:FormatSpec; value:ASTNode; }
 export interface PrintfExpression extends BaseNode { kind:'PrintfExpression'; segments:(TextSegment|FormatSegment)[]; resultType:'string'; }
@@ -166,7 +166,6 @@ class Tokenizer {
 const INTRINSICS: Set<string> = new Set([
     '__CalcMemUsed','__FindSymbol','__GetRegVal','__Offset_of','__size_of','__Symbol_exists','__Running'
 ]);
-const FORMAT_SPECS = new Set(Array.from('dutxCEIJNMSTU%'));
 
 function span(start:number, end:number) { return { start, end }; }
 
@@ -234,7 +233,6 @@ export class Parser {
 
     /* ---------- lifecycle ---------- */
 
-    /** Preferred initializer used internally. */
     private reinit(s:string) {
         this.s = s;
         this.tok.reset(s);
@@ -242,13 +240,13 @@ export class Parser {
         this.diagnostics = [];
         this.externals.clear();
     }
-    /** Public alias so external callers can use it (avoids TS6133 on private). */
+    /** Public alias for consumers that want to reuse the instance */
     public reset(s:string) { this.reinit(s); }
 
     /* ---------- public API ---------- */
 
     parse(input: string, isPrintExpression: boolean): ParseResult {
-        this.reinit?.(input) ?? this.reset(input); // support either initializer
+        this.reinit(input);
 
         let ast: ASTNode;
         let isPrintf = false;
@@ -286,6 +284,7 @@ export class Parser {
             constValue,
         };
     }
+
     /* ---------- diagnostics & token helpers ---------- */
 
     private error(msg:string, start:number, end:number) { this.diagnostics.push({ type:'error', message:msg, start, end }); }
@@ -310,9 +309,10 @@ export class Parser {
         return t.kind === kind && (value === undefined || t.value === value);
     }
 
+    /** Generic printf detection: %% or %x[ ... ] for ANY non-space spec x */
     private looksLikePrintf(s:string): boolean {
         if (s.includes('%%')) return true;
-        return /%(?:[dutxCEIJNMSTU])\s*\[/.test(s);
+        return /%[^\s%]\s*\[/.test(s);
     }
 
     private isAssignable(n: ASTNode): boolean {
@@ -342,12 +342,14 @@ export class Parser {
                 i = j+2; continue;
             }
 
+            // Accept ANY single spec character after '%'
             const spec = (j+1 < n) ? s[j+1] : '';
-            if (FORMAT_SPECS.has(spec) && spec !== '%') {
-                let k = j+2;
+            if (spec && spec !== '%') {
+                // Look for a bracketed expression after optional whitespace
+                let k = j + 2;
                 while (k<n && /\s/.test(s[k]!)) k++;
                 if (k>=n || s[k] !== '[') {
-                    // Not a bracketed spec; treat as literal "%X"
+                    // Not a bracket form: treat literally as "%x"
                     segments.push({ kind:'TextSegment', text:'%'+spec, ...span(j,j+2) });
                     i = j+2; continue;
                 }
@@ -564,13 +566,12 @@ export class Parser {
                 continue;
             }
             // index access
-            if (this.tryEat('PUNCT','[')) {
+            if (this.tryEat('PUNCT', '[')) {
                 const index = this.parseExpression();
-                if (!this.tryEat('PUNCT',']')) this.error('Expected "]"', this.cur.start, this.cur.end);
+                if (!this.tryEat('PUNCT', ']')) this.error('Expected "]"', this.cur.start, this.cur.end);
                 node = { kind:'ArrayIndex', array:node, index, ...span((node as any).start, (index as any).end) };
                 continue;
-            }
-            // postfix ++ / --
+            }      // postfix ++ / --
             if (this.cur.kind === 'PUNCT' && (this.cur.value === '++' || this.cur.value === '--')) {
                 const op = this.cur.value; const t = this.eat('PUNCT', op);
                 if (!this.isAssignable(node)) this.error('Invalid increment/decrement target', (node as any).start, (node as any).end);

@@ -101,6 +101,15 @@ export class ScvdPrint extends ScvdBase {
         }
     }
 
+    // Main Display functions
+    public getDisplayName(): string | undefined {
+        return this.property?.getDisplayName();
+    }
+
+    public getDisplayValue(): string | undefined {
+        return this.value?.getDisplayValue();
+    }
+
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
         info.push(...itemInfo);
