@@ -117,7 +117,7 @@ export class ScvdPrint extends ScvdBase {
     }
 
     public getExplorerDisplayName(): string {
-        return this.property?.getExplorerDisplayName() ?? super.getExplorerDisplayName();
+        return this.getExplorerDisplayEntry() ?? this.property?.getExplorerDisplayName() ?? super.getExplorerDisplayName();
     }
 
 }

@@ -288,8 +288,8 @@ export abstract class ScvdBase {
     }
 
     // Main Display functions
-    public getDisplayEntry(): { name: string | undefined, result: string | undefined } {
-        return { name: this.getDisplayName(), result: this.getDisplayValue() };
+    public getDisplayEntry(): { name: string | undefined, value: string | undefined } {
+        return { name: this.getDisplayName(), value: this.getDisplayValue() };
     }
 
     public getDisplayName(): string | undefined {
@@ -422,6 +422,11 @@ export abstract class ScvdBase {
 
     public getExplorerDescription(): string {
         return `(${this.constructor?.name ?? ''})`;
+    }
+
+    public getExplorerDisplayEntry(): string | undefined {
+        const { name, value } = this.getDisplayEntry();
+        return (name && value) ? `${name}: ${value}` : undefined;
     }
 
 }

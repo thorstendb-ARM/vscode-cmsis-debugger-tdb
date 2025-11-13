@@ -188,6 +188,10 @@ export class ScvdItem extends ScvdBase {
     }
 
     public getExplorerDisplayName(): string {
+        const dispEntry = this.getExplorerDisplayEntry();
+        if(dispEntry !== undefined) {
+            return dispEntry;
+        }
         const propertyName = this.getDisplayName() ?? this.property?.getExplorerDisplayName();
         const valueStr = this.value?.getDisplayValue() ?? this.value?.getExplorerDisplayName();
         if(propertyName != undefined && valueStr !== undefined && valueStr.length > 0 && propertyName != valueStr) {

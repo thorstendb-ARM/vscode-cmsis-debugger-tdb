@@ -54,7 +54,7 @@ export class ScvdPrintExpression extends ScvdExpression {
     }
 
     public getExplorerDisplayName(): string {
-        return super.getExplorerDisplayName();
+        return this.getExplorerDisplayEntry() ?? super.getExplorerDisplayName();
     }
 
 }

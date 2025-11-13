@@ -86,7 +86,7 @@ export class ScvdDataType extends ScvdBase {
     }
 
     public getExplorerDisplayName(): string {
-        return this._type?.getExplorerDisplayName() ?? 'data type';
+        return this.getExplorerDisplayEntry() ?? this._type?.getExplorerDisplayName() ?? 'data type';
     }
 
 }
@@ -130,7 +130,7 @@ export class ScvdScalarDataType extends ScvdBase {
     }
 
     public getExplorerDisplayName(): string {
-        return this._type ?? 'unknown scalar type';
+        return this.getExplorerDisplayEntry() ?? this._type ?? 'unknown scalar type';
     }
 }
 
@@ -208,7 +208,7 @@ export class ScvdComplexDataType extends ScvdBase{
     }
 
     public getExplorerDisplayName(): string {
-        return this._typeName ?? 'unknown complex type';
+        return this.getExplorerDisplayEntry() ?? this._typeName ?? 'unknown complex type';
     }
 
 }

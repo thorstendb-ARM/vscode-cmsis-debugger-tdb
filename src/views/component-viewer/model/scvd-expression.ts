@@ -213,6 +213,10 @@ export class ScvdExpression extends ScvdBase {
     }
 
     public getExplorerDisplayName(): string {
+        const dispEntry = this.getExplorerDisplayEntry();
+        if(dispEntry !== undefined) {
+            return dispEntry;
+        }
         const scvdVarName = this.scvdVarName ?? '';
         const expression = this.expression ?? '';
         const resultStr = this.getResultString();
