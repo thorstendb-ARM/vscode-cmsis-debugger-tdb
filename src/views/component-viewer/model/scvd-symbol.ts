@@ -68,6 +68,10 @@ export class ScvdSymbol extends ScvdBase {
     }
 
     public getExplorerDisplayName(): string {
+        const dispEntry = this.getExplorerDisplayEntry();
+        if(dispEntry !== undefined) {
+            return dispEntry;
+        }
         let name = 'Symbol';
         if (this._symbol !== undefined) {
             name += `: ${this._symbol}`;

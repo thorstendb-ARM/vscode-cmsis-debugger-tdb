@@ -89,6 +89,10 @@ export class ScvdComponentNumber extends ScvdBase {
     }
 
     public getExplorerDisplayName(): string {
+        const dispEntry = this.getExplorerDisplayEntry();
+        if(dispEntry !== undefined) {
+            return dispEntry;
+        }
         if(this._componentNumber === undefined) {
             return super.getExplorerDisplayName();
         }

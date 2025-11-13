@@ -85,6 +85,6 @@ export class ScvdCalc extends ScvdBase {
     }
 
     public getExplorerDisplayName(): string {
-        return super.getExplorerDisplayName();
+        return this.getExplorerDisplayEntry() ?? super.getExplorerDisplayName();
     }
 }

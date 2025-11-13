@@ -80,7 +80,7 @@ export class ScvdEventId extends ScvdBase {
     }
 
     public getExplorerDisplayName(): string {
-        return this.id.getExplorerDisplayName() ?? super.getExplorerDisplayName();
+        return this.getExplorerDisplayEntry() ?? this.id.getExplorerDisplayName() ?? super.getExplorerDisplayName();
     }
 
 }

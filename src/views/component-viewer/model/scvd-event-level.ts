@@ -77,6 +77,10 @@ export class ScvdEventLevel extends ScvdBase {
     }
 
     public getExplorerDisplayName(): string {
+        const dispEntry = this.getExplorerDisplayEntry();
+        if(dispEntry !== undefined) {
+            return dispEntry;
+        }
         if(this._level === undefined) {
             return super.getExplorerDisplayName();
         }

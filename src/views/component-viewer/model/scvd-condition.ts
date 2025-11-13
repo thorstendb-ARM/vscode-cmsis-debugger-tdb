@@ -61,6 +61,10 @@ export class ScvdCondition extends ScvdBase {
     }
 
     public getExplorerDisplayName(): string {
+        const dispEntry = this.getExplorerDisplayEntry();
+        if(dispEntry !== undefined) {
+            return dispEntry;
+        }
         const displayName = this._expression?.getExplorerDisplayName() ?? 'condition';
         return displayName ?? super.getExplorerDisplayName();
     }
