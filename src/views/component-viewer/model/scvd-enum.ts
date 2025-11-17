@@ -61,7 +61,7 @@ export class ScvdEnum extends ScvdBase {
         const info: ExplorerInfo[] = [];
         if (this._value !== undefined) {
             info.push({ name: 'Value', value: this._value.expression ?? '' });
-            info.push({ name: 'Result', value: this._value.getDisplayValue() ?? 'undefined' });
+            info.push({ name: 'Result', value: this._value.getGuiValue() ?? 'undefined' });
         }
         info.push(...itemInfo);
         return super.getExplorerInfo(info);

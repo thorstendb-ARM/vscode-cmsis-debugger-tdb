@@ -288,15 +288,19 @@ export abstract class ScvdBase {
     }
 
     // Main Display functions
-    public getDisplayEntry(): { name: string | undefined, value: string | undefined } {
-        return { name: this.getDisplayName(), value: this.getDisplayValue() };
+    public getGuiEntry(): { name: string | undefined, value: string | undefined } {
+        return { name: this.getGuiName(), value: this.getGuiValue() };
     }
 
-    public getDisplayName(): string | undefined {
+    public getGuiChildren(): ScvdBase[] | undefined {
+        return undefined;
+    }
+
+    public getGuiName(): string | undefined {
         return this.name;
     }
 
-    public getDisplayValue(): string | undefined {
+    public getGuiValue(): string | undefined {
         const val = this.getValue();
         if (val !== undefined) {
             if(typeof val === 'number') {
@@ -335,6 +339,14 @@ export abstract class ScvdBase {
     public getLineNoStr(): string {
         const lineNo = this.getLineNoInfo(this);
         return lineNo !== undefined ? lineNo : '';
+    }
+
+    protected sortByLine(a: ScvdBase, b: ScvdBase): number {
+        const aLineNum = Number(a.lineNo);
+        const bLineNum = Number(b.lineNo);
+        const aLine = Number.isNaN(aLineNum) ? -1 : aLineNum;
+        const bLine = Number.isNaN(bLineNum) ? -1 : bLineNum;
+        return bLine - aLine;
     }
 
     public writeAt(byteOffset: number, widthBits: number, value: number | string | bigint): number | string | bigint | undefined {
@@ -377,10 +389,9 @@ export abstract class ScvdBase {
         return 4;
     }
 
-    // __Offset_of intrinsic
-    public getMemberOffset(member: ScvdBase | undefined): number {
+    public getMemberOffset(member: ScvdBase | undefined): number | undefined {
         console.log(`GetMemberOffset not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}, member=${member?.getExplorerDisplayName()}`);
-        return 0;
+        return undefined;
     }
 
     public getBitWidth(): number {
@@ -425,7 +436,7 @@ export abstract class ScvdBase {
     }
 
     public getExplorerDisplayEntry(): string | undefined {
-        const { name, value } = this.getDisplayEntry();
+        const { name, value } = this.getGuiEntry();
         return (name && value) ? `${name}: ${value}` : undefined;
     }
 

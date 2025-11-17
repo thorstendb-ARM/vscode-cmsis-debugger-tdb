@@ -45,7 +45,7 @@ export class ScvdValueOutput extends ScvdBase {
         this._expression.expression = value;
     }
 
-    public getDisplayValue(): string | undefined {
+    public getGuiValue(): string | undefined {
         const expression = this.expression;
         const propertyName = expression?.getResultString();
         return propertyName;
@@ -55,13 +55,13 @@ export class ScvdValueOutput extends ScvdBase {
         const info: ExplorerInfo[] = [];
         const value = this.getValue();
         if (value !== undefined) {
-            info.push({ name: 'Value', value: this.getDisplayValue() ?? '' });
+            info.push({ name: 'Value', value: this.getGuiValue() ?? '' });
         }
         info.push(...itemInfo);
         return super.getExplorerInfo(info);
     }
 
     public getExplorerDisplayName(): string {
-        return this.getExplorerDisplayEntry() ?? this.getDisplayValue() ?? this.expression?.expression ?? super.getExplorerDisplayName();
+        return this.getExplorerDisplayEntry() ?? this.getGuiValue() ?? this.expression?.expression ?? super.getExplorerDisplayName();
     }
 }

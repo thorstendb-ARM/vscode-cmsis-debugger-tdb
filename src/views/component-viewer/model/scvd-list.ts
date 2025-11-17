@@ -36,7 +36,6 @@ export class ScvdList extends ScvdBase {
     private _var: ScvdVar[] = [];
     private _calc: ScvdCalc[] = [];
 
-
     constructor(
         parent: ScvdBase | undefined,
     ) {

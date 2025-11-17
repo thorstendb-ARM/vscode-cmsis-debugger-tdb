@@ -17,11 +17,11 @@
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
 import { ExplorerInfo, Json, ScvdBase } from './scvd-base';
-import { ScvdList } from './scvd-list';
 import { ScvdPrint } from './scvd-print';
 import { ScvdValueOutput } from './scvd-value-output';
 import { ScvdCondition } from './scvd-condition';
 import { getArrayFromJson, getStringFromJson } from './scvd-utils';
+import { ScvdListOut } from './scvd-list-out';
 
 export class ScvdItem extends ScvdBase {
     private _property: ScvdValueOutput | undefined;
@@ -30,9 +30,8 @@ export class ScvdItem extends ScvdBase {
     private _bold: ScvdCondition | undefined;
     private _alert: ScvdCondition | undefined;
     private _item: ScvdItem[] = []; // Array of child items
-    private _list: ScvdList[] = []; // Array of child lists
+    private _listOut: ScvdListOut[] = []; // Array of child lists
     private _print: ScvdPrint[] = []; // Array of child prints
-
 
     constructor(
         parent: ScvdBase | undefined,
@@ -69,11 +68,10 @@ export class ScvdItem extends ScvdBase {
             newItem.readXml(v);
         });
 
-        const list = getArrayFromJson(xml.list);
-        list?.forEach( (v: Json) => {
-            const newList = new ScvdList(this);
-            newList.readXml(v);
-            this.addList(newList);
+        const listOut = getArrayFromJson(xml.list);
+        listOut?.forEach( (v: Json) => {
+            const newListOut = this.addListOut();
+            newListOut.readXml(v);
         });
 
         const print = getArrayFromJson(xml.print);
@@ -143,11 +141,13 @@ export class ScvdItem extends ScvdBase {
         }
     }
 
-    public get list(): ScvdList[] {
-        return this._list;
+    public get listOut(): ScvdListOut[] {
+        return this._listOut;
     }
-    public addList(list: ScvdList) {
-        this._list.push(list);
+    public addListOut(): ScvdListOut {
+        const newItem = new ScvdListOut(this);
+        this._listOut.push(newItem);
+        return newItem;
     }
 
     public get item(): ScvdItem[] {
@@ -169,19 +169,27 @@ export class ScvdItem extends ScvdBase {
         return item;
     }
 
-    public getDisplayName(): string | undefined {
-        return this.property?.getDisplayValue();
+    public getGuiName(): string | undefined {
+        return this.property?.getGuiValue();
     }
 
-    public getDisplayValue(): string | undefined {
-        return this.value?.getDisplayValue();
+    public getGuiChildren(): ScvdBase[] | undefined {
+        const guiItems = [this.item, this.listOut, this.print]
+            .flat()                                 // merge
+            .filter(x => x.getConditionResult())    // filter
+            .sort(this.sortByLine);                 // sort in-place, returned
+        return guiItems && guiItems.length > 0 ? guiItems : undefined;
+    }
+
+    public getGuiValue(): string | undefined {
+        return this.value?.getGuiValue();
     }
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
 
         if(this.value !== undefined) {
-            info.push({ name: 'Value', value: this.value?.getDisplayValue() ?? this.value.getExplorerDisplayName() });
+            info.push({ name: 'Value', value: this.value?.getGuiValue() ?? this.value.getExplorerDisplayName() });
         }
         info.push(...itemInfo);
         return super.getExplorerInfo(info);
@@ -192,8 +200,8 @@ export class ScvdItem extends ScvdBase {
         if(dispEntry !== undefined) {
             return dispEntry;
         }
-        const propertyName = this.getDisplayName() ?? this.property?.getExplorerDisplayName();
-        const valueStr = this.value?.getDisplayValue() ?? this.value?.getExplorerDisplayName();
+        const propertyName = this.getGuiName() ?? this.property?.getExplorerDisplayName();
+        const valueStr = this.value?.getGuiValue() ?? this.value?.getExplorerDisplayName();
         if(propertyName != undefined && valueStr !== undefined && valueStr.length > 0 && propertyName != valueStr) {
             return `${propertyName} = ${valueStr}`;
         }

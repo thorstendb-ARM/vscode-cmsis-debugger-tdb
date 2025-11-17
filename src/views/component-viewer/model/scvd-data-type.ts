@@ -71,7 +71,6 @@ export class ScvdDataType extends ScvdBase {
         return this._type?.getMember(property);
     }
 
-
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
 

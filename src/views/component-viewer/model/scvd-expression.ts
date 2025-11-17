@@ -82,9 +82,7 @@ export class ScvdExpression extends ScvdBase {
     }
 
     public get value(): number | string | undefined {
-        if( this._result === undefined) {
-            this.evaluate();
-        }
+        this.evaluate();
         return this._result;
     }
 
@@ -206,7 +204,7 @@ export class ScvdExpression extends ScvdBase {
         }
         info.push({ name: 'Result', value: this.getResultString() ?? 'undefined' });
         if (this.value) {
-            info.push({ name: 'Value', value: this.getDisplayValue() ?? 'undefined' });
+            info.push({ name: 'Value', value: this.getGuiValue() ?? 'undefined' });
         }
         info.push(...itemInfo);
         return super.getExplorerInfo(info);

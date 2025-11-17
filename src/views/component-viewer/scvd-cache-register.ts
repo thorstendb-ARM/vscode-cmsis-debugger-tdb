@@ -67,8 +67,7 @@ export class ScvdCacheRegister extends ScvdCacheBase<number> {
         const key = this.normalize(registerName);
         const c = this.getOrInit(key, () => 0 as number);
         if (!c.valid || c.dirty) this.refreshFromTargetSync(key);
-        const value = this.getContainer(key)!.value;
-        return value;
+        return this.getContainer(key)!.value;
     }
 
     /** Write: add symbol if missing; refresh first if invalid/dirty; then set & mark dirty (SYNC). */
