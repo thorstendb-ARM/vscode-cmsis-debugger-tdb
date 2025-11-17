@@ -341,6 +341,14 @@ export abstract class ScvdBase {
         return lineNo !== undefined ? lineNo : '';
     }
 
+    protected sortByLine(a: ScvdBase, b: ScvdBase): number {
+        const aLineNum = Number(a.lineNo);
+        const bLineNum = Number(b.lineNo);
+        const aLine = Number.isNaN(aLineNum) ? -1 : aLineNum;
+        const bLine = Number.isNaN(bLineNum) ? -1 : bLineNum;
+        return bLine - aLine;
+    }
+
     public writeAt(byteOffset: number, widthBits: number, value: number | string | bigint): number | string | bigint | undefined {
         console.log(`WriteAt not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}, offset=${byteOffset}, width=${widthBits}, value=${value}`);
         return 1;

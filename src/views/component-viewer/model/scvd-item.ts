@@ -17,11 +17,11 @@
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
 import { ExplorerInfo, Json, ScvdBase } from './scvd-base';
-import { ScvdList } from './scvd-list';
 import { ScvdPrint } from './scvd-print';
 import { ScvdValueOutput } from './scvd-value-output';
 import { ScvdCondition } from './scvd-condition';
 import { getArrayFromJson, getStringFromJson } from './scvd-utils';
+import { ScvdListOut } from './scvd-list-out';
 
 export class ScvdItem extends ScvdBase {
     private _property: ScvdValueOutput | undefined;
@@ -30,9 +30,8 @@ export class ScvdItem extends ScvdBase {
     private _bold: ScvdCondition | undefined;
     private _alert: ScvdCondition | undefined;
     private _item: ScvdItem[] = []; // Array of child items
-    private _list: ScvdList[] = []; // Array of child lists
+    private _listOut: ScvdListOut[] = []; // Array of child lists
     private _print: ScvdPrint[] = []; // Array of child prints
-
 
     constructor(
         parent: ScvdBase | undefined,
@@ -69,11 +68,11 @@ export class ScvdItem extends ScvdBase {
             newItem.readXml(v);
         });
 
-        const list = getArrayFromJson(xml.list);
-        list?.forEach( (v: Json) => {
-            const newList = new ScvdList(this);
-            newList.readXml(v);
-            this.addList(newList);
+        const listOut = getArrayFromJson(xml.list);
+        listOut?.forEach( (v: Json) => {
+            const newListOut = new ScvdListOut(this);
+            newListOut.readXml(v);
+            this.addListOut(newListOut);
         });
 
         const print = getArrayFromJson(xml.print);
@@ -143,11 +142,11 @@ export class ScvdItem extends ScvdBase {
         }
     }
 
-    public get list(): ScvdList[] {
-        return this._list;
+    public get listOut(): ScvdListOut[] {
+        return this._listOut;
     }
-    public addList(list: ScvdList) {
-        this._list.push(list);
+    public addListOut(list: ScvdListOut) {
+        this._listOut.push(list);
     }
 
     public get item(): ScvdItem[] {
@@ -174,7 +173,7 @@ export class ScvdItem extends ScvdBase {
     }
 
     public getGuiChildren(): ScvdBase[] | undefined {
-        const combined: ScvdBase[] = [...this.item, ...this.list, ...this.print].sort((a, b) => {
+        const combined: ScvdBase[] = [...this.item, ...this.listOut, ...this.print].sort((a, b) => {
             const aLineNum = Number(a.lineNo);
             const bLineNum = Number(b.lineNo);
             const aLine = Number.isNaN(aLineNum) ? -1 : aLineNum;
