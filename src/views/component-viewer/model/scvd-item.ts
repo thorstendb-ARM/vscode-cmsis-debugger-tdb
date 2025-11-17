@@ -169,19 +169,19 @@ export class ScvdItem extends ScvdBase {
         return item;
     }
 
-    public getDisplayName(): string | undefined {
-        return this.property?.getDisplayValue();
+    public getGuiName(): string | undefined {
+        return this.property?.getGuiValue();
     }
 
-    public getDisplayValue(): string | undefined {
-        return this.value?.getDisplayValue();
+    public getGuiValue(): string | undefined {
+        return this.value?.getGuiValue();
     }
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
 
         if(this.value !== undefined) {
-            info.push({ name: 'Value', value: this.value?.getDisplayValue() ?? this.value.getExplorerDisplayName() });
+            info.push({ name: 'Value', value: this.value?.getGuiValue() ?? this.value.getExplorerDisplayName() });
         }
         info.push(...itemInfo);
         return super.getExplorerInfo(info);
@@ -192,8 +192,8 @@ export class ScvdItem extends ScvdBase {
         if(dispEntry !== undefined) {
             return dispEntry;
         }
-        const propertyName = this.getDisplayName() ?? this.property?.getExplorerDisplayName();
-        const valueStr = this.value?.getDisplayValue() ?? this.value?.getExplorerDisplayName();
+        const propertyName = this.getGuiName() ?? this.property?.getExplorerDisplayName();
+        const valueStr = this.value?.getGuiValue() ?? this.value?.getExplorerDisplayName();
         if(propertyName != undefined && valueStr !== undefined && valueStr.length > 0 && propertyName != valueStr) {
             return `${propertyName} = ${valueStr}`;
         }

@@ -70,6 +70,9 @@ export interface DataHost {
   getBitWidth?(ref: ScvdBase): number;                            // bits
   getElementBitWidth?(ref: ScvdBase): number;                     // bits (if array of scalars)
 
+  // **** OPTIONAL: provide an element model (prototype/type) for array-ish refs
+  getElementRef?(ref: ScvdBase): ScvdBase | undefined;
+
   // Optional named intrinsics
   // Note: __GetRegVal(reg) is special-cased (no container); others use the evalIntrinsic convention
   __CalcMemUsed?(container: RefContainer, args: any[]): any;
@@ -182,6 +185,32 @@ function gtVals(a: any, b: any): boolean { return (typeof a === 'bigint' || type
 function gteVals(a: any, b: any): boolean { return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) >= toBigInt(b)) : (asNumber(a) >= asNumber(b)); }
 
 /* =============================================================================
+ * Small utility to avoid container clobbering during nested evals
+ * ============================================================================= */
+
+function withIsolatedContainer<T>(ctx: EvalContext, fn: () => T): T {
+    const c = ctx.container;
+    const saved = {
+        anchor: c.anchor,
+        offsetBytes: c.offsetBytes,
+        widthBits: c.widthBits,
+        current: c.current,
+        member: c.member,
+        index: c.index,
+    };
+    try {
+        return fn();
+    } finally {
+        c.anchor = saved.anchor;
+        c.offsetBytes = saved.offsetBytes;
+        c.widthBits = saved.widthBits;
+        c.current = saved.current;
+        c.member = saved.member;
+        c.index = saved.index;
+    }
+}
+
+/* =============================================================================
  * Strict ref/value utilities (single-root + contextual hints)
  * ============================================================================= */
 
@@ -214,41 +243,80 @@ function mustRef(node: ASTNode, ctx: EvalContext, forWrite = false): ScvdBase {
             ctx.container.current = ref;
             return ref;
         }
+
         case 'MemberAccess': {
             const ma = node as MemberAccess;
-            // Resolve the base of the member chain first
+
+            // Fast-path: if object is an ArrayIndex, compute index ONCE, then resolve the member on the element.
+            if (ma.object.kind === 'ArrayIndex') {
+                const ai = ma.object as ArrayIndex;
+
+                // Resolve array symbol and establish anchor/current
+                const baseRef = mustRef(ai.array, ctx, forWrite);
+
+                // Evaluate index in isolation (so i/j/mem.length don't clobber outer anchor)
+                const idx = asNumber(withIsolatedContainer(ctx, () => evalNode(ai.index, ctx))) | 0;
+
+                // Apply array byte offset
+                const stride = ctx.data.getElementStride?.(baseRef);
+                if (typeof stride === 'number') addOffset(ctx, idx * stride);
+
+                // Base for member resolution = element model if host provides one
+                const baseForMember = ctx.data.getElementRef?.(baseRef) ?? baseRef;
+                ctx.container.current = baseForMember;
+
+                // Resolve member
+                const child = ctx.data.getMemberRef(ctx.container, ma.property, forWrite);
+                if (!child) throw new Error(`Missing member '${ma.property}'`);
+
+                // Accumulate member offset & width
+                const off = ctx.data.getMemberOffset?.(baseForMember, child);
+                if (typeof off === 'number') addOffset(ctx, off);
+                setWidth(ctx, ctx.data.getBitWidth?.(child));
+
+                // Finalize hints
+                ctx.container.member = child;
+                ctx.container.current = child;
+                return child;
+            }
+
+            // Default path: resolve base then member
             const baseRef = mustRef(ma.object, ctx, forWrite);
-            // Prepare container for host member lookup
+
             ctx.container.current = baseRef;
-            // Resolve child
             const child = ctx.data.getMemberRef(ctx.container, ma.property, forWrite);
             if (!child) throw new Error(`Missing member '${ma.property}'`);
-            // Accumulate member offset if host provides metadata
+
             const off = ctx.data.getMemberOffset?.(baseRef, child);
             if (typeof off === 'number') addOffset(ctx, off);
-            // Update width from child (best-effort)
             setWidth(ctx, ctx.data.getBitWidth?.(child));
-            // Finalize hinting for chained lookups
+
             ctx.container.member = child;
             ctx.container.current = child;
             return child;
         }
+
         case 'ArrayIndex': {
             const ai = node as ArrayIndex;
+
+            // Resolve array base (establishes anchor/current on the array)
             const baseRef = mustRef(ai.array, ctx, forWrite);
-            const idxVal = evalNode(ai.index, ctx);
-            const idx = asNumber(idxVal) | 0;
-            // Consume index into accumulated offset when metadata is available
+
+            // Evaluate the index in isolation
+            const idx = asNumber(withIsolatedContainer(ctx, () => evalNode(ai.index, ctx))) | 0;
+
+            // Translate index -> byte offset
             const stride = ctx.data.getElementStride?.(baseRef);
             if (typeof stride === 'number') addOffset(ctx, idx * stride);
-            // Clear transient index hint (we're doing offset-first)
-            ctx.container.index = undefined;
-            // Current target remains the base for subsequent member access
-            ctx.container.current = baseRef;
+
+            // Current target remains base for subsequent member access (or element if host exposes it)
+            ctx.container.current = ctx.data.getElementRef?.(baseRef) ?? baseRef;
+
             // Update width to element width if host exposes it
             setWidth(ctx, ctx.data.getElementBitWidth?.(baseRef));
             return baseRef;
         }
+
         case 'EvalPointCall': {
             const ep = node as EvalPointCall;
             // Only __FindSymbol may be used as a reference-returning intrinsic
@@ -324,13 +392,9 @@ export function evalNode(node: ASTNode, ctx: EvalContext): any {
             const ma = node as MemberAccess;
             // Support pseudo-members that evaluate to numbers: obj._count and obj._addr
             if (ma.property === '_count' || ma.property === '_addr') {
-                // Resolve the base object reference to establish context
                 const baseRef = mustRef(ma.object, ctx, false);
-                // Record the base used for this member access (hint for host callbacks)
                 ctx.container.member = baseRef;
-                // Ensure current points at the base for host callbacks
                 ctx.container.current = baseRef;
-                // NOTE: preserve any accumulated offset; pseudo-members are value-only
                 const host = ctx.data as any;
                 const fn = host[ma.property] as ((container: RefContainer) => any) | undefined;
                 if (typeof fn !== 'function') throw new Error(`Missing pseudo-member ${ma.property}`);
@@ -338,7 +402,7 @@ export function evalNode(node: ASTNode, ctx: EvalContext): any {
                 if (out === undefined) throw new Error(`Pseudo-member ${ma.property} returned undefined`);
                 return out;
             }
-            // Default path: resolve member as a reference and read its value
+            // Default: resolve member and read its value
             mustRef(node, ctx, false);
             return mustRead(ctx);
         }
@@ -489,7 +553,7 @@ function evalBinary(node: BinaryExpression, ctx: EvalContext): any {
 }
 
 /* =============================================================================
- * Printf helpers
+ * Printf helpers (callback-first, spec-agnostic with sensible fallbacks)
  * ============================================================================= */
 
 function formatValue(spec: FormatSegment['spec'], v: any, ctx?: EvalContext): string {
@@ -497,14 +561,13 @@ function formatValue(spec: FormatSegment['spec'], v: any, ctx?: EvalContext): st
     if (typeof override === 'string') return override;
 
     switch (spec) {
+        case '%':  return '%';
         case 'd':  return (typeof v === 'bigint') ? v.toString(10) : String((asNumber(v) | 0));
         case 'u':  return (typeof v === 'bigint') ? (v & U64_MASK).toString(10) : String((asNumber(v) >>> 0));
         case 'x':  return (typeof v === 'bigint') ? (v & U64_MASK).toString(16) : (asNumber(v) >>> 0).toString(16);
         case 't':  return truthy(v) ? 'true' : 'false';
         case 'S':  return typeof v === 'string' ? v : String(v);
-            // Domain-specific passthroughs (print as-is)
         case 'C': case 'E': case 'I': case 'J': case 'N': case 'M': case 'T': case 'U': return String(v);
-        case '%':  return '%';
         default:   return String(v);
     }
 }
@@ -573,12 +636,9 @@ export function evaluateParseResult(pr: ParseResult, ctx: EvalContext, container
         const v = evalNode(pr.ast, ctx);
         return normalizeEvaluateResult(v);
     } catch (e) {
-    // Intentionally swallow and surface as undefined for strict error semantics.
-    // (During debugging, consider rethrowing or logging more detail here.)
         console.error('Error evaluating parse result:', pr, e);
         return undefined;
     } finally {
-    // Restore base and clear transient addressing state
         if (override) ctx.container.base = prevBase;
         ctx.container.anchor = saved.anchor;
         ctx.container.offsetBytes = saved.offsetBytes;
@@ -588,3 +648,5 @@ export function evaluateParseResult(pr: ParseResult, ctx: EvalContext, container
         ctx.container.index = saved.index;
     }
 }
+
+

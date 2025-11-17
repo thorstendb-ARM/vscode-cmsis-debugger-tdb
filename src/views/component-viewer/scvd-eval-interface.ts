@@ -1,225 +1,276 @@
-/* =============================================================================
- * ScvdEvalInterface: DataHost implementation for the offset-first evaluator
- * - Works with the updated evaluator that accumulates anchor/offset/width
- * - No legacy fallback: reads/writes are performed via (anchor, offsetBytes, widthBytes)
- * - No unsafe casts in implementation logic
- * - Assumes ScvdBase exposes the required primitives:
- *     getSymbol(name), getMember(prop), getAddress(),
- *     getElementStride(), getMemberOffset(child),
- *     getBitWidth(), getElementBitWidth(), getSize(), getElementCount(),
- *     readAt(byteOffset, widthBits), writeAt(byteOffset, widthBits, value),
- *     getValue(), setValue(value)
- * ============================================================================= */
+// src/views/component-viewer/scvd-eval-interface.ts
+// DataHost using EvalSymbolCache + Cm81MRegisterCache, with:
+//  - per-instance virtual vars (auto-add on first use)
+//  - optional auto-declare unknown globals on write
+//  - module-level helpers to add/read globals without host reference
 
-import { DataHost, RefContainer } from './evaluator';
-import { ScvdBase } from './model/scvd-base';
-import type { TargetFetchFn } from './scvd-cache-base';
-import { ScvdCacheRegister, MockRegisterTarget } from './scvd-cache-register';
-import { ScvdCacheVariable, MockMemoryTarget } from './scvd-cache-variable';
+import type { DataHost, RefContainer } from './evaluator';
+import type { ScvdBase } from './model/scvd-base';
+import { ScvdVar } from './model/scvd-var';
+import { EvalSymbolCache } from './eval-symbol-cache';
+import { Cm81MRegisterCache, createMockCm81MRegisterReader } from './cm81m-registers';
+import type { VarInitHook } from './var-init-callback';
 
-/** Build a register cache wired to a mock Cortex-M register target. */
-export function createRegisterCacheWithMock(initial?: Partial<Record<string, number>>) {
-    const regTarget = new MockRegisterTarget(initial);
-    const regFetch: TargetFetchFn = (expr) => regTarget.fetch(expr);
-    const regCache = new ScvdCacheRegister(regFetch);
-    return { regCache, regFetch, regTarget };
+export type DeclareGlobalFn = (base: ScvdBase, name: string) => ScvdVar | undefined;
+
+/* ---------------- internal helpers ---------------- */
+
+function widthBytesFrom(container: RefContainer, host: ScvdEvalInterface, ref: ScvdBase): 1 | 2 | 4 {
+    const bits: number = (container.widthBits ?? (host.getBitWidth(ref) ?? 0)) | 0;
+    const w = Math.max(1, Math.ceil(bits / 8));
+    return (w === 1 || w === 2 || w === 4) ? (w as 1 | 2 | 4) : 4;
+}
+function isTopLevelVar(container: RefContainer): boolean {
+    return !!(container.current && container.anchor === container.current);
 }
 
-/** Build a variable cache wired to a mock memory target, seeding optional symbols. */
-export function createVariableCacheWithMock(seed?: Record<string, Uint8Array>) {
-    const memTarget = new MockMemoryTarget();
-    if (seed) {
-        for (const [name, bytes] of Object.entries(seed)) memTarget.seed(name, bytes);
-    }
-    const memFetch: TargetFetchFn = (expr) => memTarget.fetch(expr);
-    const varCache = new ScvdCacheVariable(memFetch);
-    return { varCache, memFetch, memTarget };
-}
+/* ========================================================================== */
+/*                               MAIN HOST                                    */
+/* ========================================================================== */
 
 export class ScvdEvalInterface implements DataHost {
-    private _registerCache: ScvdCacheRegister;
-    private _variableCache: ScvdCacheVariable;
+    readonly cache = new EvalSymbolCache();
+    readonly regs: Cm81MRegisterCache;
 
-    constructor(
-    ) {
-        const { regCache } = createRegisterCacheWithMock();
-        this._registerCache = regCache;
+    private ensureVarsOnAccess: boolean;
+    private varInit: VarInitHook | undefined;
 
-        const { varCache } = createVariableCacheWithMock();
-        this._variableCache = varCache;
+    private autoDeclareGlobalsOnWrite: boolean;
+    private declareGlobal: DeclareGlobalFn | undefined;
+
+    constructor(init?: {
+    targetSymbols?: Array<{ name: string; totalSize: number; readChunk: (off: number, len: number) => Uint8Array; chunkSize?: number }>;
+    globalVars?: Record<string, number>;
+    readRegister?: (name: string) => number | undefined;
+    ensureVarsOnAccess?: boolean;       // default: true
+    varInit?: VarInitHook;
+    autoDeclareGlobalsOnWrite?: boolean; // default: false
+    declareGlobal?: DeclareGlobalFn;
+  }) {
+        init?.targetSymbols?.forEach(s => this.cache.addTargetSymbol(s.name, s.totalSize, s.readChunk, s.chunkSize));
+        if (init?.globalVars) for (const [k, v] of Object.entries(init.globalVars)) this.cache.addGlobalVar(k, v);
+
+        this.regs = new Cm81MRegisterCache(init?.readRegister ?? createMockCm81MRegisterReader());
+        this.ensureVarsOnAccess = init?.ensureVarsOnAccess ?? true;
+        this.varInit = init?.varInit;
+
+        this.autoDeclareGlobalsOnWrite = init?.autoDeclareGlobalsOnWrite ?? false;
+        this.declareGlobal = init?.declareGlobal;
     }
 
-    get registerCache(): ScvdCacheRegister {
-        return this._registerCache;
+    /* ---------------- public utility for statement engines ---------------- */
+
+    /** Ensure a top-level ScvdVar symbol exists in the model and seed the cache. */
+    ensureGlobalSymbol(base: ScvdBase, name: string, initial?: number): ScvdVar | undefined {
+        const existing = (base as any).getSymbol?.(name) as ScvdVar | undefined;
+        if (existing) {
+            if (initial !== undefined) this.cache.vars.ensureGlobal(name, initial >>> 0);
+            return existing;
+        }
+        if (!this.declareGlobal) return undefined;
+        const created = this.declareGlobal(base, name);
+        if (created) {
+            const seed = (initial !== undefined)
+                ? initial
+                : (this.varInit?.({ kind: 'global', container: { base } as any, anchor: created, symbolName: name, varName: name }) ?? 0);
+            this.cache.vars.ensureGlobal(name, (Number(seed) >>> 0));
+        }
+        return created;
     }
 
-    get variableCache(): ScvdCacheVariable {
-        return this._variableCache;
-    }
+    /* ---------------- Resolution (DataHost) ---------------- */
 
-    getSymbolRef(container: RefContainer, name: string, _forWrite?: boolean): ScvdBase | undefined {
-        console.log(`GetSymbolRef: name=${name}, base=${container.base?.getExplorerDisplayName()}`);
-        const symbol = container.base.getSymbol(name);
+    getSymbolRef(container: RefContainer, name: string, forWrite?: boolean): ScvdBase | undefined {
+        let symbol = (container.base as any).getSymbol?.(name) as ScvdVar | undefined;
+
+        // Auto-declare unknown globals on write if configured
+        if (!symbol && forWrite && this.autoDeclareGlobalsOnWrite && this.declareGlobal) {
+            const created = this.declareGlobal(container.base, name);
+            if (created) {
+                const seed = this.varInit?.({
+                    kind: 'global', container, anchor: created, symbolName: name, varName: name
+                }) ?? 0;
+                this.cache.vars.ensureGlobal(name, (Number(seed) >>> 0));
+                symbol = created;
+            }
+        }
+
+        if (symbol) container.current = symbol;
         return symbol;
     }
 
-    getMemberRef(container: RefContainer, property: string, _forWrite?: boolean): ScvdBase | undefined {
-        console.log(`GetMemberRef: property=${property}, current=${container.current?.getExplorerDisplayName()}`);
-        const base: ScvdBase | undefined = container.current;
+    getMemberRef(container: RefContainer, property: string): ScvdBase | undefined {
+        const base = container.current;
         if (!base) return undefined;
-        const member = base.getMember(property);
-        return member;
+
+        // Try direct member
+        let m = (base as any).getMember?.(property) as ScvdBase | undefined;
+
+        // If base is an array-like, try element type's member
+        if (!m) {
+            const elem = (base as any).getElementRef?.()
+        || (base as any).getElementType?.()
+        || (base as any).getElementPrototype?.();
+            if (elem) m = (elem as any).getMember?.(property);
+        }
+
+        if (m) container.current = m;
+        return m;
     }
 
-    /* =============================
-   * Metadata (used by evaluator to build offsets)
-   * ============================= */
+    /* ---------------- Metadata (delegated to ScvdBase) ---------------- */
 
-    // the byte step from arr[i] to arr[i+1] (often sizeof(TCB), but it can be larger if there are hardware gaps)
-    // Width = how many bits to read, Stride = how far to jump for the next element.
-    getElementStride(ref: ScvdBase): number {
-        console.log(`GetElementStride: item=${ref.getExplorerDisplayName()}`);
-        return ref.getElementStride();
-    }
+    getElementStride(ref: ScvdBase): number { return (ref as any).getElementStride?.() ?? 0; }
+    getMemberOffset(base: ScvdBase, member: ScvdBase): number { return (base as any).getMemberOffset?.(member) ?? 0; }
+    getBitWidth(ref: ScvdBase): number { return (ref as any).getBitWidth?.() ?? 0; }
+    getElementBitWidth(ref: ScvdBase): number { return (ref as any).getElementBitWidth?.() ?? 0; }
 
-    getMemberOffset(base: ScvdBase, member: ScvdBase): number {
-        console.log(`GetMemberOffset: base=${base.getExplorerDisplayName()}, member=${member.getExplorerDisplayName()}`);
-        return base.getMemberOffset(member);
-    }
-
-    getBitWidth(ref: ScvdBase): number {
-        console.log(`GetBitWidth: item=${ref.getExplorerDisplayName()}`);
-        return ref.getBitWidth();
-    }
-
-    getElementBitWidth(ref: ScvdBase): number {
-        console.log(`GetElementBitWidth: item=${ref.getExplorerDisplayName()}`);
-        return ref.getElementBitWidth();
-    }
-
-    /* =============================
-   * Read / Write (anchor + offsetBytes + widthBytes)
-   * ============================= */
+    /* ---------------- Read/Write via caches ---------------- */
 
     readValue(container: RefContainer): number | string | bigint | undefined {
-        console.log(`ReadValue: anchor=${container.anchor?.getExplorerDisplayName()}, offsetBytes=${container.offsetBytes}, widthBits=${container.widthBits}`);
-        // Require an anchor (top-level symbol) established by the evaluator
         const anchor: ScvdBase | undefined = container.anchor ?? container.current;
         if (!anchor) return undefined;
 
-        const byteOffset: number = container.offsetBytes ?? 0;
-        // Prefer explicit widthBits from evaluator; convert to bytes. Otherwise derive from anchor.
-        const widthBytes: number = container.widthBits !== undefined
-            ? Math.max(1, Math.ceil(container.widthBits / 8))
-            : Math.max(1, Math.ceil(anchor.getBitWidth() / 8));
+        const symName = (anchor as any)?.name as string | undefined;
+        if (!symName) return undefined;
 
-        const symName = anchor.name;
-        if( symName !== undefined) {
-            const value = this.variableCache.readUint(symName, byteOffset, widthBytes as 1 | 2 | 4);
-            return value;
+        const member = container.member;
+
+        // Virtual member var (per-instance)
+        if (member instanceof ScvdVar) {
+            const varName = (member as any).name as string | undefined;
+            if (!varName) return undefined;
+            const byteOffset = container.offsetBytes ?? 0;
+
+            if (this.ensureVarsOnAccess && !this.cache.vars.hasBound(symName, byteOffset, varName)) {
+                const initVal = this.varInit?.({
+                    kind: 'bound', container, anchor, member: member as ScvdVar,
+                    symbolName: symName, byteOffset, varName,
+                });
+                this.cache.vars.ensureBound(symName, byteOffset, varName, (initVal === undefined ? 0 : Number(initVal)) >>> 0);
+            }
+            return this.cache.vars.readBound(symName, byteOffset, varName);
         }
-        return undefined;
+
+        // Top-level helper var (global)
+        if (isTopLevelVar(container) && (container.current instanceof ScvdVar)) {
+            const varName = (container.current as any).name as string | undefined;
+            if (!varName) return undefined;
+            if (this.ensureVarsOnAccess && !this.cache.vars.hasGlobal(varName)) {
+                const initVal = this.varInit?.({
+                    kind: 'global', container, anchor, symbolName: symName, varName,
+                });
+                this.cache.vars.ensureGlobal(varName, (initVal === undefined ? 0 : Number(initVal)) >>> 0);
+            }
+            return this.cache.vars.readGlobal(varName);
+        }
+
+        // Memory-backed target read
+        const width = widthBytesFrom(container, this, anchor);
+        const off = container.offsetBytes ?? 0;
+        return this.cache.target.readUint(symName, off, width);
     }
 
-    writeValue(container: RefContainer, value: number | string | bigint): number | string | bigint | undefined {
-        console.log(`WriteValue: anchor=${container.anchor?.getExplorerDisplayName()}, offsetBytes=${container.offsetBytes}, widthBits=${container.widthBits}, value=${value}`);
+    writeValue(container: RefContainer, value: number | string | bigint): any {
         const anchor: ScvdBase | undefined = container.anchor ?? container.current;
         if (!anchor) return undefined;
 
-        const byteOffset: number = container.offsetBytes ?? 0;
-        const widthBytes: number = container.widthBits !== undefined
-            ? Math.max(1, Math.ceil(container.widthBits / 8))
-            : Math.max(1, Math.ceil(anchor.getBitWidth() / 8));
+        const symName = (anchor as any)?.name as string | undefined;
+        if (!symName) return undefined;
 
-        const symName = anchor.name;
-        if( symName !== undefined) {
-            this.variableCache.writeUint(symName, byteOffset, widthBytes as 1 | 2 | 4, Number(value));
-            return value;
+        const member = container.member;
+
+        // Virtual member var (per-instance)
+        if (member instanceof ScvdVar) {
+            const varName = (member as any).name as string | undefined;
+            if (!varName) return undefined;
+            const byteOffset = container.offsetBytes ?? 0;
+
+            if (this.ensureVarsOnAccess && !this.cache.vars.hasBound(symName, byteOffset, varName)) {
+                const initVal = this.varInit?.({
+                    kind: 'bound', container, anchor, member: member as ScvdVar,
+                    symbolName: symName, byteOffset, varName,
+                });
+                this.cache.vars.ensureBound(symName, byteOffset, varName, (initVal === undefined ? 0 : Number(initVal)) >>> 0);
+            }
+            const ok = this.cache.vars.writeBound(symName, byteOffset, varName, Number(value));
+            return ok ? value : undefined;
         }
-        return undefined;
+
+        // Top-level helper var (global)
+        if (isTopLevelVar(container) && (container.current instanceof ScvdVar)) {
+            const varName = (container.current as any).name as string | undefined;
+            if (!varName) return undefined;
+            if (this.ensureVarsOnAccess && !this.cache.vars.hasGlobal(varName)) {
+                const initVal = this.varInit?.({
+                    kind: 'global', container, anchor, symbolName: symName, varName,
+                });
+                this.cache.vars.ensureGlobal(varName, (initVal === undefined ? 0 : Number(initVal)) >>> 0);
+            }
+            const ok = this.cache.vars.writeGlobal(varName, Number(value));
+            return ok ? value : undefined;
+        }
+
+        // Memory-backed target write
+        const width = widthBytesFrom(container, this, anchor);
+        const off = container.offsetBytes ?? 0;
+        const ok = this.cache.target.writeUint(symName, off, width, Number(value));
+        return ok ? value : undefined;
     }
 
-    /* =============================
-   * Optional hooks
-   * ============================= */
-
-    resolveColonPath(_container: RefContainer, _parts: string[]): ScvdBase | number | string | undefined {
-        return undefined;
-    }
-
-    stats(): { symbols?: number; bytesUsed?: number } {
-    // If your model can expose detailed stats, override this. Empty object satisfies the interface.
-        return {};
-    }
-
-    /* =============================
-   * Intrinsics (DataHost)
-   * ============================= */
-
-    __CalcMemUsed(_container: RefContainer, _args: unknown[]): number {
-        const s = this.stats?.();
-        if (s?.bytesUsed != null) return s.bytesUsed;
-        if (s?.symbols != null) return s.symbols * 16; // heuristic fallback
-        return 0;
-    }
+    /* ---------------- Intrinsics ---------------- */
 
     __FindSymbol(container: RefContainer, args: unknown[]): ScvdBase | undefined {
-        const [name] = args as [unknown?];
-        if (typeof name !== 'string') return undefined;
-        const ref = container.base.getSymbol(name);
-        return ref;
+        const a = args as unknown[];
+        const name = (a && typeof a[0] === 'string') ? (a[0] as string) : undefined;
+        if (!name) return undefined;
+        return (container.base as any).getSymbol?.(name) ?? undefined;
     }
 
     __GetRegVal(regName: string): number | undefined {
-        let value = undefined;
-        try {
-            console.log(`__GetRegVal: regName=${regName}`);
-            value = this.registerCache.read(regName);
-        } catch (e) {
-            console.error(`__GetRegVal: regName=${regName}, error=${e}`);
-        }
-        return value;
-    }
-
-    __Offset_of(container: RefContainer, args: unknown[]): number {
-    // If called as __Offset_of("member") with current set to a struct base
-        const [memberName] = args as [unknown?];
-        if (typeof memberName === 'string' && container.current) {
-            const member = container.current.getMember(memberName);
-            return container.current.getMemberOffset(member);
-        }
-        return 0;
-    }
-
-    __size_of(container: RefContainer, _args: unknown[]): number {
-    // Return size in bytes
-        if (container.member) return Math.ceil(container.member.getBitWidth() / 8);
-        if (container.current) return Math.ceil(container.current.getBitWidth() / 8);
-        return 0;
+        return this.regs.read(regName);
     }
 
     __Symbol_exists(container: RefContainer, args: unknown[]): number {
-        const [name] = args as [unknown?];
-        if (typeof name !== 'string') return 0;
-        return container.base.getSymbol(name) ? 1 : 0;
+        const a = args as unknown[];
+        const name = (a && typeof a[0] === 'string') ? (a[0] as string) : undefined;
+        if (!name) return 0;
+        return (container.base as any).getSymbol?.(name) ? 1 : 0;
     }
 
-    __Running(): number | undefined {
-        return 1; // domain-specific: 1 = running, 0 = halted
-    }
+    __Running(): number | undefined { return 1; }
+}
 
-    // Counts the number of items in readlist and read elements.
-    _count(container: RefContainer): number | undefined {
-        const target: ScvdBase | undefined = container.current ?? container.anchor;
-        if (!target) return undefined;
-        return target.getElementCount();
-    }
+/* ========================================================================== */
+/*                     MODULE-LEVEL GLOBAL HELPERS                            */
+/*  Use these when you DON'T have a host reference in scope.                  */
+/*  Make sure to call setActiveEvalHost(...) once during app boot.            */
+/* ========================================================================== */
 
-    // Returns the memory address of a readlist member.
-    _addr(container: RefContainer): number | undefined {
-        const anchor: ScvdBase | undefined = container.anchor ?? container.current;
-        if (!anchor) return undefined;
-        const base = anchor.getAddress();
-        return base ?? undefined;
-    }
+let ACTIVE_EVAL_HOST: ScvdEvalInterface | undefined;
+
+/** Register the active eval host (call once during app bootstrap). */
+export function setActiveEvalHost(host: ScvdEvalInterface): void {
+    ACTIVE_EVAL_HOST = host;
+}
+
+/** Ensure a global symbol exists in the model and seed its value. */
+export function ensureGlobalVar(base: ScvdBase, name: string, initial?: number): ScvdVar | undefined {
+    const h = ACTIVE_EVAL_HOST;
+    if (!h) throw new Error('Active eval host not set. Call setActiveEvalHost(...) first.');
+    return h.ensureGlobalSymbol(base, name, initial);
+}
+
+/** Set or seed the global value in the cache (symbol should already exist). */
+export function setGlobalValue(name: string, value: number): void {
+    const h = ACTIVE_EVAL_HOST;
+    if (!h) throw new Error('Active eval host not set. Call setActiveEvalHost(...) first.');
+    h.cache.vars.ensureGlobal(name, value >>> 0);
+}
+
+/** Read a global value from the cache. */
+export function getGlobalValue(name: string): number | undefined {
+    const h = ACTIVE_EVAL_HOST;
+    if (!h) throw new Error('Active eval host not set. Call setActiveEvalHost(...) first.');
+    return h.cache.vars.readGlobal(name);
 }

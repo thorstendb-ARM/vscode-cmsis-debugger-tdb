@@ -17,7 +17,7 @@
 import { EvalContext } from './evaluator';
 import { ScvdBase } from './model/scvd-base';
 import { ScvdFormatSpecifier } from './model/scvd-format-specifier';
-import { ScvdEvalInterface } from './scvd-eval-interface';
+import { ScvdEvalInterface, setActiveEvalHost } from './scvd-eval-interface';
 
 
 export type PrintfHook = {
@@ -41,7 +41,12 @@ export class ScvdEvalContext {
         baseContainer: ScvdBase
     ) {
         // Create the DataHost (stateless; you can reuse a single instance)
-        this._host = new ScvdEvalInterface();
+        this._host = new ScvdEvalInterface({
+            // …your options…
+            autoDeclareGlobalsOnWrite: true,
+            declareGlobal: (base, name) => (base as any).declareScvdVar?.(name, 32) // example
+        });
+        setActiveEvalHost(this._host);
 
         // Your model’s root ScvdBase (where symbol resolution starts)
         this._ctx = new EvalContext({
