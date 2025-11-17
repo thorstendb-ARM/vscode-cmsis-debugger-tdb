@@ -173,6 +173,17 @@ export class ScvdItem extends ScvdBase {
         return this.property?.getGuiValue();
     }
 
+    public getGuiChildren(): ScvdBase[] | undefined {
+        const combined: ScvdBase[] = [...this.item, ...this.list, ...this.print].sort((a, b) => {
+            const aLine = Number(a.lineNo ?? -1);
+            const bLine = Number(b.lineNo ?? -1);
+            return bLine - aLine;
+        });
+
+        return combined.length > 0 ? combined : undefined;
+    }
+
+
     public getGuiValue(): string | undefined {
         return this.value?.getGuiValue();
     }
