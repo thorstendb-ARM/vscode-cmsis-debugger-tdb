@@ -23,6 +23,7 @@ import { getArrayFromJson, getStringFromJson } from './scvd-utils';
 
 export class ScvdListOut extends ScvdList {
     private _item: ScvdItem[] = [];
+    private _listOut: ScvdListOut[] = []; // Array of child lists
 
     constructor(
         parent: ScvdBase | undefined,
@@ -71,10 +72,21 @@ export class ScvdListOut extends ScvdList {
         return item;
     }
 
-    public getGuiChildren(): ScvdBase[] | undefined {
-        const combined: ScvdBase[] = [...this.item, ...this.list].sort((a, b) => this.sortByLine(a, b));
+    public get listOut(): ScvdListOut[] {
+        return this._listOut;
+    }
+    public addListOut(): ScvdListOut {
+        const newItem = new ScvdListOut(this);
+        this._listOut.push(newItem);
+        return newItem;
+    }
 
-        return combined.length > 0 ? combined : undefined;
+    public getGuiChildren(): ScvdBase[] | undefined {
+        const guiItems = [this.item, this.listOut]
+            .flat()                                 // merge
+            .filter(x => x.getConditionResult())    // filter
+            .sort(this.sortByLine);                 // sort in-place, returned
+        return guiItems && guiItems.length > 0 ? guiItems : undefined;
     }
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {

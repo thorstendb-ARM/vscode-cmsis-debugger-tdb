@@ -70,9 +70,8 @@ export class ScvdItem extends ScvdBase {
 
         const listOut = getArrayFromJson(xml.list);
         listOut?.forEach( (v: Json) => {
-            const newListOut = new ScvdListOut(this);
+            const newListOut = this.addListOut();
             newListOut.readXml(v);
-            this.addListOut(newListOut);
         });
 
         const print = getArrayFromJson(xml.print);
@@ -145,8 +144,10 @@ export class ScvdItem extends ScvdBase {
     public get listOut(): ScvdListOut[] {
         return this._listOut;
     }
-    public addListOut(list: ScvdListOut) {
-        this._listOut.push(list);
+    public addListOut(): ScvdListOut {
+        const newItem = new ScvdListOut(this);
+        this._listOut.push(newItem);
+        return newItem;
     }
 
     public get item(): ScvdItem[] {
@@ -173,17 +174,12 @@ export class ScvdItem extends ScvdBase {
     }
 
     public getGuiChildren(): ScvdBase[] | undefined {
-        const combined: ScvdBase[] = [...this.item, ...this.listOut, ...this.print].sort((a, b) => {
-            const aLineNum = Number(a.lineNo);
-            const bLineNum = Number(b.lineNo);
-            const aLine = Number.isNaN(aLineNum) ? -1 : aLineNum;
-            const bLine = Number.isNaN(bLineNum) ? -1 : bLineNum;
-            return bLine - aLine;
-        });
-
-        return combined.length > 0 ? combined : undefined;
+        const guiItems = [this.item, this.listOut, this.print]
+            .flat()                                 // merge
+            .filter(x => x.getConditionResult())    // filter
+            .sort(this.sortByLine);                 // sort in-place, returned
+        return guiItems && guiItems.length > 0 ? guiItems : undefined;
     }
-
 
     public getGuiValue(): string | undefined {
         return this.value?.getGuiValue();
