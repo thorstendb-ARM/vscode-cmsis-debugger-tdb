@@ -23,18 +23,21 @@ export interface rootObjectOut {
     name?: string | undefined;
     value?: string | undefined;
     condition?: string | undefined;
-    itemsGroup: ItemsGroup;
-    listsGroup: ListsGroup;
+    itemsGroup?: childObjectItem[];
+    listsGroup?: childObjectList[];
+    //itemsGroup: ItemsGroup;
+    //listsGroup: ListsGroup;
 }
 
 export interface childObjectItem {
-    property?: string | undefined;
-    value?: string | undefined;
+    property: string | undefined;
+    value: string | undefined;
     info?: string | undefined;
     condition?: string | undefined;
     bold?: string | undefined;
     alert?: string | undefined;
     children?: childObjectItem[] | undefined;
+    parent: rootObjectOut | childObjectItem;
 }
 
 export interface childObjectList {
@@ -45,6 +48,7 @@ export interface childObjectList {
     condition?: string | undefined;
 }
 
+/*
 export interface ItemsGroup {
     groupName: 'itemsGroup';
     items: childObjectItem[]
@@ -54,9 +58,10 @@ export interface ListsGroup {
     groupName: 'listsGroup';
     lists: childObjectList[]
 }
+*/
 
-export class ComponentViewerTreeDataProvider implements vscode.TreeDataProvider<rootObjectOut | childObjectItem | childObjectList | ItemsGroup | ListsGroup> {
-    private readonly _onDidChangeTreeData = new vscode.EventEmitter<rootObjectOut | ItemsGroup | ListsGroup | void>();
+export class ComponentViewerTreeDataProvider implements vscode.TreeDataProvider<rootObjectOut | childObjectItem | childObjectList> {
+    private readonly _onDidChangeTreeData = new vscode.EventEmitter<rootObjectOut |void>();
     readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
     private _objectOutRoots: rootObjectOut[] = [];
     //private _activeSession: GDBTargetDebugSession | undefined;
@@ -82,65 +87,54 @@ export class ComponentViewerTreeDataProvider implements vscode.TreeDataProvider<
 
     }
 
-    public getTreeItem(element: rootObjectOut | childObjectItem | childObjectList | ItemsGroup | ListsGroup): vscode.TreeItem {
-    // if element is ItemsGroup, return its tree item
-        if ('groupName' in element && element.groupName === 'itemsGroup') {
-            const treeItem = new vscode.TreeItem('Items', vscode.TreeItemCollapsibleState.Collapsed);
+    public getTreeItem(element: rootObjectOut | childObjectItem | childObjectList): vscode.TreeItem {
+        // if element is rootObjectOut, return its corresponding tree item
+        if ('id' in element && element.name !== undefined) {
+            const treeItem = new vscode.TreeItem(element.name, vscode.TreeItemCollapsibleState.Collapsed);
             return treeItem;
         }
 
-        // if element is ListsGroup, return its tree item
-        if ('groupName' in element && element.groupName === 'listsGroup') {
-            const treeItem = new vscode.TreeItem('Lists', vscode.TreeItemCollapsibleState.Collapsed);
-            return treeItem;
-        }
-
-        // if element is rootObjectOut, return its tree item
-        if ('id' in element && ('itemsGroup' in element || 'listsGroup' in element)) {
-            const rootElement = element as rootObjectOut;
-            const treeItem = new vscode.TreeItem(rootElement.name || `Root ${rootElement.id}`, vscode.TreeItemCollapsibleState.Collapsed);
-            return treeItem;
-        }
-
-        // if element is childObjectItem, return its tree item
+        // if element is childObjectItem, return its corresponding tree item
         if ('property' in element) {
-        // childObjectItem
-            const treeItem = new vscode.TreeItem(element.property + ' = ' || 'Item', vscode.TreeItemCollapsibleState.None);
+            const treeItem = new vscode.TreeItem(element.property + ' = ' || 'Item');
+            treeItem.collapsibleState = element.children && element.children.length > 0
+                ? vscode.TreeItemCollapsibleState.Collapsed
+                : vscode.TreeItemCollapsibleState.None;
             treeItem.description = element.value as string;
             return treeItem;
         }
 
-        // if element is childObjectList, return its tree item
-        if ('name' in element && 'start' in element) {
-        // childObjectList
+        // if element is childObjectList, return its corresponding tree item
+        if ('name' in element) {
             const treeItem = new vscode.TreeItem(element.name ?? 'List', vscode.TreeItemCollapsibleState.None);
-            treeItem.description = `start: ${element.start}`;
             return treeItem;
         }
 
         return new vscode.TreeItem('Unknown', vscode.TreeItemCollapsibleState.None);
     }
 
-    public getChildren(element?: rootObjectOut | childObjectItem | childObjectList | ItemsGroup | ListsGroup): Promise<(rootObjectOut | childObjectItem | childObjectList | ItemsGroup | ListsGroup)[]> {
+    public getChildren(element?: rootObjectOut | childObjectItem | childObjectList): Promise<(rootObjectOut | childObjectItem | childObjectList)[]> {
         if (!element) {
             return Promise.resolve(this._objectOutRoots);
         }
 
-        // if element is of the type rootObjectOut, return two group objects; one for items and one for lists
-        if ('id' in element) {
-            return Promise.resolve([element.itemsGroup, element.listsGroup]);
+        // if element is of the type rootObjectOut, return both itemsGroup and listsGroup children
+        if ('id' in element && (element.itemsGroup || element.listsGroup)) {
+            return Promise.resolve([element.itemsGroup, element.listsGroup].flat().filter(Boolean) as (childObjectItem | childObjectList)[]);
         }
 
-        // if element is ItemsGroup, return its items
-        if ('groupName' in element && element.groupName === 'itemsGroup') {
-            return Promise.resolve(element.items);
+        // trying to retrieve children of children
+        /*
+        if ('property' in element) {
+            // Get children from model
+            const children = this.
+            // Populate children array to be returned
+            //const children : childObjectItem [] = element.children?.map( child => {
+            //    const 
+            //})
+            return Promise.resolve(element.children);
         }
-
-        // if element is ListsGroup, return its lists
-        if ('groupName' in element && element.groupName === 'listsGroup') {
-            return Promise.resolve(element.lists);
-        }
-
+        */
         return Promise.resolve([]);
     }
 
@@ -155,7 +149,25 @@ export class ComponentViewerTreeDataProvider implements vscode.TreeDataProvider<
         }
     }
 
-
+    private addRootObject(): void {
+        if(!this._objects?.objects) {
+            return;
+        }
+        for(const objects of this._objects?.objects) {
+            for (const singleOutObject of objects.out) {
+                const root: rootObjectOut = {
+                    id: this._nodeID,
+                    name: singleOutObject.name,
+                    value: singleOutObject.value?.expression,
+                    condition: singleOutObject.cond?.expression?.expression,
+                };
+                this._objectOutRoots.push(root);
+                this._nodeID++;
+            }
+        }
+        this.refresh();
+    }
+    /*
     private addRootObject(): void {
     // make sure a model exists
         if(!this._objects?.objects) {
@@ -166,10 +178,6 @@ export class ComponentViewerTreeDataProvider implements vscode.TreeDataProvider<
             for (const singleOut of objects.out) {
                 const lists: childObjectList [] = [];
                 const items: childObjectItem [] = [];
-                const testList = singleOut.list;
-                const testItem = singleOut.item;
-                console.log('Test List:', testList);
-                console.log('Test Item:', testItem);
                 for (const list of singleOut.list) {
                     const childList: childObjectList = {
                         name: list.name,
@@ -181,9 +189,10 @@ export class ComponentViewerTreeDataProvider implements vscode.TreeDataProvider<
                     lists.push(childList);
                 }
                 for (const item of singleOut.item) {
+                    const propertyValuePair = item.getDisplayEntry();
                     const childItem: childObjectItem = {
-                        property: item.property?.expression?.expression,
-                        value: item.value?.expression?.expression,
+                        property: propertyValuePair.name,
+                        value: propertyValuePair.value,
                         info: item.info,
                         condition: item.cond?.expression?.expression,
                         bold: item.bold?.expression?.expression,
@@ -211,5 +220,5 @@ export class ComponentViewerTreeDataProvider implements vscode.TreeDataProvider<
         }
         this.refresh();
     }
-
+    */
 }
