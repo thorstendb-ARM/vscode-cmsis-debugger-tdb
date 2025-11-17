@@ -175,8 +175,10 @@ export class ScvdItem extends ScvdBase {
 
     public getGuiChildren(): ScvdBase[] | undefined {
         const combined: ScvdBase[] = [...this.item, ...this.list, ...this.print].sort((a, b) => {
-            const aLine = Number(a.lineNo ?? -1);
-            const bLine = Number(b.lineNo ?? -1);
+            const aLineNum = Number(a.lineNo);
+            const bLineNum = Number(b.lineNo);
+            const aLine = Number.isNaN(aLineNum) ? -1 : aLineNum;
+            const bLine = Number.isNaN(bLineNum) ? -1 : bLineNum;
             return bLine - aLine;
         });
 
