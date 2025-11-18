@@ -144,11 +144,6 @@ export abstract class ScvdBase {
         return true;
     }
 
-    public getGuiConditionResult(): boolean {
-        return true;    // use getConditionResult() later
-    }
-
-
     public set tag(value: string | undefined) {
         this._tag = value;
     }
@@ -292,31 +287,6 @@ export abstract class ScvdBase {
         return val;
     }
 
-    // Main Display functions
-    public getGuiEntry(): { name: string | undefined, value: string | undefined } {
-        return { name: this.getGuiName(), value: this.getGuiValue() };
-    }
-
-    public getGuiChildren(): ScvdBase[] | undefined {
-        return undefined;
-    }
-
-    public getGuiName(): string | undefined {
-        return this.name;
-    }
-
-    public getGuiValue(): string | undefined {
-        const val = this.getValue();
-        if (val !== undefined) {
-            if(typeof val === 'number') {
-                return val.toString();
-            } else if(typeof val === 'string') {
-                return val;
-            }
-        }
-        return undefined;
-    }
-
     private getLineNoInfo(item: ScvdBase | undefined): string | undefined {
         if(item === undefined) {
             return undefined;
@@ -409,6 +379,35 @@ export abstract class ScvdBase {
         return 32;
     }
 
+    // ------------  GUI Interface Begin ------------
+    public getGuiEntry(): { name: string | undefined, value: string | undefined } {
+        return { name: this.getGuiName(), value: this.getGuiValue() };
+    }
+
+    public getGuiChildren(): ScvdBase[] | undefined {
+        return undefined;
+    }
+
+    public getGuiName(): string | undefined {
+        return this.name;
+    }
+
+    public getGuiValue(): string | undefined {
+        const val = this.getValue();
+        if (val !== undefined) {
+            if(typeof val === 'number') {
+                return val.toString();
+            } else if(typeof val === 'string') {
+                return val;
+            }
+        }
+        return undefined;
+    }
+
+    public getGuiConditionResult(): boolean {
+        return true;    // use getConditionResult() later
+    }
+    // ------------  GUI Interface End ------------
 
 
     // ---------- Explorer Info ------------
