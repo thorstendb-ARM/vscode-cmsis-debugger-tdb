@@ -118,6 +118,14 @@ export class ScvdOut extends ScvdBase {
         return list;
     }
 
+    public getGuiChildren(): ScvdBase[] | undefined {
+        const guiItems = this.item
+            .filter(x => x.getConditionResult())    // filter
+            .sort(this.sortByLine);                 // sort in-place, returned
+        return guiItems && guiItems.length > 0 ? guiItems : undefined;
+    }
+
+
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
         info.push(...itemInfo);
