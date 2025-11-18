@@ -1,0 +1,233 @@
+/**
+ * Copyright 2025 Arm Limited
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// https://arm-software.github.io/CMSIS-View/main/scvd_expression.html
+
+
+import { parseExpression, ParseResult } from '../parser';
+import {  evaluateParseResult, EvaluateResult } from '../evaluator';
+
+import { ExplorerInfo, ScvdBase } from './scvd-base';
+
+
+export class ScvdExpression extends ScvdBase {
+    private _expression: string | undefined;
+    private _result: number | string | undefined;
+    private _scvdVarName: string | undefined;
+    private _expressionAst: ParseResult | undefined;
+    private _isPrintExpression: boolean = false;
+    private _rangeMin: number | undefined;
+    private _rangeMax: number | undefined;
+
+    constructor(
+        parent: ScvdBase | undefined,
+        expression: string | undefined,
+        scvdVarName: string,
+        isPrintExpression?: boolean,
+    ) {
+        super(parent);
+        this.expression = expression;
+        this.scvdVarName = scvdVarName;
+        this.tag = scvdVarName;
+        this._isPrintExpression = isPrintExpression ?? false;
+    }
+
+    public get expressionAst(): ParseResult | undefined {
+        return this._expressionAst;
+    }
+    public set expressionAst(ast: ParseResult | undefined) {
+        this._expressionAst = ast;
+    }
+
+    public get isPrintExpression(): boolean {
+        return this._isPrintExpression;
+    }
+
+    public get expression(): string | undefined {
+        return this._expression;
+    }
+    public set expression(expression: string | undefined) {
+        if (expression == undefined) {
+            return;
+        }
+
+        this._expression = expression;
+        this._expressionAst = undefined;
+        this._result = undefined;
+    }
+
+    public evaluateExpression(): EvaluateResult {
+        if(this.expressionAst === undefined || this.evalContext === undefined) {
+            return undefined;
+        }
+        const result = evaluateParseResult(this.expressionAst, this.evalContext /*, this*/); // pass 'this' for local variable resolution
+        return result;
+    }
+
+    public get result(): number | string | undefined {
+        return this._result;
+    }
+
+    public get value(): number | string | undefined {
+        this.evaluate();
+        return this._result;
+    }
+
+    public getValue(): number | undefined {
+        return (typeof this.value === 'number') ? this.value : undefined;
+    }
+
+    public setValue(val: number): number | undefined {
+        if(typeof this._result === 'number') {
+            this._result = val;
+        } else {
+            this.expression = val.toString();
+            this.configure();
+        }
+        return val;
+    }
+
+    public get scvdVarName(): string | undefined {
+        return this._scvdVarName;
+    }
+    public set scvdVarName(value: string | undefined) {
+        this._scvdVarName = value;
+    }
+
+    public setMinMax(min: number | undefined, max: number | undefined) {
+        this._rangeMin = min;
+        this._rangeMax = max;
+    }
+
+    public getMinMax(): { min: number | undefined; max: number | undefined } | undefined {
+        return { min: this._rangeMin, max: this._rangeMax };
+    }
+
+    public getResultBoolean(): boolean {
+        return typeof this.value === 'number' && this.value > 0;
+    }
+
+    public evaluate() {
+        if(this.expressionAst !== undefined) {  // AST exists
+            if(this.expressionAst.constValue === undefined) {   // not a constant expression
+                const result = this.evaluateExpression();
+                if(result !== undefined) {
+                    this._result = result;
+                }
+            } else {    // constant expression
+                this._result = this.expressionAst.constValue;
+            }
+        }
+    }
+
+    private parseExpression(): boolean {
+        const expression = this.expression;
+        if (expression === undefined) {
+            return false;
+        }
+
+        if(this.expressionAst === undefined) {  // if already parsed by dependency, skip parsing
+            const expressionAst = parseExpression(expression, this.isPrintExpression);
+            if(expressionAst !== undefined && expressionAst.diagnostics.length === 0) {
+                this.expressionAst = expressionAst;
+            }
+        }
+
+        return true;
+    }
+
+    public configure(): boolean {
+        this.parseExpression();
+        return super.configure();
+    }
+
+    public validate(prevResult: boolean): boolean {
+        const expression = this.expression;
+        if (expression === undefined) {
+            console.error(this.getLineInfoStr(), 'Expression is empty.');
+            return super.validate(false);
+        }
+
+        const expressionAst = this.expressionAst;
+        if(expressionAst === undefined) {
+            console.error(this.getLineInfoStr(), 'Expression AST is undefined for expression: ', expression);
+            return super.validate(false);
+        }
+        if(expressionAst.diagnostics.length > 0) {
+            console.error(this.getLineInfoStr(), 'Expression AST has diagnostics for expression: ', expression, '\nDiagnostics: ', expressionAst.diagnostics);
+            return super.validate(false);
+        }
+
+        return super.validate(prevResult && true);
+    }
+
+    public debug(): boolean {
+        this.evaluate();
+        console.log(this.getLineInfoStr(), 'Expr:', this.expression, '\nResult:', this.getResultString());
+
+        return super.debug();
+    }
+
+    public getResultString(): string | undefined {
+        this.evaluate();
+        if(this._result !== undefined) {
+            if (typeof this._result === 'number') {
+                return this._result.toString();
+            } else if (typeof this._result === 'string') {
+                return this._result;
+            }
+        }
+        return undefined;
+    }
+
+
+    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
+        const info: ExplorerInfo[] = [];
+        if(this.scvdVarName) {
+            info.push({ name: 'Var', value: this.scvdVarName });
+        }
+        if (this.expression) {
+            info.push({ name: 'Expression', value: this.expression });
+        }
+        info.push({ name: 'Result', value: this.getResultString() ?? 'undefined' });
+        if (this.value) {
+            info.push({ name: 'Value', value: this.getGuiValue() ?? 'undefined' });
+        }
+        info.push(...itemInfo);
+        return super.getExplorerInfo(info);
+    }
+
+    public getExplorerDisplayName(): string {
+        const dispEntry = this.getExplorerDisplayEntry();
+        if(dispEntry !== undefined) {
+            return dispEntry;
+        }
+        const scvdVarName = this.scvdVarName ?? '';
+        const expression = this.expression ?? '';
+        const resultStr = this.getResultString();
+        /*const firstIdx = [expression.indexOf('='), expression.indexOf('(')]
+            .filter(i => i !== -1)
+            .reduce((min, i) => (min === -1 || i < min ? i : min), -1);
+        if (firstIdx !== -1) {
+            const exprStr = expression.substring(0, firstIdx).trim();
+            if (exprStr) {
+                return scvdVarName + ': ' + exprStr;
+            }
+        }*/
+        return scvdVarName + ': ' + ((resultStr !== '') ? resultStr : expression);
+    }
+
+}

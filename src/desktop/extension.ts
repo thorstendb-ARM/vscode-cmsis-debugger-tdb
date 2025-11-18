@@ -23,6 +23,7 @@ import { CpuStatesStatusBarItem } from '../features/cpu-states/cpu-states-status
 import { CpuStates } from '../features/cpu-states/cpu-states';
 import { CpuStatesCommands } from '../features/cpu-states/cpu-states-commands';
 import { LiveWatchTreeDataProvider } from '../views/live-watch/live-watch';
+import { ComponentViewer } from '../views/component-viewer/component-viewer-main';
 
 const BUILTIN_TOOLS_PATHS = [
     'tools/pyocd/pyocd',
@@ -39,6 +40,7 @@ export const activate = async (context: vscode.ExtensionContext): Promise<void> 
     const cpuStatesStatusBarItem = new CpuStatesStatusBarItem();
     // Register the Tree View under the id from package.json
     liveWatchTreeDataProvider = new LiveWatchTreeDataProvider(context);
+    const componentViewer = new ComponentViewer();
 
     addToolsToPath(context, BUILTIN_TOOLS_PATHS);
     // Activate components
@@ -50,6 +52,8 @@ export const activate = async (context: vscode.ExtensionContext): Promise<void> 
     cpuStatesStatusBarItem.activate(context, cpuStates);
     // Live Watch view
     liveWatchTreeDataProvider.activate(gdbtargetDebugTracker);
+    // Component Viewer: SCVD Evaluator
+    await componentViewer.activate(context);
 
     logger.debug('Extension Pack activated');
 };

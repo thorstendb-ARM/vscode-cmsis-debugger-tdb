@@ -53,6 +53,11 @@
           "id": "cmsis-debugger",
           "title": "Trace and Live View",
           "icon": "media/trace-and-live-dark.svg"
+        },
+        {
+          "id": "cmsis-scvd-explorer",
+          "title": "CMSIS SCVD Explorer",
+          "icon": "$(preferences-open-settings)"
         }
       ]
     },
@@ -62,10 +67,26 @@
           "id": "cmsis-debugger.liveWatch",
           "name": "Live Watch",
           "icon": "media/trace-and-live-light.svg"
+        },
+        {
+          "id": "cmsis-debugger.componentViewer",
+          "name": "Component Viewer",
+          "icon": "${rocket}"
+        }
+      ],
+      "cmsis-scvd-explorer": [
+        {
+          "id": "cmsis-scvd-explorer",
+          "name": "CMSIS SCVD Explorer",
+          "icon": "$(preferences-open-settings)"
         }
       ]
     },
     "commands": [
+      {
+        "command": "cmsis-scvd-explorer.refreshEntry",
+        "title": "Refresh CMSIS SCVD Explorer"
+      },
       {
         "title": "CPU Time",
         "shortTitle": "CPU Time",
@@ -299,6 +320,14 @@
                   "cbuildRunFile": {
                     "type": "string",
                     "description": "Path to *.cbuild-run.yml debug configuration file generated with CMSIS-Toolbox."
+                  },
+                  "componentViewer": {
+                    "type": "array",
+                    "description": "List of Component Viewer (SVCD) files.",
+                    "items": {
+                      "type": "string"
+                    },
+                    "default": []
                   }
                 }
               }
@@ -345,6 +374,9 @@
     "baseContentUrl": "https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/blob/main/README.md"
   },
   "dependencies": {
+    "fast-xml-parser": "^4.2.4",
+    "typescript-parsec": "^0.3.4",
+    "xml2js": "^0.6.2",
     "yaml": "^2.8.1"
   },
   "devDependencies": {
@@ -354,7 +386,9 @@
     "@types/minimist": "^1.2.5",
     "@types/node": "^20.19.19",
     "@types/node-fetch": "^2.6.13",
+    "@types/sax": "^1.2.7",
     "@types/vscode": "^1.63.0",
+    "@types/xml2js": "^0.4.14",
     "@types/yargs": "^17.0.33",
     "@types/yarnpkg__lockfile": "^1.1.9",
     "@typescript-eslint/eslint-plugin": "^8.45.0",
