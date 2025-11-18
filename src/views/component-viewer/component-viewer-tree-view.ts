@@ -119,8 +119,15 @@ export class ComponentViewerTreeDataProvider implements vscode.TreeDataProvider<
         }
 
         // if element is of the type rootObjectOut, return both itemsGroup and listsGroup children
-        if ('id' in element && (element.itemsGroup || element.listsGroup)) {
-            return Promise.resolve([element.itemsGroup, element.listsGroup].flat().filter(Boolean) as (childObjectItem | childObjectList)[]);
+        //if ('id' in element && (element.itemsGroup || element.listsGroup)) {
+        //    return Promise.resolve([element.itemsGroup, element.listsGroup].flat().filter(Boolean) as (childObjectItem | childObjectList)[]);
+        //}
+
+        // get children of rootobjectOut from model by matching the id
+        if ('id' in element) {
+            // find the children in model
+            const itemsAndLists = this.getChildrenOfRootObject(element.id);
+            return Promise.resolve(itemsAndLists);
         }
 
         // trying to retrieve children of children
@@ -166,6 +173,46 @@ export class ComponentViewerTreeDataProvider implements vscode.TreeDataProvider<
             }
         }
         this.refresh();
+    }
+
+    private getChildrenOfRootObject(rootId: number): (childObjectItem | childObjectList)[] {
+        const outChildren: (childObjectItem | childObjectList)[] = [];
+        if(!this._objects?.objects) {
+            return outChildren;
+        }
+        // using the id, get the name of the root object, find it in the model, and extract its children
+        for(const objects of this._objects?.objects) {
+            for (const singleOutObject of objects.out) {
+                if(singleOutObject.name && rootId === this._objectOutRoots.find( root => root.name === singleOutObject.name)?.id) {
+                    // extract lists
+                    for (const list of singleOutObject.list) {
+                        const childList: childObjectList = {
+                            name: list.name,
+                            start: list.start?.expression,
+                            limit: list.limit?.expression,
+                            while: list.while?.expression,
+                            condition: list.cond?.expression
+                        };
+                        outChildren.push(childList);
+                    }
+                    // extract items
+                    for (const item of singleOutObject.item) {
+                        const propertyValuePair = item.getGuiEntry();
+                        const childItem: childObjectItem = {
+                            property: propertyValuePair.name,
+                            value: propertyValuePair.value,
+                            info: item.info,
+                            condition: item.cond?.expression?.expression,
+                            bold: item.bold?.expression?.expression,
+                            alert: item.alert?.expression?.expression,
+                            parent: this._objectOutRoots.find( root => root.name === singleOutObject.name) as rootObjectOut
+                        };
+                        outChildren.push(childItem);
+                    }
+                }
+            }
+        }
+        return outChildren;
     }
     /*
     private addRootObject(): void {
