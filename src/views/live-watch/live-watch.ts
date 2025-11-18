@@ -58,7 +58,7 @@ export class LiveWatchTreeDataProvider implements vscode.TreeDataProvider<LiveWa
         }
         try {
             const children = await this._activeSession?.session.customRequest('variables', { variablesReference: element.value.variablesReference });
-            const childNodes : LiveWatchNode [] = children?.variables.map((child: DebugProtocol.Variable) => ({
+            const childNodes = children?.variables.map((child: DebugProtocol.Variable) => ({
                 id: this.nodeID++,
                 expression: child.name,
                 children: [],
