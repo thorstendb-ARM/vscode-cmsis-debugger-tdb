@@ -144,6 +144,11 @@ export abstract class ScvdBase {
         return true;
     }
 
+    public getConditionResultTrue(): boolean {
+        return true;
+    }
+
+
     public set tag(value: string | undefined) {
         this._tag = value;
     }
