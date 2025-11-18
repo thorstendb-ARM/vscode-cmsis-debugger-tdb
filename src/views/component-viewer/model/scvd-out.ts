@@ -120,7 +120,7 @@ export class ScvdOut extends ScvdBase {
 
     public getGuiChildren(): ScvdBase[] | undefined {
         const guiItems = this.item
-            .filter(x => x.getConditionResultTrue())    // filter
+            .filter(x => x.getGuiConditionResult())    // filter
             .sort(this.sortByLine);                 // sort in-place, returned
         return guiItems && guiItems.length > 0 ? guiItems : undefined;
     }

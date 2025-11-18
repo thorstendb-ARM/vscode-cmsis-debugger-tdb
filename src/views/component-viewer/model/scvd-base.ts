@@ -144,8 +144,8 @@ export abstract class ScvdBase {
         return true;
     }
 
-    public getConditionResultTrue(): boolean {
-        return true;
+    public getGuiConditionResult(): boolean {
+        return true;    // use getConditionResult() later
     }
 
 

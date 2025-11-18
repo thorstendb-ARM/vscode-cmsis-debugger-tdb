@@ -176,7 +176,7 @@ export class ScvdItem extends ScvdBase {
     public getGuiChildren(): ScvdBase[] | undefined {
         const guiItems = [this.item, this.listOut, this.print]
             .flat()                                 // merge
-            .filter(x => x.getConditionResultTrue())    // filter
+            .filter(x => x.getGuiConditionResult())    // filter
             .sort(this.sortByLine);                 // sort in-place, returned
         return guiItems && guiItems.length > 0 ? guiItems : undefined;
     }
