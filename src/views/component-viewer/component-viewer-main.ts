@@ -12,6 +12,7 @@ import { URI } from 'vscode-uri';
 import path from 'path';
 import { ComponentViewerInstance } from './component-viewer-instance';
 import { SidebarDebugView } from './sidebar-debug-view';
+import { ComponentViewerTreeDataProvider } from './component-viewer-tree-view';
 
 
 const scvdFiles: string[] = [
@@ -41,24 +42,23 @@ const scvdFile1 = scvdFiles[scvdExamples.RTX5];
 export class ComponentViewer {
     private instance: ComponentViewerInstance | undefined;
     private treeDataProvider: SidebarDebugView | undefined;
+    private componentViewerTreeDataProvider: ComponentViewerTreeDataProvider | undefined;
 
     public constructor(
-        context: vscode.ExtensionContext
     ) {
-        const fullPath = context.extensionPath;
-        this.createInstance(URI.file(path.join(fullPath, scvdFile1)));
     }
 
     protected async createInstance(filename: URI) {
         const startTime = Date.now();
         this.instance = new ComponentViewerInstance();
         await this.instance.readModel(filename);
+        this.componentViewerTreeDataProvider?.setModel(this.instance.model);
         this.treeDataProvider?.setModel(this.instance.model);
         const endTime = Date.now();
         console.log(`SCVD instance created in ${endTime - startTime} ms for file: ${filename}`);
     }
 
-    public activate(_ctx: vscode.ExtensionContext) {
+    public async activate(_ctx: vscode.ExtensionContext) {
         interface CmsisConfig {
             componentViewer?: unknown;
             [key: string]: unknown;
@@ -111,8 +111,12 @@ export class ComponentViewer {
 
         // debug side view
         this.treeDataProvider = new SidebarDebugView();
+        this.componentViewerTreeDataProvider = new ComponentViewerTreeDataProvider();
         const providerDisposable = vscode.window.registerTreeDataProvider('cmsis-scvd-explorer', this.treeDataProvider);
         const cmdDisposable = vscode.commands.registerCommand('cmsis-scvd-explorer.refreshEntry', () => this.treeDataProvider?.refresh());
-        _ctx.subscriptions.push(providerDisposable, cmdDisposable);
+        const treeProviderDisposable = vscode.window.registerTreeDataProvider('cmsis-debugger.componentViewer', this.componentViewerTreeDataProvider);
+        await this.createInstance(URI.file(path.join(_ctx.extensionPath, scvdFile1)));
+        await this.componentViewerTreeDataProvider.activate();
+        _ctx.subscriptions.push(providerDisposable, cmdDisposable, treeProviderDisposable);
     }
 }
