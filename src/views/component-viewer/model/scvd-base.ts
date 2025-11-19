@@ -281,7 +281,7 @@ export abstract class ScvdBase implements ScvdGuiInterface {
 
     // expanded values
     public getValue(): string | number | undefined {
-        return 0;   // TODO: change to undefined to indicate no value
+        return undefined;   // TODO: change to undefined to indicate no value
     }
 
     public setValue(val: number | string | bigint): number | string | bigint | undefined {
@@ -335,7 +335,7 @@ export abstract class ScvdBase implements ScvdGuiInterface {
         return 1;
     }
 
-    // size of array type, to skip one instance to the next. Can be sizeof, or gaps
+    // element size in bytes, size of array type, to skip one instance to the next. Can be sizeof, or gaps
     // byte distance between adjacent elements in your model’s actual layout (not necessarily sizeof if there are hardware gaps).
     public getElementStride(): number {
         console.log(`GetElementStride not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
@@ -365,11 +365,13 @@ export abstract class ScvdBase implements ScvdGuiInterface {
         return 4;
     }
 
+    // member’s byte offset
     public getMemberOffset(member: ScvdBase | undefined): number | undefined {
         console.log(`GetMemberOffset not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}, member=${member?.getExplorerDisplayName()}`);
         return undefined;
     }
 
+    // member’s width in bits
     public getBitWidth(): number {
         console.log(`GetBitWidth not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
         return 32;

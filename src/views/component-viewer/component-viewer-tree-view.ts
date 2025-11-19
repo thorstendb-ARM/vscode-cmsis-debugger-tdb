@@ -1,271 +1,124 @@
-/**
- * Copyright 2025 Arm Limited
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+/*
+ * Component Viewer Tree (ordered exactly as provided by getGuiChildren())
+ * - Root = model.objects?.objects?.[0]?.out?.[0]
+ * - Label/description from node.getGuiEntry() -> { name, value }
+ * - Children from node.getGuiChildren() (returned AS-IS, in order)
+ * - Each item id = node.nodeId (no fallbacks)
+ * - Activation via `await provider.activate()`; no constructor args
+ * - View ID defaults to 'cmsis-debugger.componentViewer'
  */
 
 import * as vscode from 'vscode';
-import { ScvdComponentViewer } from './model/scvd-comonent-viewer';
-import { ScvdObjects } from './model/scvd-object';
+import { ScvdGuiInterface } from './model/scvd-gui-interface';
 
-export interface rootObjectOut {
-    id: number;
-    name?: string | undefined;
-    value?: string | undefined;
-    condition?: string | undefined;
-    itemsGroup?: childObjectItem[];
-    listsGroup?: childObjectList[];
-    //itemsGroup: ItemsGroup;
-    //listsGroup: ListsGroup;
-}
-
-export interface childObjectItem {
-    property: string | undefined;
-    value: string | undefined;
-    info?: string | undefined;
-    condition?: string | undefined;
-    bold?: string | undefined;
-    alert?: string | undefined;
-    children?: childObjectItem[] | undefined;
-    parent: rootObjectOut | childObjectItem;
-}
-
-export interface childObjectList {
-    name: string | undefined;
-    start: string | undefined;
-    limit?: string | undefined;
-    while?: string | undefined;
-    condition?: string | undefined;
-}
-
-/*
-export interface ItemsGroup {
-    groupName: 'itemsGroup';
-    items: childObjectItem[]
-}
-
-export interface ListsGroup {
-    groupName: 'listsGroup';
-    lists: childObjectList[]
-}
-*/
-
-export class ComponentViewerTreeDataProvider implements vscode.TreeDataProvider<rootObjectOut | childObjectItem | childObjectList> {
-    private readonly _onDidChangeTreeData = new vscode.EventEmitter<rootObjectOut |void>();
+export class ComponentViewerTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeItem>, vscode.Disposable {
+    private readonly _onDidChangeTreeData = new vscode.EventEmitter<void>();
     readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
-    private _objectOutRoots: rootObjectOut[] = [];
-    //private _activeSession: GDBTargetDebugSession | undefined;
-    private _nodeID: number;
-    private _scvdModel: ScvdComponentViewer | undefined;
-    private _objects: ScvdObjects | undefined;
 
-    constructor () {
-        this._objectOutRoots = [];
-        this._nodeID = 0;
+    private _model: any;
+    private _root: ScvdGuiInterface | undefined;
+    private _view?: vscode.TreeView<vscode.TreeItem>;
+    private _disposed = false;
+    private static readonly VIEW_ID = 'cmsis-debugger.componentViewer';
+
+    constructor() {}
+
+    async activate(viewIdOverride?: string): Promise<void> {
+        if (this._view) return; // already active
+        const viewId = viewIdOverride ?? ComponentViewerTreeDataProvider.VIEW_ID;
+        this._view = vscode.window.createTreeView<vscode.TreeItem>(viewId, { treeDataProvider: this });
     }
 
-    public async activate(): Promise<void> {
-        // Extracts out data from objects inside of the scvd model
-        if (!this._scvdModel) {
-            console.warn('No SCVD model set in ComponentViewerTreeDataProvider');
-            return;
-        }
-
-        this.addRootObject();
-
+    /** Provide/replace the model, recompute root, and refresh. */
+    public setModel(model: any): void {
+        this._model = model;
+        this._root = this.computeRoot();
         this.refresh();
-
     }
 
-    public getTreeItem(element: rootObjectOut | childObjectItem | childObjectList): vscode.TreeItem {
-        // if element is rootObjectOut, return its corresponding tree item
-        if ('id' in element && element.name !== undefined) {
-            const treeItem = new vscode.TreeItem(element.name, vscode.TreeItemCollapsibleState.Collapsed);
-            return treeItem;
-        }
+    refresh(): void { this._onDidChangeTreeData.fire(); }
 
-        // if element is childObjectItem, return its corresponding tree item
-        if ('property' in element) {
-            const treeItem = new vscode.TreeItem(element.property + ' = ' || 'Item');
-            treeItem.collapsibleState = element.children && element.children.length > 0
-                ? vscode.TreeItemCollapsibleState.Collapsed
-                : vscode.TreeItemCollapsibleState.None;
-            treeItem.description = element.value as string;
-            return treeItem;
-        }
-
-        // if element is childObjectList, return its corresponding tree item
-        if ('name' in element) {
-            const treeItem = new vscode.TreeItem(element.name ?? 'List', vscode.TreeItemCollapsibleState.None);
-            return treeItem;
-        }
-
-        return new vscode.TreeItem('Unknown', vscode.TreeItemCollapsibleState.None);
+    private computeRoot(): ScvdGuiInterface | undefined {
+    // Root child for addRootObject(): const outItem = this.model.objects?.objects?.[0]?.out[0];
+        const outItem: ScvdGuiInterface | undefined = this._model?.objects?.objects?.[0]?.out?.[0];
+        return outItem;
     }
 
-    public getChildren(element?: rootObjectOut | childObjectItem | childObjectList): Promise<(rootObjectOut | childObjectItem | childObjectList)[]> {
+    // --- TreeDataProvider<vscode.TreeItem> API ---
+    getTreeItem(element: vscode.TreeItem): vscode.TreeItem { return element; }
+
+    getChildren(element?: vscode.TreeItem): vscode.ProviderResult<vscode.TreeItem[]> {
+        if (!this._root) {
+            return this.noData();
+        }
+
+        // Root expansion
         if (!element) {
-            return Promise.resolve(this._objectOutRoots);
+            return [this.makeNodeItem(this._root)];
         }
 
-        // if element is of the type rootObjectOut, return both itemsGroup and listsGroup children
-        //if ('id' in element && (element.itemsGroup || element.listsGroup)) {
-        //    return Promise.resolve([element.itemsGroup, element.listsGroup].flat().filter(Boolean) as (childObjectItem | childObjectList)[]);
-        //}
+        // Otherwise, element.id corresponds to a ScvdGuiInterface.nodeId. Find that node and enumerate its children in order.
+        const nodeId = element.id as string | undefined;
+        const base = nodeId ? this.findNodeById(this._root, nodeId) : undefined;
+        if (!base) return [];
 
-        // get children of rootobjectOut from model by matching the id
-        if ('id' in element) {
-            // find the children in model
-            const itemsAndLists = this.getChildrenOfRootObject(element.id);
-            return Promise.resolve(itemsAndLists);
+        const kids = base.getGuiChildren?.() ?? [];
+        // Reference view uses model.map(...) which yields the natural order.
+        // getGuiChildren() appears to return the inverse; render reversed to match the reference's visible order.
+        const ordered = [...kids].reverse();
+        const out: vscode.TreeItem[] = [];
+        for (const child of ordered) {
+            out.push(this.makeNodeItem(child));
         }
-
-        // trying to retrieve children of children
-        /*
-        if ('property' in element) {
-            // Get children from model
-            const children = this.
-            // Populate children array to be returned
-            //const children : childObjectItem [] = element.children?.map( child => {
-            //    const 
-            //})
-            return Promise.resolve(element.children);
-        }
-        */
-        return Promise.resolve([]);
+        return out;
     }
 
-    private refresh(): void {
-        this._onDidChangeTreeData.fire();
+    // --- Helpers ---
+    private noData(): vscode.TreeItem[] {
+        const item = new vscode.TreeItem('Updating Component Viewer…');
+        item.description = 'Please wait';
+        item.iconPath = new vscode.ThemeIcon('sync');
+        item.contextValue = 'updating';
+        return [item];
     }
 
-    public setModel(scvdModel: ScvdComponentViewer | undefined) {
-        if(scvdModel !== undefined) {
-            this._scvdModel = scvdModel;
-            this._objects = this._scvdModel.objects;
+    private makeNodeItem(node: ScvdGuiInterface): vscode.TreeItem {
+        const entry = node.getGuiEntry?.() ?? ({} as any);
+        const label: string = entry?.name ?? '(unnamed)';
+        const value: string | undefined = entry?.value;
+
+        // Collapsible if there could be children (we do not call getGuiChildren() here to avoid double-enumeration during label rendering)
+        const collapsible = typeof node.getGuiChildren === 'function' ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None;
+        const ti = new vscode.TreeItem(label, collapsible);
+
+        // id strictly from node.nodeId; no fallbacks to avoid collisions or reordering side-effects
+        if ((node as any).nodeId !== undefined && (node as any).nodeId !== null) {
+            ti.id = String((node as any).nodeId);
         }
+
+        // Value formatting: " = <value>"
+        ti.description = value ? ' = ' + value : '';
+        ti.tooltip = value ? `${label}: ${value}` : label;
+        ti.contextValue = 'model-node';
+        return ti;
     }
 
-    private addRootObject(): void {
-        if(!this._objects?.objects) {
-            return;
+    private findNodeById(node: ScvdGuiInterface | undefined, id: string): ScvdGuiInterface | undefined {
+        if (!node) return undefined;
+        if ((node as any).nodeId === id) return node;
+        const kids = node.getGuiChildren?.();
+        if (!kids || kids.length === 0) return undefined;
+        for (const k of kids) {
+            const found = this.findNodeById(k, id);
+            if (found) return found;
         }
-        for(const objects of this._objects?.objects) {
-            for (const singleOutObject of objects.out) {
-                const root: rootObjectOut = {
-                    id: this._nodeID,
-                    name: singleOutObject.name,
-                    value: singleOutObject.value?.expression,
-                    condition: singleOutObject.cond?.expression?.expression,
-                };
-                this._objectOutRoots.push(root);
-                this._nodeID++;
-            }
-        }
-        this.refresh();
+        return undefined;
     }
 
-    private getChildrenOfRootObject(rootId: number): (childObjectItem | childObjectList)[] {
-        const outChildren: (childObjectItem | childObjectList)[] = [];
-        if(!this._objects?.objects) {
-            return outChildren;
-        }
-        // using the id, get the name of the root object, find it in the model, and extract its children
-        for(const objects of this._objects?.objects) {
-            for (const singleOutObject of objects.out) {
-                if(singleOutObject.name && rootId === this._objectOutRoots.find( root => root.name === singleOutObject.name)?.id) {
-                    // extract lists
-                    for (const list of singleOutObject.list) {
-                        const childList: childObjectList = {
-                            name: list.name,
-                            start: list.start?.expression,
-                            limit: list.limit?.expression,
-                            while: list.while?.expression,
-                            condition: list.cond?.expression
-                        };
-                        outChildren.push(childList);
-                    }
-                    // extract items
-                    for (const item of singleOutObject.item) {
-                        const propertyValuePair = item.getGuiEntry();
-                        const childItem: childObjectItem = {
-                            property: propertyValuePair.name,
-                            value: propertyValuePair.value,
-                            info: item.info,
-                            condition: item.cond?.expression?.expression,
-                            bold: item.bold?.expression?.expression,
-                            alert: item.alert?.expression?.expression,
-                            parent: this._objectOutRoots.find( root => root.name === singleOutObject.name) as rootObjectOut
-                        };
-                        outChildren.push(childItem);
-                    }
-                }
-            }
-        }
-        return outChildren;
+    dispose(): void {
+        if (this._disposed) return;
+        this._disposed = true;
+        this._view?.dispose();
+        this._onDidChangeTreeData.dispose();
     }
-    /*
-    private addRootObject(): void {
-    // make sure a model exists
-        if(!this._objects?.objects) {
-            return;
-        }
-        // create a root node for each out in the scvd model objects
-        for(const objects of this._objects?.objects) {
-            for (const singleOut of objects.out) {
-                const lists: childObjectList [] = [];
-                const items: childObjectItem [] = [];
-                for (const list of singleOut.list) {
-                    const childList: childObjectList = {
-                        name: list.name,
-                        start: list.start?.expression,
-                        limit: list.limit?.expression,
-                        while: list.while?.expression,
-                        condition: list.cond?.expression
-                    };
-                    lists.push(childList);
-                }
-                for (const item of singleOut.item) {
-                    const propertyValuePair = item.getDisplayEntry();
-                    const childItem: childObjectItem = {
-                        property: propertyValuePair.name,
-                        value: propertyValuePair.value,
-                        info: item.info,
-                        condition: item.cond?.expression?.expression,
-                        bold: item.bold?.expression?.expression,
-                        alert: item.alert?.expression?.expression
-                    };
-                    items.push(childItem);
-                }
-                const root: rootObjectOut = {
-                    id: this._nodeID,
-                    name: singleOut.name,
-                    value: singleOut.value?.expression,
-                    condition: singleOut.cond?.expression?.expression,
-                    itemsGroup: {
-                        groupName: 'itemsGroup',
-                        items: items
-                    },
-                    listsGroup: {
-                        groupName: 'listsGroup',
-                        lists: lists
-                    }
-                };
-                this._objectOutRoots.push(root);
-                this._nodeID++;
-            }
-        }
-        this.refresh();
-    }
-    */
 }

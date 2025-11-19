@@ -8,13 +8,21 @@ import { Cm81MRegisterCache } from './cache/register-cache';
 import type { DataHost, RefContainer } from './evaluator';
 import { createMockCm81MRegisterReader } from './mock/cm81m-registers';
 import type { ScvdBase } from './model/scvd-base';
-
+import { CachedMemoryHost, HostOptions } from './cache/cache';
+import { TargetRuntime, GdbClientSync, Symtab } from './cache/target-runtime';
 
 export class ScvdEvalInterface implements DataHost {
     private _registerCache = new Cm81MRegisterCache(createMockCm81MRegisterReader());
+    private runtime: TargetRuntime;
+    private memHost: CachedMemoryHost;
 
     constructor(
+        gdb: GdbClientSync,
+        symtab: Symtab,
+        opts?: HostOptions
     ) {
+        this.runtime = new TargetRuntime(gdb, symtab);
+        this.memHost = new CachedMemoryHost(this.runtime, this.runtime, opts);
     }
 
     private get registerCache(): Cm81MRegisterCache {
@@ -29,7 +37,7 @@ export class ScvdEvalInterface implements DataHost {
 
     getMemberRef(container: RefContainer, property: string): ScvdBase | undefined {
         const base = container.current;
-        const member = base?.getMember?.(property);
+        const member = base?.getMember(property);
         return member;
     }
 
@@ -51,11 +59,13 @@ export class ScvdEvalInterface implements DataHost {
 
     /* ---------------- Read/Write via caches ---------------- */
     readValue(container: RefContainer): number | string | bigint | undefined {
-        return container.current?.getValue();
+        const value = this.memHost.readValue(container);
+        return value;
     }
 
     writeValue(container: RefContainer, value: number | string | bigint): any {
-        return container.current?.setValue(value);
+        this.memHost.writeValue(container, value);
+        return value;
     }
 
     /* ---------------- Intrinsics ---------------- */
