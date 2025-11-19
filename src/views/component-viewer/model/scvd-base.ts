@@ -16,6 +16,7 @@
 
 import { EvalContext } from '../evaluator';
 import { ResolveSymbolCb } from '../resolver';
+import { ScvdGuiInterface } from './scvd-gui-interface';
 import { getLineNumberFromJson, getStringFromJson } from './scvd-utils';
 
 // add linter exception for Json
@@ -32,7 +33,7 @@ export type ExplorerInfo = {
 
 type AnyScvdCtor = abstract new (...args: any[]) => ScvdBase;
 
-export abstract class ScvdBase {
+export abstract class ScvdBase implements ScvdGuiInterface {
     private _parent: ScvdBase | undefined;
     private _children: ScvdBase[] = [];
     private _nodeId: number = 0;
