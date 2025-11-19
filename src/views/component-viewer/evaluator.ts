@@ -254,18 +254,24 @@ function mustRef(node: ASTNode, ctx: EvalContext, forWrite = false): ScvdBase {
             if (ma.object.kind === 'ArrayIndex') {
                 const ai = ma.object as ArrayIndex;
 
-                // Resolve array symbol and establish anchor/current
+                // Resolve the array (establishes anchor/current on the array or inner element if nested)
                 const baseRef = mustRef(ai.array, ctx, forWrite);
 
                 // Evaluate index in isolation (so i/j/mem.length don't clobber outer anchor)
                 const idx = asNumber(withIsolatedContainer(ctx, () => evalNode(ai.index, ctx))) | 0;
 
-                // Apply array byte offset
-                const stride = ctx.data.getElementStride?.(baseRef);
+                // Remember the index for hosts that use it
+                ctx.container.index = idx;
+
+                // Use the thing we're actually indexing (supports nested arr[i][j].field)
+                const arrayRef = ctx.container.current ?? baseRef;
+
+                // Apply array byte offset using the correct dimension's stride
+                const stride = ctx.data.getElementStride?.(arrayRef);
                 if (typeof stride === 'number') addOffset(ctx, idx * stride);
 
                 // Base for member resolution = element model if host provides one
-                const baseForMember = ctx.data.getElementRef?.(baseRef) ?? baseRef;
+                const baseForMember = ctx.data.getElementRef?.(arrayRef) ?? arrayRef;
                 ctx.container.current = baseForMember;
 
                 // Resolve member
@@ -308,15 +314,23 @@ function mustRef(node: ASTNode, ctx: EvalContext, forWrite = false): ScvdBase {
             // Evaluate the index in isolation
             const idx = asNumber(withIsolatedContainer(ctx, () => evalNode(ai.index, ctx))) | 0;
 
+            // Remember last index for hosts/UI
+            ctx.container.index = idx;
+            // If we're chaining (e.g., arr[i][j]), index the actual current array
+            const arrayRef = ctx.container.current ?? baseRef;
+            // Clear member hint on raw indexing (optional consistency)
+            ctx.container.member = undefined;
+
+
             // Translate index -> byte offset
-            const stride = ctx.data.getElementStride?.(baseRef);
+            const stride = ctx.data.getElementStride?.(arrayRef);
             if (typeof stride === 'number') addOffset(ctx, idx * stride);
 
             // Current target remains base for subsequent member access (or element if host exposes it)
-            ctx.container.current = ctx.data.getElementRef?.(baseRef) ?? baseRef;
+            ctx.container.current = ctx.data.getElementRef?.(arrayRef) ?? arrayRef;
 
             // Update width to element width if host exposes it
-            setWidth(ctx, ctx.data.getElementBitWidth?.(baseRef));
+            setWidth(ctx, ctx.data.getElementBitWidth?.(arrayRef));
             return baseRef;
         }
 

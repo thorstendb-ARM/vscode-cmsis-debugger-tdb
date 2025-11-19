@@ -16,32 +16,55 @@
 
 import { EvalContext } from './evaluator';
 import { ScvdBase } from './model/scvd-base';
+import { ScvdComponentViewer } from './model/scvd-comonent-viewer';
 import { printfHook } from './printf-hook';
-import { ScvdEvalInterface, setActiveEvalHost } from './scvd-eval-interface';
+import { ScvdEvalInterface } from './scvd-eval-interface';
 
 
 export class ScvdEvalContext {
     private _ctx: EvalContext;
     private _host: ScvdEvalInterface;
+    private _model: ScvdComponentViewer;
 
     constructor(
-        baseContainer: ScvdBase
+        model: ScvdComponentViewer
     ) {
+        this._model = model;
         // Create the DataHost (stateless; you can reuse a single instance)
-        this._host = new ScvdEvalInterface({
-            // …your options…
-            autoDeclareGlobalsOnWrite: true,
-            declareGlobal: (base, name) => (base as any).declareScvdVar?.(name, 32) // example
-        });
-        setActiveEvalHost(this._host);
+        this._host = new ScvdEvalInterface();
+        const outItem = this.getOutItem();
+        if(outItem === undefined) {
+            throw new Error('SCVD EvalContext: No output item defined');
+        }
 
         // Your model’s root ScvdBase (where symbol resolution starts)
         this._ctx = new EvalContext({
             data: this._host,              // DataHost
-            container: baseContainer, // ScvdBase root for symbol resolution
+            container: outItem, // ScvdBase root for symbol resolution
             printf: printfHook,
             // functions: this._host.functions, // optional external callables table
         });
+    }
+
+    private get model(): ScvdComponentViewer {
+        return this._model;
+    }
+
+    public getOutItem(): ScvdBase | undefined {
+        const objects = this.model.objects;
+        if(objects === undefined) {
+            return undefined;
+        }
+        if(objects.objects.length > 0) {
+            const object = objects.objects[0];
+            return object;
+        }
+        return undefined;
+    }
+
+    public init() {
+        // Initialize the EVAL context (pre-declare symbols, etc.)
+        this._model.evalContext = this._ctx;
     }
 
     public get ctx(): EvalContext {

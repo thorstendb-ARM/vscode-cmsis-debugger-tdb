@@ -54,7 +54,7 @@ export class StatementRead extends StatementBase {
 
 
         const offsetExpr = scvdRead.offset;
-        if(symbol?.name === undefined && offsetExpr === undefined) {
+        if(symbol?.symbol === undefined && offsetExpr === undefined) {
             console.error(`${this.line}: Executing "read": ${scvdRead.name}, no symbol or offset defined`);
             return;
         }
