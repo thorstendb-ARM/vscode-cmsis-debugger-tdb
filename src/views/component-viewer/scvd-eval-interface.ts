@@ -4,15 +4,24 @@
 //  - optional auto-declare unknown globals on write
 //  - module-level helpers to add/read globals without host reference
 
+import { Cm81MRegisterCache } from './cache/register-cache';
 import type { DataHost, RefContainer } from './evaluator';
+import { createMockCm81MRegisterReader } from './mock/cm81m-registers';
 import type { ScvdBase } from './model/scvd-base';
 
 
 export class ScvdEvalInterface implements DataHost {
+    private _registerCache = new Cm81MRegisterCache(createMockCm81MRegisterReader());
+
     constructor(
     ) {
     }
 
+    private get registerCache(): Cm81MRegisterCache {
+        return this._registerCache;
+    }
+
+    // ---------------- DataHost Interface ----------------
     getSymbolRef(container: RefContainer, name: string, _forWrite?: boolean): ScvdBase | undefined {
         const symbol = container.base.getSymbol?.(name);
         return symbol;
@@ -23,8 +32,6 @@ export class ScvdEvalInterface implements DataHost {
         const member = base?.getMember?.(property);
         return member;
     }
-
-    /* ---------------- Metadata (delegated to ScvdBase) ---------------- */
 
     getElementStride(ref: ScvdBase): number {
         return ref.getElementStride() ?? 0;
@@ -43,13 +50,12 @@ export class ScvdEvalInterface implements DataHost {
     }
 
     /* ---------------- Read/Write via caches ---------------- */
-
-    readValue(_container: RefContainer): number | string | bigint | undefined {
-        return 0;
+    readValue(container: RefContainer): number | string | bigint | undefined {
+        return container.current?.getValue();
     }
 
-    writeValue(_container: RefContainer, _value: number | string | bigint): any {
-        return 0;
+    writeValue(container: RefContainer, value: number | string | bigint): any {
+        return container.current?.setValue(value);
     }
 
     /* ---------------- Intrinsics ---------------- */
@@ -58,8 +64,8 @@ export class ScvdEvalInterface implements DataHost {
         return undefined;   // will lookup per GDB
     }
 
-    __GetRegVal(_regName: string): number | undefined {
-        return 0; //this.regs.read(regName); // read from register cache
+    __GetRegVal(regName: string): number | undefined {
+        return this.registerCache.read(regName); // read from register cache
     }
 
     __Symbol_exists(_container: RefContainer, _args: unknown[]): number {

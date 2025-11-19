@@ -92,6 +92,7 @@ export class ScvdExpression extends ScvdBase {
 
     public setValue(val: number): number | undefined {
         if(typeof this._result === 'number') {
+            this.resetExpression();
             this._result = val;
         } else {
             this.expression = val.toString();
@@ -133,9 +134,16 @@ export class ScvdExpression extends ScvdBase {
         }
     }
 
+    private resetExpression() {
+        this._expression = undefined;
+        this._expressionAst = undefined;
+        this._result = undefined;
+    }
+
     private parseExpression(): boolean {
         const expression = this.expression;
         if (expression === undefined) {
+            this.expressionAst = undefined;
             return false;
         }
 
