@@ -16,25 +16,12 @@
 
 import { EvalContext } from './evaluator';
 import { ScvdBase } from './model/scvd-base';
-import { ScvdFormatSpecifier } from './model/scvd-format-specifier';
+import { printfHook } from './printf-hook';
 import { ScvdEvalInterface, setActiveEvalHost } from './scvd-eval-interface';
 
 
-export type PrintfHook = {
-  format: (spec: string, value: any, ctx: EvalContext) => string | undefined;
-};
-
-const formatSpecifier = new ScvdFormatSpecifier();
-
-const printfHook: PrintfHook = {
-    format(spec: string, value: any, ctx: EvalContext): string | undefined {
-        return formatSpecifier.formatValue(spec, value, ctx);
-    },
-};
-
 export class ScvdEvalContext {
     private _ctx: EvalContext;
-    private _printf: PrintfHook = printfHook;
     private _host: ScvdEvalInterface;
 
     constructor(
@@ -52,9 +39,7 @@ export class ScvdEvalContext {
         this._ctx = new EvalContext({
             data: this._host,              // DataHost
             container: baseContainer, // ScvdBase root for symbol resolution
-            printf: {
-                format: (spec, value, ctx) => this._printf.format(spec, value, ctx),
-            },
+            printf: printfHook,
             // functions: this._host.functions, // optional external callables table
         });
     }

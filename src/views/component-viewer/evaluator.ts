@@ -91,13 +91,16 @@ export interface DataHost {
   _addr?(container: RefContainer): number | undefined;
 }
 
+export type EvalPrintfHook = {
+  format: (spec: string, value: any, ctx: EvalContext) => string | undefined;
+};
+
+
 export interface EvalContextInit {
   data: DataHost;
   /** Starting container for symbol resolution (root model). */
   container: ScvdBase;
-  printf?: {
-    format?: (spec: FormatSegment['spec'], value: any, ctx: EvalContext) => string | undefined;
-  };
+  printf?: EvalPrintfHook;
 }
 
 export class EvalContext {
