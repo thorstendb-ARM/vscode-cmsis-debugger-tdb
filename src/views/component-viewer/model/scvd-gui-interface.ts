@@ -21,5 +21,6 @@ export interface ScvdGuiInterface {
     getGuiName(): string | undefined ;
     getGuiValue(): string | undefined;
     getGuiConditionResult(): boolean;
+    getGuiLineInfo(): string | undefined;
 }
 

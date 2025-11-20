@@ -65,7 +65,7 @@ export class ComponentViewerTreeDataProvider implements vscode.TreeDataProvider<
         const kids = base.getGuiChildren?.() ?? [];
         // Reference view uses model.map(...) which yields the natural order.
         // getGuiChildren() appears to return the inverse; render reversed to match the reference's visible order.
-        const ordered = [...kids].reverse();
+        const ordered = [...kids]; //.reverse();
         const out: vscode.TreeItem[] = [];
         for (const child of ordered) {
             out.push(this.makeNodeItem(child));
