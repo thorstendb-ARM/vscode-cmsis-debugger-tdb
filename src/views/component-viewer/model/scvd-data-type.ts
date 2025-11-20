@@ -46,10 +46,6 @@ export class ScvdDataType extends ScvdBase {
         this.type = type;
     }
 
-    public get size(): number | undefined {
-        return this._type?.size;
-    }
-
     public get type(): ScvdScalarDataType | ScvdComplexDataType | undefined {
         return this._type;
     }
@@ -71,12 +67,16 @@ export class ScvdDataType extends ScvdBase {
         return this._type?.getMember(property);
     }
 
+    public getBitWidth(): number {
+        return this._type?.getBitWidth() ?? 32;
+    }
+
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
 
         if (this._type !== undefined) {
             info.push({ name: 'Type', value: this._type.getExplorerDisplayName() });
-            info.push({ name: 'Size', value: this.size?.toString() ?? '' });
+            info.push({ name: 'Size', value: this.getBitWidth().toString() ?? '' });
         } else {
             info.push({ name: 'Type', value: 'undefined' });
         }
@@ -110,12 +110,20 @@ export class ScvdScalarDataType extends ScvdBase {
 
     public get size(): number | undefined {
         const info = this._type && ScvdScalarDataTypeMap[this._type];
-        const value = info ? info[0] / 8 : undefined;
+        const value = info ? info[0]: undefined;
         return value;
     }
 
     public get type(): string | undefined {
         return this._type;
+    }
+
+    public getBitWidth(): number {
+        const bitWidth = this.size;
+        if( bitWidth !== undefined) {
+            return bitWidth;
+        }
+        return 32;
     }
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
@@ -155,7 +163,19 @@ export class ScvdComplexDataType extends ScvdBase{
     }
 
     public get size(): number | undefined {
-        return this._type?.size;
+        const sizeInBytes = this._type?.size;
+        if (sizeInBytes !== undefined) {
+            return sizeInBytes;
+        }
+        return undefined;
+    }
+
+    public getBitWidth(): number {
+        const bitWidth = this.size;
+        if( bitWidth !== undefined) {
+            return bitWidth * 8;
+        }
+        return 32;
     }
 
     public get isPointer(): boolean {

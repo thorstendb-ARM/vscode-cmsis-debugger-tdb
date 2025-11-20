@@ -114,6 +114,28 @@ export class ScvdMember extends ScvdBase {
         return undefined;
     }
 
+    // member’s byte offset
+    public getMemberOffset(): number | undefined {
+        const offsetExpr = this._offset;
+        if (offsetExpr !== undefined) {
+            const offsetValue = offsetExpr.getValue();
+            if (typeof offsetValue === 'number') {
+                return offsetValue;
+            }
+        }
+        return 0;   // TODO: default?
+    }
+
+    // member’s width in bits
+    public getBitWidth(): number {
+        const bitWidth = this._type?.getBitWidth();
+        if (bitWidth !== undefined) {
+            return bitWidth;
+        }
+        return 32;
+    }
+
+
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
         if (this._size) {
