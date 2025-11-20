@@ -17,7 +17,6 @@ import { StatementEngine } from './statement-engine/statement-engine';
 import { ScvdEvalContext } from './scvd-eval-context';
 
 
-
 const xmlOpts: ParserOptions = {
     explicitArray: false,
     mergeAttrs: true,
@@ -30,6 +29,9 @@ const xmlOpts: ParserOptions = {
 
 export class ComponentViewerInstance {
     private _model: ScvdComponentViewer | undefined;
+    private _memUsageStart: number = 0;
+    private _memUsageLast: number = 0;
+    private _timeUsageLast: number = 0;
 
     public constructor(
     ) {
@@ -47,15 +49,40 @@ export class ComponentViewerInstance {
         return result.join('\n');
     }
 
+    public getStats(text: string): string {
+        const mem = process.memoryUsage();
+        const memCurrent = Math.round(mem.heapUsed / 1024 / 1024);
+        const timeCurrent = Date.now();
+
+        if(this._timeUsageLast === 0) {
+            this._timeUsageLast = timeCurrent;
+        }
+        if(this._memUsageStart === 0) {
+            this._memUsageStart = memCurrent;
+            this._memUsageLast = memCurrent;
+        }
+
+        const memUsage = memCurrent - this._memUsageLast;
+        const timeUsage = timeCurrent - this._timeUsageLast;
+        const memIncrease = memCurrent - this._memUsageStart;
+
+        this._memUsageLast = memCurrent;
+        this._timeUsageLast = timeCurrent;
+
+        return `${text}, Time: ${timeUsage} ms, Mem: ${memUsage}, Mem Increase: ${memIncrease}, MB (Total: ${memCurrent} MB)`;
+    }
+
+
     public async readModel(filename: URI) {
-        const startTime = Date.now();
-        console.log(`Reading SCVD file: ${filename}`);
+        const stats: string[] = [];
+
+        stats.push(this.getStats(`  Start reading SCVD file ${filename}`));
         const buf = (await this.readFileToBuffer(filename)).toString('utf-8');
-        const readTime = Date.now();
+        stats.push(this.getStats('  read'));
         const bufLineNo = this.injectLineNumbers(buf);
-        const injectTime = Date.now();
+        stats.push(this.getStats('  inject'));
         const xml: Json = await this.parseXml(bufLineNo);
-        const parseTime = Date.now();
+        stats.push(this.getStats('  parse'));
 
         if(xml === undefined) {
             console.error('Failed to parse SCVD XML');
@@ -69,41 +96,30 @@ export class ComponentViewerInstance {
         }
 
         this.model.readXml(xml);
-        const modelTime = Date.now();
+        stats.push(this.getStats('  model.readXml'));
         this.model.configureAll();
-        const modelConfiguredTime = Date.now();
+        stats.push(this.getStats('  model.configureAll'));
         this.model.validateAll(true);
-        const modelValidatedTime = Date.now();
+        stats.push(this.getStats('  model.validateAll'));
 
         const resolver = new Resolver(this.model);
         resolver.resolve();
-        const resolveAndLinkTime = Date.now();
+        stats.push(this.getStats('  resolver.resolve'));
 
         const evalContext = new ScvdEvalContext(this.model);
         evalContext.init();
-        const modelGatherObjectsTime = Date.now();
+        stats.push(this.getStats('  evalContext.init'));
 
         const statementEngine = new StatementEngine(this.model);
         statementEngine.initialize();
-        const statementEngineInitializedTime = Date.now();
+        stats.push(this.getStats('  statementEngine.initialize'));
         statementEngine.executeAll();
-        const statementEngineExecuteAllTime = Date.now();
+        stats.push(this.getStats('  statementEngine.executeAll'));
 
         //this.model.debugAll();
-        //const modelDebuggedTime = Date.now();
+        //stats.push(this.getStats('  model.debugAll'));
 
-        console.log(`SCVD file read in ${resolveAndLinkTime - startTime} ms:`,
-            `\n  read: ${readTime - startTime} ms,`,
-            `\n  inject: ${injectTime - readTime} ms,`,
-            `\n  parse: ${parseTime - injectTime} ms,`,
-            `\n  model: ${modelTime - parseTime} ms,`,
-            `\n  configure: ${modelConfiguredTime - modelTime} ms,`,
-            `\n  validate: ${modelValidatedTime - modelConfiguredTime} ms,`,
-            `\n  gatherObjects: ${modelGatherObjectsTime - modelValidatedTime} ms,`,
-            `\n  statementEngineInitialize: ${statementEngineInitializedTime - modelGatherObjectsTime} ms,`,
-            `\n  statementEngineExecuteAll: ${statementEngineExecuteAllTime - statementEngineInitializedTime} ms,`,
-            //`\n  debug: ${modelDebuggedTime - statementEngineExecuteAllTime} ms,`,
-            `\n  resolveAndLink: ${resolveAndLinkTime - statementEngineExecuteAllTime /*modelDebuggedTime*/} ms`);
+        console.log('ComponentViewerInstance readModel stats:\n' + stats.join('\n  '));
     }
 
     private async readFileToBuffer(filePath: URI): Promise<Buffer> {
