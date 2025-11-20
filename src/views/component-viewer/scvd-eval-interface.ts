@@ -5,11 +5,11 @@
 //  - module-level helpers to add/read globals without host reference
 
 import { Cm81MRegisterCache } from './cache/register-cache';
-import type { DataHost, RefContainer } from './evaluator';
+import { DataHost, RefContainer } from './evaluator';
 import { createMockCm81MRegisterReader } from './mock/cm81m-registers';
-import type { ScvdBase } from './model/scvd-base';
-import { CachedMemoryHost, HostOptions } from './cache/cache';
+import { ScvdBase } from './model/scvd-base';
 import { TargetRuntime, GdbClientSync, Symtab } from './cache/target-runtime';
+import { CachedMemoryHost, HostOptions } from './cache/cache';
 
 export class ScvdEvalInterface implements DataHost {
     private _registerCache = new Cm81MRegisterCache(createMockCm81MRegisterReader());

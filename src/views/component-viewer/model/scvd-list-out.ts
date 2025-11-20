@@ -89,6 +89,10 @@ export class ScvdListOut extends ScvdList {
         return guiItems && guiItems.length > 0 ? guiItems : undefined;
     }
 
+    public hasGuiChildren(): boolean {
+        return this.item.length > 0 || this.listOut.length > 0;
+    }
+
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
 

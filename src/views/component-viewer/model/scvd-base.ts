@@ -391,6 +391,10 @@ export abstract class ScvdBase implements ScvdGuiInterface {
         return undefined;
     }
 
+    public hasGuiChildren(): boolean {
+        return false;
+    }
+
     public getGuiName(): string | undefined {
         return this.name;
     }

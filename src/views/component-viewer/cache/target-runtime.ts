@@ -1,6 +1,6 @@
 // target-runtime.ts
 import { ScvdBase } from '../model/scvd-base';
-import type { MemoryBackend, ModelAddressName } from './cache'; // from cache.ts
+import { MemoryBackend, ModelAddressName } from './cache';
 
 export interface GdbClientSync {
   read(addr: number, size: number): Uint8Array;

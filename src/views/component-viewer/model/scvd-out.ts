@@ -125,6 +125,9 @@ export class ScvdOut extends ScvdBase {
         return guiItems && guiItems.length > 0 ? guiItems : undefined;
     }
 
+    public hasGuiChildren(): boolean {
+        return this.item.length > 0 || this.list.length > 0;
+    }
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];

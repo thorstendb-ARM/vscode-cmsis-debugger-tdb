@@ -9,6 +9,12 @@
     <typedef name="tcb_t" info="" size="36">
       <member name="element"       type="elem_t" offset="0"  info="name of the thread (type is const char *)"/>
     </typedef>
+    <typedef name="memberTest_t" info="" size="4">
+      <member name="a"       type="uint8_t" offset="0"  info="Member a"/>
+      <member name="b"       type="uint8_t" offset="1"  info="Member b"/>
+      <member name="c"       type="uint8_t" offset="2"  info="Member c"/>
+      <member name="d"       type="uint8_t" offset="3"  info="Member d"/>
+    </typedef>
 
   </typedefs>
 
@@ -19,9 +25,12 @@
       <var name="i" type="uint32_t" value="0"/>
       <var name="j" type="uint32_t" value="0"/>
       <var name="TCB" type="tcb_t" value=""/>
+      <var name="memberTest" type="memberTest_t" value="0x12345678"/>
 
       <calc>
         R0  = __GetRegVal ("R0");
+        i = 1;
+        j = 1;
       </calc>
 
       <!-- Read Thread Control Block -->
