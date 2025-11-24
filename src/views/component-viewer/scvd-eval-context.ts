@@ -15,7 +15,6 @@
  */
 
 import { EvalContext } from './evaluator';
-import { MockGdbRuntime } from './mock/mock-gdb-runtime';
 import { ScvdBase } from './model/scvd-base';
 import { ScvdComponentViewer } from './model/scvd-comonent-viewer';
 import { printfHook } from './printf-hook';
@@ -26,21 +25,14 @@ export class ScvdEvalContext {
     private _ctx: EvalContext;
     private _host: ScvdEvalInterface;
     private _model: ScvdComponentViewer;
-    private _runtime: MockGdbRuntime;
 
     constructor(
         model: ScvdComponentViewer
     ) {
         this._model = model;
-        this._runtime = new MockGdbRuntime({
-            memSize: 1 << 20,
-            defaultSymbolSpan: 512, // optional
-            refToName: (ref: any) => ref.name, // or your own mapping
-        });
-        this._runtime.refreshSymtabFromGdb();
 
         // Create the DataHost (stateless; you can reuse a single instance)
-        this._host = new ScvdEvalInterface(this._runtime, this._runtime, { endianness: 'little' });
+        this._host = new ScvdEvalInterface({ endianness: 'little' });
         const outItem = this.getOutItem();
         if(outItem === undefined) {
             throw new Error('SCVD EvalContext: No output item defined');
@@ -69,10 +61,6 @@ export class ScvdEvalContext {
             return object;
         }
         return undefined;
-    }
-
-    public get runtime(): MockGdbRuntime {
-        return this._runtime;
     }
 
     public init() {

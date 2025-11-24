@@ -1,19 +1,6 @@
 // cache.ts
 
 import { RefContainer } from '../evaluator';
-import { ScvdBase } from '../model/scvd-base';
-
-/** Memory I/O used by the cache host (sync). */
-export interface MemoryBackend {
-  read(addr: number, size: number): Uint8Array;
-  write(addr: number, data: Uint8Array): void;
-}
-
-/** Symbol→address/name mapping used by cache host. */
-export interface ModelAddressName {
-  addressOf(ref: ScvdBase): number;
-  nameOf(ref: ScvdBase): string;
-}
 
 /** Entry stored in the symbol cache. */
 export interface SymbolEntry {
@@ -41,37 +28,45 @@ export class SymbolCache {
 
 export class MemoryContainer {
     constructor(
-    readonly symbolName: string,
-    private backend: MemoryBackend,
-    private _baseAddress: number,
-    ) {}
-
-    get baseAddress(): number { return this._baseAddress; }
-    set baseAddress(v: number) { this._baseAddress = v; this.buf = null; }
-
+    readonly symbolName: string
+    ){ }
     private buf: Uint8Array | null = null;
     private winStart = 0;
     private winSize = 0;
 
+
+    private store: Uint8Array = new Uint8Array(0);
     private ensure(off: number, size: number) {
+        // Grow the local store if needed so [off, off+size) fits.
+        const needed = off + size;
+        if (this.store.length < needed) {
+            const next = new Uint8Array(needed);
+            next.set(this.store, 0);
+            this.store = next;
+        }
+
+        // If our current window already covers the requested range, we're done.
         if (this.buf && off >= this.winStart && off + size <= this.winStart + this.winSize) return;
-        const addr = this._baseAddress + off;
-        const bytes = this.backend.read(addr, size);
-        if (bytes.length !== size) throw new Error(`Backend read ${bytes.length}B, expected ${size}B`);
-        this.buf = bytes; this.winStart = off; this.winSize = size;
+
+        // Point the window at the requested range in the local store.
+        this.buf = this.store.subarray(off, off + size);
+        this.winStart = off;
+        this.winSize = size;
+
     }
 
     read(off: number, size: number): Uint8Array {
         this.ensure(off, size);
         if (!this.buf) throw new Error('window not initialized');
-        return this.buf.subarray(0, size); // aligned to 'off'
+        const rel = off - this.winStart;
+        return this.buf.subarray(rel, rel + size);
     }
 
     write(off: number, data: Uint8Array): void {
         this.ensure(off, data.length);
         if (!this.buf) throw new Error('window not initialized');
-        this.buf.set(data, 0);
-        this.backend.write(this._baseAddress + off, data);
+        const rel = off - this.winStart;
+        this.buf.set(data, rel);
     }
 }
 
@@ -107,28 +102,19 @@ export class CachedMemoryHost {
     private cache: SymbolCache;
     private endianness: Endianness;
 
-    constructor(
-    private backend: MemoryBackend,
-    private addrName: ModelAddressName,
-    opts?: HostOptions,
+    constructor(opts?: HostOptions,
     ) {
-        this.cache = new SymbolCache((name) => new MemoryContainer(name, this.backend, 0));
+        this.cache = new SymbolCache((name) => new MemoryContainer(name));
         this.endianness = opts?.endianness ?? 'little';
     }
 
-    private getEntry(anchor: ScvdBase): SymbolEntry {
-        const name = this.addrName.nameOf(anchor);
-        const entry = this.cache.getSymbol(name);
-        const baseAddr = this.addrName.addressOf(anchor);
-        if (entry.data.baseAddress !== baseAddr) {
-            entry.data.baseAddress = baseAddr;
-            entry.valid = false;
-        }
+    private getEntry(varName: string): SymbolEntry {
+        const entry = this.cache.getSymbol(varName);
         return entry;
     }
 
     readValue(container: RefContainer): any {
-        const anchor = container.anchor;
+        const anchor = container.anchor?.name;
         const widthBits = container.widthBits ?? 0;
         if (!anchor || widthBits <= 0) throw new Error('readValue: invalid target');
 
@@ -152,7 +138,7 @@ export class CachedMemoryHost {
     }
 
     writeValue(container: RefContainer, value: any): void {
-        const anchor = container.anchor;
+        const anchor = container.anchor?.name;
         const widthBits = container.widthBits ?? 0;
         if (!anchor || widthBits <= 0) throw new Error('writeValue: invalid target');
 

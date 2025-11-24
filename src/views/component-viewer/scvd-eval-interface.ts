@@ -8,21 +8,16 @@ import { Cm81MRegisterCache } from './cache/register-cache';
 import { DataHost, RefContainer } from './evaluator';
 import { createMockCm81MRegisterReader } from './mock/cm81m-registers';
 import { ScvdBase } from './model/scvd-base';
-import { TargetRuntime, GdbClientSync, Symtab } from './cache/target-runtime';
 import { CachedMemoryHost, HostOptions } from './cache/cache';
 
 export class ScvdEvalInterface implements DataHost {
     private _registerCache = new Cm81MRegisterCache(createMockCm81MRegisterReader());
-    private runtime: TargetRuntime;
     private memHost: CachedMemoryHost;
 
     constructor(
-        gdb: GdbClientSync,
-        symtab: Symtab,
         opts?: HostOptions
     ) {
-        this.runtime = new TargetRuntime(gdb, symtab);
-        this.memHost = new CachedMemoryHost(this.runtime, this.runtime, opts);
+        this.memHost = new CachedMemoryHost(opts);
     }
 
     private get registerCache(): Cm81MRegisterCache {
