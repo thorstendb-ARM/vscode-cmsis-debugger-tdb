@@ -50,12 +50,10 @@ export class ScvdEvalContext {
             throw new Error('SCVD EvalContext: No output item defined');
         }
 
-        // Your model’s root ScvdBase (where symbol resolution starts)
         this._ctx = new EvalContext({
-            data: this._evalHost,              // DataHost
-            container: outItem, // ScvdBase root for symbol resolution
+            data: this._evalHost,               // DataHost
+            container: outItem,                 // ScvdBase root for symbol resolution
             printf: printfHook,
-            // functions: this._host.functions, // optional external callables table
         });
     }
 
@@ -96,7 +94,5 @@ export class ScvdEvalContext {
     }
 
     public init() {
-        // Initialize the EVAL context (pre-declare symbols, etc.)
-        this._model.evalContext = this._ctx;
     }
 }

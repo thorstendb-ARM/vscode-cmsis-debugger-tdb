@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import { EvalContext } from '../evaluator';
 import { ResolveSymbolCb } from '../resolver';
+import { ExecutionContext } from '../scvd-eval-context';
 import { ScvdGuiInterface } from './scvd-gui-interface';
 import { getLineNumberFromJson, getStringFromJson } from './scvd-utils';
 
@@ -47,7 +47,7 @@ export abstract class ScvdBase implements ScvdGuiInterface {
     private _isModified: boolean = false;
     private _valid: boolean = false;
 
-    static #_evalContext?: EvalContext | undefined;
+    static _executionContext: ExecutionContext | undefined;
     private _symbolsCache: Map<string, ScvdBase> | undefined;
 
     constructor(
@@ -121,23 +121,7 @@ export abstract class ScvdBase implements ScvdGuiInterface {
         return undefined;
     }
 
-    /** Set once for the entire process / class hierarchy. */
-    static initEvalContext(ctx: EvalContext) {
-        ScvdBase.#_evalContext = ctx;
-    }
-
-    /** Static accessor in case you need it from static contexts. */
-    static getEvalContext(): EvalContext | undefined{
-        return ScvdBase.#_evalContext;
-    }
-
-    /** Instance-level convenience that reads the shared static. */
-    get evalContext(): EvalContext | undefined {
-        return ScvdBase.getEvalContext();
-    }
-
-    set evalContext(_ctx: EvalContext) {
-        ScvdBase.initEvalContext(_ctx);
+    public setExecutionContext(_executionContext: ExecutionContext) {
     }
 
     // default condition always true

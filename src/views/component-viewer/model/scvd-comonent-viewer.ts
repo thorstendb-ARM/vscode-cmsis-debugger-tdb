@@ -22,6 +22,7 @@ import { ExplorerInfo, Json, ScvdBase } from './scvd-base';
 import { ScvdObjects } from './scvd-object';
 import { ScvdTypedefs } from './scvd-typedef';
 import { /*getArrayFromJson,*/ getObjectFromJson } from './scvd-utils';
+import { ExecutionContext } from '../scvd-eval-context';
 
 export class ScvdComponentViewer extends ScvdBase {
     private _componentIdentifier: ScvdComponentIdentifier | undefined;
@@ -123,6 +124,16 @@ export class ScvdComponentViewer extends ScvdBase {
             this.validateRecursive(child, valid);
         });
         return valid;
+    }
+
+    public setExecutionContextAll(executionContext: ExecutionContext) {
+        this.setExecutionContextRecursive(this, executionContext);
+    }
+    private setExecutionContextRecursive(item: ScvdBase, executionContext: ExecutionContext) {
+        item.setExecutionContext(executionContext);
+        item.children.forEach( (child: ScvdBase) => {
+            this.setExecutionContextRecursive(child, executionContext);
+        });
     }
 
     public debugAll(): boolean {

@@ -97,6 +97,14 @@ export class ComponentViewerInstance {
 
         this.model.readXml(xml);
         stats.push(this.getStats('  model.readXml'));
+
+        const scvdEvalContext = new ScvdEvalContext(this.model);
+        scvdEvalContext.init();
+        stats.push(this.getStats('  evalContext.init'));
+
+        const executionContext = scvdEvalContext.getExecutionContext();
+        this.model.setExecutionContextAll(executionContext);
+
         this.model.configureAll();
         stats.push(this.getStats('  model.configureAll'));
         this.model.validateAll(true);
@@ -106,11 +114,6 @@ export class ComponentViewerInstance {
         resolver.resolve();
         stats.push(this.getStats('  resolver.resolve'));
 
-        const scvdEvalContext = new ScvdEvalContext(this.model);
-        scvdEvalContext.init();
-        stats.push(this.getStats('  evalContext.init'));
-
-        const executionContext = scvdEvalContext.getExecutionContext();
         const statementEngine = new StatementEngine(this.model, executionContext);
         statementEngine.initialize();
         stats.push(this.getStats('  statementEngine.initialize'));
