@@ -44,10 +44,12 @@ export class ScvdEvalInterface implements DataHost {
     //     return ref.getElementRef(); // ref to type
     // }
 
+    // actual data width of one element in bits (no padding).
     getElementBitWidth(ref: ScvdBase): number {
         return ref.getElementBitWidth() ?? 0;
     }
 
+    // bytes per element (including any padding/alignment inside the array layout).
     getElementStride(ref: ScvdBase): number {
         return ref.getElementStride() ?? 0;
     }
@@ -57,6 +59,12 @@ export class ScvdEvalInterface implements DataHost {
         console.log(`getMemberOffset: base=${_base.getExplorerDisplayName()} member=${member.getExplorerDisplayName()} => ${offset}`);
         return offset;
     }
+
+    /* width in bits of that node itself:
+      - For scalars/structs/unions: their full bit width.
+      - For arrays: either the total array width (count × stride × 8)
+        if known, or leave it ambiguous. Do not return the element width for an array; that’s what getElementBitWidth is for.
+    */
     getBitWidth(ref: ScvdBase): number {
         const size = ref.getSize();
         if(size !== undefined) {
