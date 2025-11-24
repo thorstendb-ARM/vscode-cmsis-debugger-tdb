@@ -110,6 +110,9 @@ export class ScvdVar extends ScvdBase {
         return undefined;
     }
 
+    public getElementStride(): number {
+        return this._type?.getSize() ?? 0;
+    }
 
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {

@@ -35,7 +35,7 @@
       </calc> -->
 
       <calc>
-        memberTest[1] = 24;
+        memberTest[2] = 24;
         memberTest.a = 12;
         memberTest.b = 34;
         memberTest.c = 56;
@@ -55,6 +55,7 @@
           <item property="memberTest c"     value="%d[memberTest.c]"/>
           <item property="memberTest d"     value="%d[memberTest.d]"/>
           <item property="memberTest sum"   value="%d[memberTest.sum]"/>
+          <item property="memberTest"       value="%d[memberTest[2]]"/>
 
         <!-- <item property="ISR_FIFO at i" value="%x[ISR_FIFO[i]]"/>
         <item property="TCB at i, element" value="%x[TCB[i].element]"/>
