@@ -9,11 +9,12 @@
     <typedef name="tcb_t" info="" size="36">
       <member name="element"       type="elem_t" offset="0"  info="name of the thread (type is const char *)"/>
     </typedef>
-    <typedef name="memberTest_t" info="" size="4">
+    <typedef name="memberTest_t" info="" size="8">
       <member name="a"       type="uint8_t" offset="0"  info="Member a"/>
       <member name="b"       type="uint8_t" offset="1"  info="Member b"/>
       <member name="c"       type="uint8_t" offset="2"  info="Member c"/>
       <member name="d"       type="uint8_t" offset="3"  info="Member d"/>
+      <member name="sum"     type="uint32_t" offset="4"  info="Member sum"/>
     </typedef>
 
   </typedefs>
@@ -34,10 +35,12 @@
       </calc> -->
 
       <calc>
+        memberTest[1] = 24;
         memberTest.a = 12;
         memberTest.b = 34;
         memberTest.c = 56;
         memberTest.d = 78;
+        memberTest.sum = memberTest.a + memberTest.b + memberTest.c + memberTest.d;
       </calc>
 
       <!-- Read Thread Control Block -->
@@ -51,6 +54,7 @@
           <item property="memberTest b"     value="%d[memberTest.b]"/>
           <item property="memberTest c"     value="%d[memberTest.c]"/>
           <item property="memberTest d"     value="%d[memberTest.d]"/>
+          <item property="memberTest sum"   value="%d[memberTest.sum]"/>
 
         <!-- <item property="ISR_FIFO at i" value="%x[ISR_FIFO[i]]"/>
         <item property="TCB at i, element" value="%x[TCB[i].element]"/>

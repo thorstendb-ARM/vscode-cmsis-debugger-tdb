@@ -121,6 +121,10 @@ export abstract class ScvdBase implements ScvdGuiInterface {
         return undefined;
     }
 
+    public getElementRef(): ScvdBase | undefined {
+        return undefined;
+    }
+
     public setExecutionContext(_executionContext: ExecutionContext) {
     }
 
@@ -338,7 +342,6 @@ export abstract class ScvdBase implements ScvdGuiInterface {
         return 0;
     }
 
-    // __size_of intrinsic
     public getSize(): number | undefined {
         console.log(`GetSize not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
         return 4;
@@ -347,12 +350,6 @@ export abstract class ScvdBase implements ScvdGuiInterface {
     public getMemberOffset(): number | undefined {
         console.log(`GetMemberOffset not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
         return undefined;
-    }
-
-    // member’s width in bits
-    public getBitWidth(): number {
-        console.log(`GetBitWidth not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
-        return 32;
     }
 
     public getElementBitWidth(): number {

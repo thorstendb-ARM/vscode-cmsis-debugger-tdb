@@ -67,8 +67,13 @@ export class ScvdDataType extends ScvdBase {
         return this._type?.getMember(property);
     }
 
-    public getBitWidth(): number {
-        return this._type?.getBitWidth() ?? 32;
+    public getSize(): number | undefined {
+        const size = this._type?.size;
+        return size;
+    }
+
+    public get size(): number | undefined {
+        return this._type?.size;
     }
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
@@ -76,7 +81,7 @@ export class ScvdDataType extends ScvdBase {
 
         if (this._type !== undefined) {
             info.push({ name: 'Type', value: this._type.getExplorerDisplayName() });
-            info.push({ name: 'Size', value: this.getBitWidth().toString() ?? '' });
+            info.push({ name: 'Size', value: this.getSize()?.toString() ?? '' });
         } else {
             info.push({ name: 'Type', value: 'undefined' });
         }
@@ -111,19 +116,11 @@ export class ScvdScalarDataType extends ScvdBase {
     public get size(): number | undefined {
         const info = this._type && ScvdScalarDataTypeMap[this._type];
         const value = info ? info[0]: undefined;
-        return value;
+        return value ? value / 8 : undefined;
     }
 
     public get type(): string | undefined {
         return this._type;
-    }
-
-    public getBitWidth(): number {
-        const bitWidth = this.size;
-        if( bitWidth !== undefined) {
-            return bitWidth;
-        }
-        return 32;
     }
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
@@ -168,14 +165,6 @@ export class ScvdComplexDataType extends ScvdBase{
             return sizeInBytes;
         }
         return undefined;
-    }
-
-    public getBitWidth(): number {
-        const bitWidth = this.size;
-        if( bitWidth !== undefined) {
-            return bitWidth * 8;
-        }
-        return 32;
     }
 
     public get isPointer(): boolean {

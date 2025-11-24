@@ -380,19 +380,28 @@ function mustRead(ctx: EvalContext, label?: string): any {
 function lref(node: ASTNode, ctx: EvalContext): LValue {
     // Resolve and set the current target in the container for writes
     mustRef(node, ctx, true);
+
+    // ⬇️ NEW: snapshot the LHS write target so RHS evaluation can't clobber it
+    const target: RefContainer = {
+        base: ctx.container.base,
+        anchor: ctx.container.anchor,
+        offsetBytes: ctx.container.offsetBytes,
+        widthBits: ctx.container.widthBits,
+        offsetBitRemainder: ctx.container.offsetBitRemainder,
+        index: (ctx.container as any).index,  // if you record it
+    };
     return {
         get(): any {
             mustRef(node, ctx, false);
             return mustRead(ctx);
         },
         set(v: any): any {
-            const out = ctx.data.writeValue(ctx.container, v);
+            const out = ctx.data.writeValue(target, v); // ⬅️ use frozen target
             if (out === undefined) throw new Error('Write returned undefined');
             return out;
         }
     };
 }
-
 /* =============================================================================
  * Evaluation
  * ============================================================================= */
@@ -482,7 +491,10 @@ export function evalNode(node: ASTNode, ctx: EvalContext): any {
         case 'AssignmentExpression': {
             const a = node as AssignmentExpression;
             const ref = lref(a.left, ctx);
-            if (a.operator === '=') return ref.set(evalNode(a.right, ctx));
+            if (a.operator === '=') {
+                const value = withIsolatedContainer(ctx, () => evalNode(a.right, ctx));
+                return ref.set(value);
+            }
             const L = evalNode(a.left, ctx);
             const R = evalNode(a.right, ctx);
             let out: any;

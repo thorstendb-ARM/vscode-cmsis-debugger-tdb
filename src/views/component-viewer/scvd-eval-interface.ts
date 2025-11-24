@@ -35,10 +35,17 @@ export class ScvdEvalInterface implements DataHost {
         return symbol;
     }
 
-    getMemberRef(container: RefContainer, property: string): ScvdBase | undefined {
+    getMemberRef(container: RefContainer, property: string, _forWrite?: boolean): ScvdBase | undefined {
         const base = container.current;
-        const member = base?.getMember(property);
-        return member;
+        return base?.getMember(property);
+    }
+
+    // getElementRef(ref: ScvdBase): ScvdBase | undefined {
+    //     return ref.getElementRef(); // ref to type
+    // }
+
+    getElementBitWidth(ref: ScvdBase): number {
+        return ref.getElementBitWidth() ?? 0;
     }
 
     getElementStride(ref: ScvdBase): number {
@@ -47,16 +54,15 @@ export class ScvdEvalInterface implements DataHost {
 
     getMemberOffset(_base: ScvdBase, member: ScvdBase): number {
         const offset = member.getMemberOffset() ?? 0;
-        console.log(`ScvdEvalInterface.getMemberOffset: base=${_base.getExplorerDisplayName()}, member=${member.getExplorerDisplayName()} => offset=${offset}`);
+        console.log(`getMemberOffset: base=${_base.getExplorerDisplayName()} member=${member.getExplorerDisplayName()} => ${offset}`);
         return offset;
     }
-
     getBitWidth(ref: ScvdBase): number {
-        return ref.getBitWidth() ?? 0;
-    }
-
-    getElementBitWidth(ref: ScvdBase): number {
-        return ref.getElementBitWidth() ?? 0;
+        const size = ref.getSize();
+        if(size !== undefined) {
+            return size * 8;
+        }
+        return 0;
     }
 
     /* ---------------- Read/Write via caches ---------------- */

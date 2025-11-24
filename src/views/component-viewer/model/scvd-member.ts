@@ -89,6 +89,15 @@ export class ScvdMember extends ScvdBase {
         }
     }
 
+    public getSize(): number | undefined {
+        const size = this._size;
+        if( size !== undefined) {
+            return size;
+        }
+        const typeSize = this._type?.size;
+        return typeSize;
+    }
+
     public addEnum(): ScvdEnum {
         const lastEnum = this._enum[this._enum.length - 1];
         const enumItem = new ScvdEnum(this, lastEnum);
@@ -125,16 +134,6 @@ export class ScvdMember extends ScvdBase {
         }
         return 0;   // TODO: default?
     }
-
-    // member’s width in bits
-    public getBitWidth(): number {
-        const bitWidth = this._type?.getBitWidth();
-        if (bitWidth !== undefined) {
-            return bitWidth;
-        }
-        return 32;
-    }
-
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];

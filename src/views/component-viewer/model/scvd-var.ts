@@ -87,6 +87,11 @@ export class ScvdVar extends ScvdBase {
         }
     }
 
+    public getSize(): number | undefined {
+        const size = this._type?.getSize();
+        return size;
+    }
+
     // search a member (member, var) in typedef
     public getMember(_property: string): ScvdBase | undefined {
         const type = this._type;
@@ -96,6 +101,15 @@ export class ScvdVar extends ScvdBase {
         }
         return undefined;
     }
+
+    public getElementRef(): ScvdBase | undefined {
+        const typeObj = this._type;
+        if(typeObj !== undefined) {
+            return typeObj;
+        }
+        return undefined;
+    }
+
 
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
