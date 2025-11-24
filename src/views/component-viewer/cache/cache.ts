@@ -159,7 +159,7 @@ export class CachedMemoryHost {
         entry.data.write(byteOff, next);
     }
 
-    setVariable(name: string, size: number, value: any): void {
+    setVariable(name: string, size: number, value: number | bigint | Uint8Array): void {
         const entry = this.getEntry(name);
         const buf = new Uint8Array(size);
         if (typeof value === 'bigint') {
