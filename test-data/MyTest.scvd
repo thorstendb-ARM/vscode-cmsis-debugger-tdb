@@ -20,38 +20,41 @@
 
   <objects>
     <object name="RTX RTOS Object">
-      <var name="R0" type="uint32_t" value="0x1"/>
-      <var name="ISR_FIFO" type="uint32_t" value="0x2"/>
+      <!-- <var name="R0" type="uint32_t" value="0x1"/>
+      <var name="ISR_FIFO" type="uint32_t" value="0x2"/> -->
+      <!-- <var name="TCB" type="tcb_t" value=""/> -->
       <var name="i" type="uint32_t" value="0"/>
       <var name="j" type="uint32_t" value="0"/>
-      <var name="TCB" type="tcb_t" value=""/>
-      <var name="memberTest" type="memberTest_t" value="0x12345678"/>
+      <var name="memberTest" type="memberTest_t" value="0x00000000"/>
 
-      <calc>
+      <!-- <calc>
         R0  = __GetRegVal ("R0");
         i = 1;
         j = 2;
-        memberTest.a = 0x12;
-        memberTest.b = 0x34;
-        memberTest.c = 0x56;
-        memberTest.d = 0x78;
+      </calc> -->
+
+      <calc>
+        memberTest.a = 12;
+        memberTest.b = 34;
+        memberTest.c = 56;
+        memberTest.d = 78;
       </calc>
 
       <!-- Read Thread Control Block -->
       <!--readlist cond="(mem_list_com[i].len &amp; 1) &amp;&amp; (mem_list_com[i].id == 0xF1)" name="TCB" type="osRtxThread_t" offset="addr" count="1" /-->
 
       <out name="GetRegVal Test">
-          <item property="R0"     value="%x[R0]"/>
+          <!-- <item property="R0"     value="%x[R0]"/>
           <item property="i"     value="%x[i]"/>
-          <item property="j"     value="%x[j]"/>
-          <item property="memberTest a"     value="%x[memberTest.a]"/>
-          <item property="memberTest b"     value="%x[memberTest.b]"/>
-          <item property="memberTest c"     value="%x[memberTest.c]"/>
-          <item property="memberTest d"     value="%x[memberTest.d]"/>
+          <item property="j"     value="%x[j]"/> -->
+          <item property="memberTest a"     value="%d[memberTest.a]"/>
+          <item property="memberTest b"     value="%d[memberTest.b]"/>
+          <item property="memberTest c"     value="%d[memberTest.c]"/>
+          <item property="memberTest d"     value="%d[memberTest.d]"/>
 
-        <!--item property="ISR_FIFO at i" value="%x[ISR_FIFO[i]]"/-->
-        <!--item property="TCB at i, element" value="%x[TCB[i].element]"/-->
-        <!--item property="TCB at i, element at i, id" value="%x[TCB[i].element[j].id]"/-->
+        <!-- <item property="ISR_FIFO at i" value="%x[ISR_FIFO[i]]"/>
+        <item property="TCB at i, element" value="%x[TCB[i].element]"/>
+        <item property="TCB at i, element at i, id" value="%x[TCB[i].element[j].id]"/> -->
       </out>
     </object>
   </objects>

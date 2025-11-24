@@ -45,8 +45,10 @@ export class ScvdEvalInterface implements DataHost {
         return ref.getElementStride() ?? 0;
     }
 
-    getMemberOffset(base: ScvdBase, _member: ScvdBase): number {
-        return base.getMemberOffset() ?? 0;
+    getMemberOffset(_base: ScvdBase, member: ScvdBase): number {
+        const offset = member.getMemberOffset() ?? 0;
+        console.log(`ScvdEvalInterface.getMemberOffset: base=${_base.getExplorerDisplayName()}, member=${member.getExplorerDisplayName()} => offset=${offset}`);
+        return offset;
     }
 
     getBitWidth(ref: ScvdBase): number {

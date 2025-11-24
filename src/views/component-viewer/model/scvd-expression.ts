@@ -81,13 +81,14 @@ export class ScvdExpression extends ScvdBase {
         return this._result;
     }
 
-    public get value(): number | string | undefined {
+    private get value(): number | string | undefined {
         this.evaluate();
         return this._result;
     }
 
     public getValue(): number | undefined {
-        return (typeof this.value === 'number') ? this.value : undefined;
+        const val = this.value;
+        return (typeof val === 'number') ? val : undefined;
     }
 
     public setValue(val: number): number | undefined {

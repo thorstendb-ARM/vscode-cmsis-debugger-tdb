@@ -39,7 +39,7 @@ export class StatementRead extends StatementBase {
         const size = scvdRead.size;
         let readLength: number = 4;
         if(size !== undefined) {
-            const sizeValue = size.value;
+            const sizeValue = size.getValue();
             if(typeof sizeValue === 'number') {
                 readLength = sizeValue;
                 console.log(`${this.line} Executing "read": ${scvdRead.name}, size expression: ${size.expression}, value: ${readLength}`);

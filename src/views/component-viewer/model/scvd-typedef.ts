@@ -156,7 +156,7 @@ export class ScvdTypedef extends ScvdBase {
         const info: ExplorerInfo[] = [];
         if (this._size !== undefined) {
             info.push({ name: 'Size', value: this._size.expression ?? '' });
-            if (this._size.value !== undefined) {
+            if (this._size.getValue() !== undefined) {
                 info.push({ name: 'Size Value', value: this._size.getGuiValue() ?? 'undefined' });
             }
         }
