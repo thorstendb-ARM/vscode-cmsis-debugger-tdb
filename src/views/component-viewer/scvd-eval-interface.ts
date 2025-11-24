@@ -4,24 +4,29 @@
 //  - optional auto-declare unknown globals on write
 //  - module-level helpers to add/read globals without host reference
 
-import { Cm81MRegisterCache } from './cache/register-cache';
 import { DataHost, RefContainer } from './evaluator';
-import { createMockCm81MRegisterReader } from './mock/cm81m-registers';
 import { ScvdBase } from './model/scvd-base';
-import { CachedMemoryHost, HostOptions } from './cache/cache';
+import { CachedMemoryHost } from './cache/cache';
+import { Cm81MRegisterCache } from './cache/register-cache';
 
 export class ScvdEvalInterface implements DataHost {
-    private _registerCache = new Cm81MRegisterCache(createMockCm81MRegisterReader());
-    private memHost: CachedMemoryHost;
+    private _registerCache: Cm81MRegisterCache;
+    private _memHost: CachedMemoryHost;
 
     constructor(
-        opts?: HostOptions
+        memHost: CachedMemoryHost,
+        regHost: Cm81MRegisterCache
     ) {
-        this.memHost = new CachedMemoryHost(opts);
+        this._memHost = memHost;
+        this._registerCache = regHost;
     }
 
     private get registerCache(): Cm81MRegisterCache {
         return this._registerCache;
+    }
+
+    private get memHost(): CachedMemoryHost {
+        return this._memHost;
     }
 
     // ---------------- DataHost Interface ----------------

@@ -16,6 +16,7 @@
 
 import { ScvdBase } from '../model/scvd-base';
 import { ScvdComponentViewer } from '../model/scvd-comonent-viewer';
+import { ExecutionContext } from '../scvd-eval-context';
 import { StatementBase } from './statement-base';
 import { StatementCalc } from './statement-calc';
 import { StatementItem } from './statement-item';
@@ -26,12 +27,18 @@ import { StatementRead } from './statement-read';
 import { StatementReadList } from './statement-readList';
 import { StatementVar } from './statement-var';
 
+
 export class StatementEngine {
     private _model: ScvdComponentViewer;
     private _statementTree: StatementBase | undefined;
+    private _executionContext: ExecutionContext;
 
-    constructor(model: ScvdComponentViewer) {
+    constructor(
+        model: ScvdComponentViewer,
+        executionContext: ExecutionContext
+    ) {
         this._model = model;
+        this._executionContext = executionContext;
     }
 
     get model(): ScvdComponentViewer {
@@ -40,6 +47,10 @@ export class StatementEngine {
 
     get statementTree(): StatementBase | undefined {
         return this._statementTree;
+    }
+
+    get executionContext(): ExecutionContext {
+        return this._executionContext;
     }
 
     private buildStatement(item: ScvdBase, parent: StatementBase | undefined) : StatementBase | undefined {
@@ -116,7 +127,7 @@ export class StatementEngine {
         // This is a placeholder implementation.
         if (this._statementTree) {
             console.log('Executing statements in the statement tree...');
-            this._statementTree.executeStatement();
+            this._statementTree.executeStatement(this.executionContext);
         }
     }
 }

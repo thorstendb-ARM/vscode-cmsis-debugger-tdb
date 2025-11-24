@@ -16,6 +16,7 @@
 
 import { ScvdBase } from '../model/scvd-base';
 import { ScvdCalc } from '../model/scvd-calc';
+import { ExecutionContext } from '../scvd-eval-context';
 import { StatementBase } from './statement-base';
 
 
@@ -25,7 +26,7 @@ export class StatementCalc extends StatementBase {
         super(item, parent);
     }
 
-    protected onExecute(): void {
+    protected onExecute(_executionContext: ExecutionContext): void {
         const calcItem = this.scvdItem.castToDerived(ScvdCalc);
         if (!calcItem) {
             throw new Error('Invalid SCVD item');

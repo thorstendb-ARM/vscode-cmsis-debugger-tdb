@@ -114,11 +114,11 @@ export class CachedMemoryHost {
     }
 
     readValue(container: RefContainer): any {
-        const anchor = container.anchor?.name;
+        const variableName = container.anchor?.name;
         const widthBits = container.widthBits ?? 0;
-        if (!anchor || widthBits <= 0) throw new Error('readValue: invalid target');
+        if (!variableName || widthBits <= 0) throw new Error('readValue: invalid target');
 
-        const entry = this.getEntry(anchor);
+        const entry = this.getEntry(variableName);
         const byteOff = container.offsetBytes ?? 0;
         const bitStart = container.offsetBitRemainder ?? 0;
         const nBytes = Math.ceil((bitStart + widthBits) / 8);
@@ -138,11 +138,11 @@ export class CachedMemoryHost {
     }
 
     writeValue(container: RefContainer, value: any): void {
-        const anchor = container.anchor?.name;
+        const variableName = container.anchor?.name;
         const widthBits = container.widthBits ?? 0;
-        if (!anchor || widthBits <= 0) throw new Error('writeValue: invalid target');
+        if (!variableName || widthBits <= 0) throw new Error('writeValue: invalid target');
 
-        const entry = this.getEntry(anchor);
+        const entry = this.getEntry(variableName);
         const byteOff = container.offsetBytes ?? 0;
         const bitStart = container.offsetBitRemainder ?? 0;
         const nBytes = Math.ceil((bitStart + widthBits) / 8);
@@ -157,5 +157,23 @@ export class CachedMemoryHost {
         const raw = entry.data.read(byteOff, nBytes);
         const next = injectBitsLE(raw, bitStart, widthBits, valBig);
         entry.data.write(byteOff, next);
+    }
+
+    setVariable(name: string, size: number, value: any): void {
+        const entry = this.getEntry(name);
+        const buf = new Uint8Array(size);
+        if (typeof value === 'bigint') {
+            const valBytes = leBigIntToBytes(value, size);
+            buf.set(valBytes, 0);
+        } else if (typeof value === 'number') {
+            const valBytes = leBigIntToBytes(BigInt(Math.trunc(value)), size);
+            buf.set(valBytes, 0);
+        } else if (value instanceof Uint8Array) {
+            buf.set(value.subarray(0, size), 0);
+        } else {
+            throw new Error('setVariable: unsupported value type');
+        }
+        entry.data.write(0, buf);
+        entry.valid = true;
     }
 }

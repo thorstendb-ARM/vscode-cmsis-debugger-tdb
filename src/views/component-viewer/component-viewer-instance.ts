@@ -106,11 +106,12 @@ export class ComponentViewerInstance {
         resolver.resolve();
         stats.push(this.getStats('  resolver.resolve'));
 
-        const evalContext = new ScvdEvalContext(this.model);
-        evalContext.init();
+        const scvdEvalContext = new ScvdEvalContext(this.model);
+        scvdEvalContext.init();
         stats.push(this.getStats('  evalContext.init'));
 
-        const statementEngine = new StatementEngine(this.model);
+        const executionContext = scvdEvalContext.getExecutionContext();
+        const statementEngine = new StatementEngine(this.model, executionContext);
         statementEngine.initialize();
         stats.push(this.getStats('  statementEngine.initialize'));
         statementEngine.executeAll();

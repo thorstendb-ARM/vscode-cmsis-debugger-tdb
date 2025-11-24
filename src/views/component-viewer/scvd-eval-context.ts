@@ -14,16 +14,27 @@
  * limitations under the License.
  */
 
+import { CachedMemoryHost } from './cache/cache';
+import { Cm81MRegisterCache } from './cache/register-cache';
 import { EvalContext } from './evaluator';
+import { createMockCm81MRegisterReader } from './mock/cm81m-registers';
 import { ScvdBase } from './model/scvd-base';
 import { ScvdComponentViewer } from './model/scvd-comonent-viewer';
 import { printfHook } from './printf-hook';
 import { ScvdEvalInterface } from './scvd-eval-interface';
 
+export interface ExecutionContext {
+    memoryHost: CachedMemoryHost;
+    registerHost: Cm81MRegisterCache;
+    evalContext: EvalContext;
+}
+
 
 export class ScvdEvalContext {
     private _ctx: EvalContext;
-    private _host: ScvdEvalInterface;
+    private _evalHost: ScvdEvalInterface;
+    private _memoryHost: CachedMemoryHost;
+    private _registerHost: Cm81MRegisterCache;
     private _model: ScvdComponentViewer;
 
     constructor(
@@ -31,8 +42,9 @@ export class ScvdEvalContext {
     ) {
         this._model = model;
 
-        // Create the DataHost (stateless; you can reuse a single instance)
-        this._host = new ScvdEvalInterface({ endianness: 'little' });
+        this._memoryHost = new CachedMemoryHost({ endianness: 'little' });
+        this._registerHost = new Cm81MRegisterCache(createMockCm81MRegisterReader());
+        this._evalHost = new ScvdEvalInterface(this._memoryHost, this._registerHost);
         const outItem = this.getOutItem();
         if(outItem === undefined) {
             throw new Error('SCVD EvalContext: No output item defined');
@@ -40,7 +52,7 @@ export class ScvdEvalContext {
 
         // Your model’s root ScvdBase (where symbol resolution starts)
         this._ctx = new EvalContext({
-            data: this._host,              // DataHost
+            data: this._evalHost,              // DataHost
             container: outItem, // ScvdBase root for symbol resolution
             printf: printfHook,
             // functions: this._host.functions, // optional external callables table
@@ -49,6 +61,26 @@ export class ScvdEvalContext {
 
     private get model(): ScvdComponentViewer {
         return this._model;
+    }
+
+    private get memoryHost(): CachedMemoryHost {
+        return this._memoryHost;
+    }
+
+    private get registerHost(): Cm81MRegisterCache {
+        return this._registerHost;
+    }
+
+    private get ctx(): EvalContext {
+        return this._ctx;
+    }
+
+    public getExecutionContext(): ExecutionContext {
+        return {
+            memoryHost: this.memoryHost,
+            registerHost: this.registerHost,
+            evalContext: this.ctx
+        };
     }
 
     public getOutItem(): ScvdBase | undefined {
@@ -66,9 +98,5 @@ export class ScvdEvalContext {
     public init() {
         // Initialize the EVAL context (pre-declare symbols, etc.)
         this._model.evalContext = this._ctx;
-    }
-
-    public get ctx(): EvalContext {
-        return this._ctx;
     }
 }

@@ -15,8 +15,8 @@
  */
 
 import { ScvdBase } from '../model/scvd-base';
-import { ScvdExpression } from '../model/scvd-expression';
 import { ScvdVar } from '../model/scvd-var';
+import { ExecutionContext } from '../scvd-eval-context';
 import { StatementBase } from './statement-base';
 
 
@@ -26,18 +26,18 @@ export class StatementVar extends StatementBase {
         super(item, parent);
     }
 
-    protected onExecute(): void {
+    protected onExecute(executionContext: ExecutionContext): void {
         console.log(`${this.line}: Executing "var": ${this.scvdItem.name}`);
 
         const varItem = this.scvdItem.castToDerived(ScvdVar);
         if(varItem !== undefined) {
             const name = varItem.name;
+            const size = varItem.getSize();
             const value = varItem.getValue();
-            const exprString = `${name} = ${value}`;
-            const expr = new ScvdExpression(undefined, exprString, 'temp', false);
-            expr.configure();
-            const result = expr.getValue();
-            console.log(`${this.line} Variable "${name}" created with value: ${result}`);
+            if(name !== undefined && size !== undefined) {
+                executionContext.memoryHost.setVariable(name, size, value);
+                console.log(`${this.line} Variable "${name}" created with value: ${value}`);
+            }
         }
     }
 }
