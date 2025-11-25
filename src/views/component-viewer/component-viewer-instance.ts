@@ -104,6 +104,7 @@ export class ComponentViewerInstance {
 
         const executionContext = scvdEvalContext.getExecutionContext();
         this.model.setExecutionContextAll(executionContext);
+        stats.push(this.getStats('  model.setExecutionContextAll'));
 
         this.model.configureAll();
         stats.push(this.getStats('  model.configureAll'));
@@ -113,6 +114,9 @@ export class ComponentViewerInstance {
         const resolver = new Resolver(this.model);
         resolver.resolve();
         stats.push(this.getStats('  resolver.resolve'));
+
+        this.model.calculateTypedefs();
+        stats.push(this.getStats('  model.calculateTypedefs'));
 
         const statementEngine = new StatementEngine(this.model, executionContext);
         statementEngine.initialize();

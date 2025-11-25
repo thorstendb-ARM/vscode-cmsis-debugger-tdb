@@ -104,6 +104,18 @@ export class ScvdVar extends ScvdBase {
         }
     }
 
+    // member’s byte offset
+    public getMemberOffset(): number | undefined {
+        const offsetExpr = this._offset;
+        if (offsetExpr !== undefined) {
+            const offsetValue = offsetExpr.getValue();
+            if (typeof offsetValue === 'number') {
+                return offsetValue;
+            }
+        }
+        return 0;   // TODO: default?
+    }
+
 
     // search a member (member, var) in typedef
     public getMember(_property: string): ScvdBase | undefined {

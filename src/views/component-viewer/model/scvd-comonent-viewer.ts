@@ -114,6 +114,15 @@ export class ScvdComponentViewer extends ScvdBase {
         return true;
     }
 
+    public calculateTypedefs(): boolean {
+        const typedefs = this.typedefs;
+        if(typedefs === undefined || typedefs.typedef.length === 0) {
+            return false;
+        }
+        typedefs.calculateTypedefs();
+        return true;
+    }
+
     public validateAll(prevResult: boolean): boolean {
         this.valid = prevResult;
         return this.validateRecursive(this, prevResult);
