@@ -90,12 +90,14 @@ export class ScvdTypedef extends ScvdBase {
             const memberItem = this.addMember();
             memberItem.readXml(v);
         });
+        this._member.sort(this.sortByLine);
 
         const vars = getArrayFromJson(xml.var);
         vars?.forEach( (v: Json) => {
             const varItem = this.addVar();
             varItem.readXml(v);
         });
+        this._var.sort(this.sortByLine);
 
         return super.readXml(xml);
     }
