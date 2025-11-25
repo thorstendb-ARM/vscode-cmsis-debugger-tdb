@@ -3,8 +3,7 @@ import { DebugProtocol } from '@vscode/debugprotocol';
 import { GDBTargetDebugSession } from '../../debug-session';
 import { logger } from '../../logger';
 
-
-class ComponentViewerTargetAccess {
+export class ComponentViewerTargetAccess {
 
     _activeSession: GDBTargetDebugSession | undefined;
     constructor (session: GDBTargetDebugSession) {
