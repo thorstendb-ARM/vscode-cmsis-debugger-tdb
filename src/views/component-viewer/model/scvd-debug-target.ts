@@ -23,6 +23,7 @@ export interface MemberInfo {
 }
 
 export interface SymbolInfo {
+    name: string;
     address: number;
     member: MemberInfo[];
 }
@@ -34,13 +35,23 @@ export class ScvdDebugTarget {
     }
 
     public getSymbolInfo(symbol: string): SymbolInfo | undefined {
-        const symbolInfo: SymbolInfo = { address: 0x12345678, member: [] };
-        symbolInfo.member.push(this.mockMemberInfo('A', 1, 4+0));
-        symbolInfo.member.push(this.mockMemberInfo('B', 1, 4+1));
-        symbolInfo.member.push(this.mockMemberInfo('C', 1, 4+2));
-        symbolInfo.member.push(this.mockMemberInfo('D', 1, 4+3));
-        console.log(`Fetched symbol info for ${symbol}:`, symbolInfo);
-        return symbolInfo;
+        if(symbol === undefined) {
+            return undefined;
+        }
+
+        return this.getMockSymbolInfo(symbol);
+    }
+
+    private getMockSymbolInfo(symbol: string): SymbolInfo | undefined {
+        if(symbol === 'mySymbol') {
+            const symbolInfo: SymbolInfo = { name: symbol, address: 0x12345678, member: [] };
+            symbolInfo.member.push(this.mockMemberInfo('A', 1, 4+0));
+            symbolInfo.member.push(this.mockMemberInfo('B', 1, 4+1));
+            symbolInfo.member.push(this.mockMemberInfo('C', 1, 4+2));
+            symbolInfo.member.push(this.mockMemberInfo('D', 1, 4+3));
+            return symbolInfo;
+        }
+        return undefined;
     }
 
     private mockMemberInfo(memberName: string, size: number, offset: number): MemberInfo {
