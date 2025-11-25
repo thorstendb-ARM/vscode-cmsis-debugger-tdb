@@ -24,6 +24,8 @@ import { getStringFromJson } from './scvd-utils';
 export class ScvdVar extends ScvdBase {
     private _value: ScvdExpression | undefined;
     private _type: ScvdDataType | undefined;
+    private _offset: ScvdExpression | undefined;
+
 
     constructor(
         parent: ScvdBase | undefined,
@@ -91,6 +93,17 @@ export class ScvdVar extends ScvdBase {
         const size = this._type?.getSize();
         return size;
     }
+
+    get offset(): ScvdExpression | undefined {
+        return this._offset;
+    }
+
+    set offset(value: string | undefined) {
+        if(value !== undefined) {
+            this._offset = new ScvdExpression(this, value, 'offset');
+        }
+    }
+
 
     // search a member (member, var) in typedef
     public getMember(_property: string): ScvdBase | undefined {
