@@ -322,7 +322,7 @@ export abstract class ScvdBase implements ScvdGuiInterface {
         const bLineNum = Number(b.lineNo);
         const aLine = Number.isNaN(aLineNum) ? -1 : aLineNum;
         const bLine = Number.isNaN(bLineNum) ? -1 : bLineNum;
-        return bLine - aLine;
+        return aLine - bLine;
     }
 
     public writeAt(byteOffset: number, widthBits: number, value: number | string | bigint): number | string | bigint | undefined {
@@ -407,6 +407,10 @@ export abstract class ScvdBase implements ScvdGuiInterface {
 
     public getGuiConditionResult(): boolean {
         return true;    // use getConditionResult() later
+    }
+
+    public getGuiLineInfo(): string {
+        return this.getLineInfoStr();
     }
     // ------------  GUI Interface End ------------
 
