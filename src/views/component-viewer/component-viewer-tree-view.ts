@@ -16,21 +16,23 @@
 
 import * as vscode from 'vscode';
 import { ScvdComponentViewer } from './model/scvd-comonent-viewer';
-import { ScvdObjects } from './model/scvd-object';
 import { ScvdGuiInterface } from './model/scvd-gui-interface';
 //import { GDBTargetDebugSession, GDBTargetDebugTracker, SessionStackItem } from '../../debug-session';
 
+interface ISCVDFiles {
+    scvdModels: ScvdComponentViewer[];
+}
 
 export class ComponentViewerTreeDataProvider implements vscode.TreeDataProvider<ScvdGuiInterface> {
     private readonly _onDidChangeTreeData = new vscode.EventEmitter<ScvdGuiInterface | void>();
     readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
     //private _activeSession: GDBTargetDebugSession | undefined;
     private _objectOutRoots: ScvdGuiInterface[] = [];
-    private _scvdModel: ScvdComponentViewer | undefined;
-    private _objects: ScvdObjects | undefined;
+    private _scvdModel: ISCVDFiles;
 
     constructor () {
         this._objectOutRoots = [];
+        this._scvdModel = { scvdModels: [] };
     }
     public async activate(): Promise<void> {
     //public async activate(tracker: GDBTargetDebugTracker): Promise<void> {
@@ -104,18 +106,22 @@ export class ComponentViewerTreeDataProvider implements vscode.TreeDataProvider<
 
     public setModel(scvdModel: ScvdComponentViewer | undefined) {
         if(scvdModel !== undefined) {
-            this._scvdModel = scvdModel;
-            this._objects = this._scvdModel.objects;
+            this._scvdModel.scvdModels.push(scvdModel);
         }
     }
 
     private addRootObject(): void {
-        if(!this._objects?.objects) {
+        if(this._scvdModel?.scvdModels.length === 0) {
             return;
         }
-        for(const objects of this._objects?.objects) {
+        this._scvdModel.scvdModels.forEach(model => {
+            if(!model.objects?.objects) {
+                return;
+            }
+            for(const objects of model.objects?.objects) {
             this._objectOutRoots.push(...objects.out);
-        }
+            }
+        })
         this.refresh();
     }
 }
