@@ -41,6 +41,7 @@ const scvdFile1 = scvdFiles[scvdExamples.MyTest];
 
 export class ComponentViewer {
     private instance: ComponentViewerInstance | undefined;
+    private instance_0: ComponentViewerInstance | undefined;
     private treeDataProvider: SidebarDebugView | undefined;
     private componentViewerTreeDataProvider: ComponentViewerTreeDataProvider | undefined;
 
@@ -48,11 +49,14 @@ export class ComponentViewer {
     ) {
     }
 
-    protected async createInstance(filename: URI) {
+    protected async createInstance(_ctx: vscode.ExtensionContext, filename: URI) {
         const startTime = Date.now();
         this.instance = new ComponentViewerInstance();
+        this.instance_0 = new ComponentViewerInstance();
         await this.instance.readModel(filename);
+        await this.instance_0.readModel(URI.file(path.join(_ctx.extensionPath, scvdFiles[scvdExamples.GetRegVal_Test])));
         this.componentViewerTreeDataProvider?.setModel(this.instance.model);
+        this.componentViewerTreeDataProvider?.setModel(this.instance_0.model);
         this.treeDataProvider?.setModel(this.instance.model);
         const endTime = Date.now();
         console.log(`SCVD instance created in ${endTime - startTime} ms for file: ${filename}`);
@@ -115,7 +119,7 @@ export class ComponentViewer {
         const providerDisposable = vscode.window.registerTreeDataProvider('cmsis-scvd-explorer', this.treeDataProvider);
         const cmdDisposable = vscode.commands.registerCommand('cmsis-scvd-explorer.refreshEntry', () => this.treeDataProvider?.refresh());
         const treeProviderDisposable = vscode.window.registerTreeDataProvider('cmsis-debugger.componentViewer', this.componentViewerTreeDataProvider);
-        await this.createInstance(URI.file(path.join(_ctx.extensionPath, scvdFile1)));
+        await this.createInstance(_ctx, URI.file(path.join(_ctx.extensionPath, scvdFile1)));
         await this.componentViewerTreeDataProvider.activate();
         _ctx.subscriptions.push(providerDisposable, cmdDisposable, treeProviderDisposable);
     }

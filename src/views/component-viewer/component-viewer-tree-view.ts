@@ -9,116 +9,113 @@
  */
 
 import * as vscode from 'vscode';
+import { ScvdComponentViewer } from './model/scvd-comonent-viewer';
 import { ScvdGuiInterface } from './model/scvd-gui-interface';
+//import { GDBTargetDebugSession, GDBTargetDebugTracker, SessionStackItem } from '../../debug-session';
 
-export class ComponentViewerTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeItem>, vscode.Disposable {
-    private readonly _onDidChangeTreeData = new vscode.EventEmitter<void>();
+interface ISCVDFiles {
+    scvdModels: ScvdComponentViewer[];
+}
+
+export class ComponentViewerTreeDataProvider implements vscode.TreeDataProvider<ScvdGuiInterface> {
+    private readonly _onDidChangeTreeData = new vscode.EventEmitter<ScvdGuiInterface | void>();
     readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
+    //private _activeSession: GDBTargetDebugSession | undefined;
+    private _objectOutRoots: ScvdGuiInterface[] = [];
+    private _scvdModel: ISCVDFiles;
 
-    private _model: any;
-    private _root: ScvdGuiInterface | undefined;
-    private _view?: vscode.TreeView<vscode.TreeItem>;
-    private _disposed = false;
-    private static readonly VIEW_ID = 'cmsis-debugger.componentViewer';
-
-    constructor() {}
-
-    async activate(viewIdOverride?: string): Promise<void> {
-        if (this._view) return; // already active
-        const viewId = viewIdOverride ?? ComponentViewerTreeDataProvider.VIEW_ID;
-        this._view = vscode.window.createTreeView<vscode.TreeItem>(viewId, { treeDataProvider: this });
+    constructor () {
+        this._objectOutRoots = [];
+        this._scvdModel = { scvdModels: [] };
     }
-
-    /** Provide/replace the model, recompute root, and refresh. */
-    public setModel(model: any): void {
-        this._model = model;
-        this._root = this.computeRoot();
+    public async activate(): Promise<void> {
+    //public async activate(tracker: GDBTargetDebugTracker): Promise<void> {
+        /*
+        // Subscribe to the debug tracker relevant events 
+        const onDidChangeActiveDebugSessionDisposable = tracker.onDidChangeActiveDebugSession(
+            async (session) => await this.handleOnDidChangeActiveDebugSession(session)
+        );
+        const onWillStartSessionDisposable = tracker.onWillStartSession(
+            async (session) => await this.handleOnWillStartSession(session)
+        );
+        const onWillStopSessionDisposable = tracker.onWillStopSession(
+            async (session) => await this.handleOnWillStopSession(session)
+        );
+        const onDidChangeActiveStackItemDisposable = tracker.onDidChangeActiveStackItem(
+            async (stackFrame) => await this.handleOnDidChangeActiveStackItem(stackFrame)
+        );
+        // Extracts out data from objects inside of the scvd model
+        if (!this._scvdModel) {
+            console.warn('No SCVD model set in ComponentViewerTreeDataProvider');
+            return;
+        }
+            */
+        this.addRootObject();
         this.refresh();
     }
 
-    refresh(): void { this._onDidChangeTreeData.fire(); }
-
-    private computeRoot(): ScvdGuiInterface | undefined {
-    // Root child for addRootObject(): const outItem = this.model.objects?.objects?.[0]?.out[0];
-        const outItem: ScvdGuiInterface | undefined = this._model?.objects?.objects?.[0]?.out?.[0];
-        return outItem;
+    public getTreeItem(element: ScvdGuiInterface): vscode.TreeItem {
+       const treeItemLabel = element.getGuiName() ?? 'UNKNOWN';
+       const treeItem = new vscode.TreeItem(treeItemLabel);
+       treeItem.collapsibleState = element.getGuiChildren()
+           ? vscode.TreeItemCollapsibleState.Collapsed
+           : vscode.TreeItemCollapsibleState.None;
+        // Needs fixing, getGuiValue() for ScvdBase returns 0 when undefined
+       treeItem.description = element.getGuiValue() ?? '';
+       treeItem.tooltip = element.getGuiLineInfo() ?? '';
+        return treeItem;
     }
 
-    // --- TreeDataProvider<vscode.TreeItem> API ---
-    getTreeItem(element: vscode.TreeItem): vscode.TreeItem { return element; }
-
-    getChildren(element?: vscode.TreeItem): vscode.ProviderResult<vscode.TreeItem[]> {
-        if (!this._root) {
-            return this.noData();
-        }
-
-        // Root expansion
+    public getChildren(element?: ScvdGuiInterface): Promise<ScvdGuiInterface[]> {
         if (!element) {
-            return [this.makeNodeItem(this._root)];
+            return Promise.resolve(this._objectOutRoots);
         }
 
-        // Otherwise, element.id corresponds to a ScvdGuiInterface.nodeId. Find that node and enumerate its children in order.
-        const nodeId = element.id as string | undefined;
-        const base = nodeId ? this.findNodeById(this._root, nodeId) : undefined;
-        if (!base) return [];
+        return Promise.resolve(element.getGuiChildren() || []);
+    }
+    /*
+    private async handleOnDidChangeActiveDebugSession(session: GDBTargetDebugSession | undefined): Promise<void> {
+        // Handle changes to the active debug session if needed
+        this.refresh();
+    }
+    
+    private async handleOnWillStartSession(session: GDBTargetDebugSession): Promise<void> {
+        // Handle actions before a debug session starts if needed
+        this.refresh();
+    }
 
-        const kids = base.getGuiChildren?.() ?? [];
-        // Reference view uses model.map(...) which yields the natural order.
-        // getGuiChildren() appears to return the inverse; render reversed to match the reference's visible order.
-        const ordered = [...kids]; //.reverse();
-        const out: vscode.TreeItem[] = [];
-        for (const child of ordered) {
-            out.push(this.makeNodeItem(child));
+    private async handleOnWillStopSession(session: GDBTargetDebugSession): Promise<void> {
+        // Handle actions before a debug session stops if needed
+        this.refresh();
+    }
+
+    private async handleOnDidChangeActiveStackItem(stackFrame: SessionStackItem): Promise<void> {
+        // Handle changes to the active stack frame if needed
+        this.refresh();
+    }
+    */
+    private refresh(): void {
+        this._onDidChangeTreeData.fire();
+    }
+
+    public setModel(scvdModel: ScvdComponentViewer | undefined) {
+        if(scvdModel !== undefined) {
+            this._scvdModel.scvdModels.push(scvdModel);
         }
-        return out;
     }
 
-    // --- Helpers ---
-    private noData(): vscode.TreeItem[] {
-        const item = new vscode.TreeItem('Updating Component Viewer…');
-        item.description = 'Please wait';
-        item.iconPath = new vscode.ThemeIcon('sync');
-        item.contextValue = 'updating';
-        return [item];
-    }
-
-    private makeNodeItem(node: ScvdGuiInterface): vscode.TreeItem {
-        const entry = node.getGuiEntry?.() ?? ({} as any);
-        const label: string = entry?.name ?? '(unnamed)';
-        const value: string | undefined = entry?.value;
-
-        // Collapsible if there could be children (we do not call getGuiChildren() here to avoid double-enumeration during label rendering)
-        const collapsible = typeof node.getGuiChildren === 'function' ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None;
-        const ti = new vscode.TreeItem(label, collapsible);
-
-        // id strictly from node.nodeId; no fallbacks to avoid collisions or reordering side-effects
-        if ((node as any).nodeId !== undefined && (node as any).nodeId !== null) {
-            ti.id = String((node as any).nodeId);
+    private addRootObject(): void {
+        if(this._scvdModel?.scvdModels.length === 0) {
+            return;
         }
-
-        // Value formatting: " = <value>"
-        ti.description = value ? ' = ' + value : '';
-        ti.tooltip = value ? `${label}: ${value}` : label;
-        ti.contextValue = 'model-node';
-        return ti;
-    }
-
-    private findNodeById(node: ScvdGuiInterface | undefined, id: string): ScvdGuiInterface | undefined {
-        if (!node) return undefined;
-        if ((node as any).nodeId === id) return node;
-        const kids = node.getGuiChildren?.();
-        if (!kids || kids.length === 0) return undefined;
-        for (const k of kids) {
-            const found = this.findNodeById(k, id);
-            if (found) return found;
-        }
-        return undefined;
-    }
-
-    dispose(): void {
-        if (this._disposed) return;
-        this._disposed = true;
-        this._view?.dispose();
-        this._onDidChangeTreeData.dispose();
+        this._scvdModel.scvdModels.forEach(model => {
+            if(!model.objects?.objects) {
+                return;
+            }
+            for(const objects of model.objects?.objects) {
+            this._objectOutRoots.push(...objects.out);
+            }
+        })
+        this.refresh();
     }
 }
