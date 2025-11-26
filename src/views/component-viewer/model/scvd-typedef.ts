@@ -181,6 +181,9 @@ export class ScvdTypedef extends ScvdBase {
         this.calculateOffsets();
     }
 
+    private alignToDword(addr: number): number {
+        return (addr + 3) & ~3;
+    }
     /* TODO: must use symbol information from debugger to check if symbols are present.
      * For now, use the information that is available in the SCVD file only.
      */
@@ -223,6 +226,8 @@ export class ScvdTypedef extends ScvdBase {
                 console.warn(`Current offset ${currentNextOffset} exceeds typedef size ${typedefSize}`);
             }
         }
+
+        currentNextOffset = this.alignToDword(currentNextOffset + 8);   // make sure no overlaps happen when reading target memory
 
         this.var.forEach( (varItem: ScvdVar) => {
             const varSize = varItem.getSize() ?? 4; // default size 4 bytes
