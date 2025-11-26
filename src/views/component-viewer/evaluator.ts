@@ -88,7 +88,7 @@ export interface DataHost {
   __CalcMemUsed?(args: any[]): number | undefined;
   __size_of?(symbol: string): number | undefined;
   __Symbol_exists?(symbol: string): number | undefined;
-__Offset_of?(container: RefContainer, typedefMember: string): number | undefined;
+  __Offset_of?(container: RefContainer, typedefMember: string): number | undefined;
 
   // Additional named intrinsics
   // __Running is special-cased (no container) and returns 1 or 0 for use in expressions
