@@ -121,8 +121,31 @@ export class ScvdEvalInterface implements DataHost {
         const StackSize: number = _args[1];
         const FillPattern: number = _args[2];
         const MagicValue: number = _args[3];
-        console.log(`__CalcMemUsed not implemented yet: StackAddress=${StackAddress} StackSize=${StackSize} FillPattern=${FillPattern} MagicValue=${MagicValue}`);
-        return 0;
+        const memUsed = this.debugTarget.calculateMemoryUsage(
+            StackAddress,
+            StackSize,
+            FillPattern,
+            MagicValue
+        );
+        return memUsed;
+    }
+
+    __size_of(symbol: string): number | undefined {
+        const symbolRef = this.debugTarget.getSymbolInfo(symbol);
+        if (symbolRef) {
+            const size = symbolRef.size;
+            return size;
+        }
+        return undefined;
+    }
+
+    __Offset_of(container: RefContainer, typedefMember: string): number | undefined {
+        const memberRef = container.base.getMember(typedefMember);
+        if (memberRef) {
+            const offset = memberRef.getMemberOffset();
+            return offset;
+        }
+        return undefined;
     }
 
     __Running(): number | undefined {

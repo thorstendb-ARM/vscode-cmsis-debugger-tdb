@@ -75,6 +75,9 @@
             <item property="StackStart"    value="%x[StackStart]"/>
             <item property="StackSize"     value="%x[StackSize]"/>
             <item property="StackUsage"    value="%d[StackUsage]"/>
+            <item alert="(StackUsage >> 31)"    
+              property="tstack @%x[StackStart] size=%x[StackSize]"
+              value="Usage %x[StackUsage &amp; 0xFFFFF] %d[(StackUsage>>20) &amp; 0xFF]%%" />
           </item>
 
           <item property="Vars">
