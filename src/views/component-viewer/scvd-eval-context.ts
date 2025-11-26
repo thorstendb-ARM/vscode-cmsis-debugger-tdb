@@ -47,8 +47,8 @@ export class ScvdEvalContext {
 
         this._memoryHost = new CachedMemoryHost({ endianness: 'little' });
         this._registerHost = new Cm81MRegisterCache(createMockCm81MRegisterReader());
-        this._evalHost = new ScvdEvalInterface(this._memoryHost, this._registerHost);
         this._debugTarget = new ScvdDebugTarget();
+        this._evalHost = new ScvdEvalInterface(this._memoryHost, this._registerHost, this._debugTarget);
         const outItem = this.getOutItem();
         if(outItem === undefined) {
             throw new Error('SCVD EvalContext: No output item defined');

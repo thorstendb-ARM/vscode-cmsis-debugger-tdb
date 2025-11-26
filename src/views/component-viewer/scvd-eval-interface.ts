@@ -8,17 +8,21 @@ import { DataHost, RefContainer } from './evaluator';
 import { ScvdBase } from './model/scvd-base';
 import { CachedMemoryHost } from './cache/cache';
 import { Cm81MRegisterCache } from './cache/register-cache';
+import { ScvdDebugTarget } from './model/scvd-debug-target';
 
 export class ScvdEvalInterface implements DataHost {
     private _registerCache: Cm81MRegisterCache;
     private _memHost: CachedMemoryHost;
+    private _debugTarget: ScvdDebugTarget;
 
     constructor(
         memHost: CachedMemoryHost,
-        regHost: Cm81MRegisterCache
+        regHost: Cm81MRegisterCache,
+        debugTarget: ScvdDebugTarget
     ) {
         this._memHost = memHost;
         this._registerCache = regHost;
+        this._debugTarget = debugTarget;
     }
 
     private get registerCache(): Cm81MRegisterCache {
@@ -27,6 +31,10 @@ export class ScvdEvalInterface implements DataHost {
 
     private get memHost(): CachedMemoryHost {
         return this._memHost;
+    }
+
+    private get debugTarget(): ScvdDebugTarget {
+        return this._debugTarget;
     }
 
     // ---------------- DataHost Interface ----------------
@@ -86,19 +94,40 @@ export class ScvdEvalInterface implements DataHost {
 
     /* ---------------- Intrinsics ---------------- */
 
-    __FindSymbol(_container: RefContainer, _args: unknown[]): ScvdBase | undefined {
-        return undefined;   // will lookup per GDB
+    __FindSymbol(symbolName: string): number | undefined {
+        if (typeof symbolName === 'string') {
+            const symbolAddress = this.debugTarget.findSymbolAddress(symbolName);
+            return symbolAddress;
+        }
+        return undefined;
     }
 
     __GetRegVal(regName: string): number | undefined {
         return this.registerCache.read(regName); // read from register cache
     }
 
-    __Symbol_exists(_container: RefContainer, _args: unknown[]): number {
-        return 0;   // will lookup per GDB
+    __Symbol_exists(symbol: string): number | undefined {
+        return this.debugTarget.findSymbolAddress(symbol) ? 1 : 0;
     }
 
-    __Running(): number | undefined { return 1; }
+    /* Returns
+    A packed 32-bit integer value that indicates memory usage in bytes, in percent, and memory overflow:
+    Bit 0..19 Used memory in Bytes (how many bytes of FillPattern are overwritten)
+    Bit 20..28 Used memory in percent (how many percent of FillPattern are overwritten)
+    Bit 31 Memory overflow (MagicValue is overwritten)
+    */
+    __CalcMemUsed(_args: any[]): number | undefined {
+        const StackAddress: number = _args[0];
+        const StackSize: number = _args[1];
+        const FillPattern: number = _args[2];
+        const MagicValue: number = _args[3];
+        console.log(`__CalcMemUsed not implemented yet: StackAddress=${StackAddress} StackSize=${StackSize} FillPattern=${FillPattern} MagicValue=${MagicValue}`);
+        return 0;
+    }
+
+    __Running(): number | undefined {
+        return 1;
+    }
 
     _count(container: RefContainer): number | undefined {
         const base = container.current;

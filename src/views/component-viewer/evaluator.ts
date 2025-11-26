@@ -81,12 +81,14 @@ export interface DataHost {
 
   // Optional named intrinsics
   // Note: __GetRegVal(reg) is special-cased (no container); others use the evalIntrinsic convention
-  __CalcMemUsed?(container: RefContainer, args: any[]): any;
-  __FindSymbol?(container: RefContainer, args: any[]): ScvdBase | undefined;
+
+
   __GetRegVal?(reg: string): number | undefined;
-  __size_of?(container: RefContainer, args: any[]): any;
-  __Symbol_exists?(container: RefContainer, args: any[]): any;
-  __Offset_of?(container: RefContainer, args: any[]): any;
+  __FindSymbol?(symbol: string): number | undefined;
+  __CalcMemUsed?(args: any[]): number | undefined;
+  __size_of?(symbol: string): number | undefined;
+  __Symbol_exists?(symbol: string): number | undefined;
+__Offset_of?(container: RefContainer, typedefMember: string): number | undefined;
 
   // Additional named intrinsics
   // __Running is special-cased (no container) and returns 1 or 0 for use in expressions
@@ -345,22 +347,6 @@ function mustRef(node: ASTNode, ctx: EvalContext, forWrite = false): ScvdBase {
         }
 
         case 'EvalPointCall': {
-            const ep = node as EvalPointCall;
-            // Only __FindSymbol may be used as a reference-returning intrinsic
-            if (ep.intrinsic === '__FindSymbol') {
-                const args = ep.args.map(a => evalNode(a, ctx));
-                const ref = routeIntrinsic(ctx, ep.intrinsic as string, args) as ScvdBase | undefined;
-                if (!ref) throw new Error('__FindSymbol did not return a reference');
-                ctx.container.member = undefined;
-                ctx.container.index = undefined;
-                ctx.container.current = ref;
-                // Treat found symbol as a new anchor
-                ctx.container.anchor = ref;
-                ctx.container.offsetBytes = 0;
-                ctx.container.offsetBitRemainder = 0;
-                ctx.container.widthBits = ctx.data.getBitWidth?.(ref);
-                return ref;
-            }
             throw new Error('Invalid reference target.');
         }
 
@@ -415,6 +401,7 @@ const VALUE_INTRINSICS = new Set<string>([
     '__size_of',
     '__Symbol_exists',
     '__Offset_of',
+    '__FindSymbol',
 ]);
 
 export function evalNode(node: ASTNode, ctx: EvalContext): any {
@@ -524,9 +511,7 @@ export function evalNode(node: ASTNode, ctx: EvalContext): any {
                 if (VALUE_INTRINSICS.has(name)) {
                     return routeIntrinsic(ctx, name, args);
                 }
-                if (name === '__FindSymbol') {
-                    throw new Error('__FindSymbol returns a reference and must be used in reference context.');
-                }
+
             }
 
             const fnVal = evalNode(c.callee, ctx);
@@ -619,30 +604,60 @@ function formatValue(spec: FormatSegment['spec'], v: any, ctx?: EvalContext): st
  * ============================================================================= */
 
 function routeIntrinsic(ctx: EvalContext, name: string, args: any[]): any {
-    // Special-cases first
-    if (name === '__FindSymbol') {
-        const fn = (ctx.data as any).__FindSymbol as ((container: RefContainer, args: any[]) => ScvdBase | undefined) | undefined;
-        if (typeof fn !== 'function') throw new Error('Missing intrinsic __FindSymbol');
-        const out = fn.call(ctx.data, ctx.container, args);
-        if (out === undefined) throw new Error('Intrinsic __FindSymbol returned undefined');
-        return out; // returns ScvdBase
-    }
+    // Explicit numeric intrinsics (simple parameter lists)
     if (name === '__GetRegVal') {
         const fn = (ctx.data as any).__GetRegVal as ((reg: string) => number | undefined) | undefined;
         if (typeof fn !== 'function') throw new Error('Missing intrinsic __GetRegVal');
         const out = fn.call(ctx.data, String(args[0] ?? ''));
         if (out === undefined) throw new Error('Intrinsic __GetRegVal returned undefined');
-        return out; // returns number for further calculation
+        return out;
+    }
+    if (name === '__FindSymbol') {
+        const fn = (ctx.data as any).__FindSymbol as ((sym: string) => number | undefined) | undefined;
+        if (typeof fn !== 'function') throw new Error('Missing intrinsic __FindSymbol');
+        const out = fn.call(ctx.data, String(args[0] ?? ''));
+        if (out === undefined) throw new Error('Intrinsic __FindSymbol returned undefined');
+        return out | 0;
+    }
+    if (name === '__CalcMemUsed') {
+        const fn = (ctx.data as any).__CalcMemUsed as ((args: any[]) => number | undefined) | undefined;
+        if (typeof fn !== 'function') throw new Error('Missing intrinsic __CalcMemUsed');
+        const a = args.map(v => Number(v) >>> 0);
+        const out = fn.call(ctx.data, a);
+        if (out === undefined) throw new Error('Intrinsic __CalcMemUsed returned undefined');
+        return out >>> 0;
+    }
+    if (name === '__size_of') {
+        const fn = (ctx.data as any).__size_of as ((sym: string) => number | undefined) | undefined;
+        if (typeof fn !== 'function') throw new Error('Missing intrinsic __size_of');
+        const out = fn.call(ctx.data, String(args[0] ?? ''));
+        if (out === undefined) throw new Error('Intrinsic __size_of returned undefined');
+        return out | 0;
+    }
+    if (name === '__Symbol_exists') {
+        const fn = (ctx.data as any).__Symbol_exists as ((sym: string) => number | undefined) | undefined;
+        if (typeof fn !== 'function') throw new Error('Missing intrinsic __Symbol_exists');
+        const out = fn.call(ctx.data, String(args[0] ?? ''));
+        if (out === undefined) throw new Error('Intrinsic __Symbol_exists returned undefined');
+        return out | 0;
+    }
+    // Explicit intrinsic that needs the container but returns a number
+    if (name === '__Offset_of') {
+        const fn = (ctx.data as any).__Offset_of as ((container: RefContainer, typedefMember: string) => number | undefined) | undefined;
+        if (typeof fn !== 'function') throw new Error('Missing intrinsic __Offset_of');
+        const out = fn.call(ctx.data, ctx.container, String(args[0] ?? ''));
+        if (out === undefined) throw new Error('Intrinsic __Offset_of returned undefined');
+        return out >>> 0;
     }
     if (name === '__Running') {
         const fn = (ctx.data as any).__Running as (() => number | undefined) | undefined;
         if (typeof fn !== 'function') throw new Error('Missing intrinsic __Running');
         const out = fn.call(ctx.data);
         if (out === undefined) throw new Error('Intrinsic __Running returned undefined');
-        return out; // returns numeric flag for further calculation
+        return out | 0;
     }
 
-    // Generic dispatch paths
+    // Generic dispatch paths (legacy/custom)
     if (typeof ctx.data.evalIntrinsic === 'function') {
         const out = ctx.data.evalIntrinsic(name, ctx.container, args);
         if (out === undefined) throw new Error(`Intrinsic ${name} returned undefined`);
@@ -656,7 +671,6 @@ function routeIntrinsic(ctx: EvalContext, name: string, args: any[]): any {
     }
     throw new Error(`Missing intrinsic ${name}`);
 }
-
 /* =============================================================================
  * Top-level convenience
  * ============================================================================= */

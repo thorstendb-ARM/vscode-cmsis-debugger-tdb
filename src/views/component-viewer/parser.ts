@@ -551,6 +551,7 @@ export class Parser {
                     kind: isIntrinsic ? 'EvalPointCall' : 'CallExpression',
                     callee, args,
                     intrinsic: isIntrinsic ? ( (callee as any).name as IntrinsicName) : undefined,
+                    ...(isIntrinsic && (['__CalcMemUsed','__FindSymbol','__GetRegVal','__Offset_of','__size_of','__Symbol_exists','__Running'] as string[]).includes((callee as any).name) ? { valueType: 'number' as const } : {}),
                     ...span((node as any).start, this.cur.end)
                 } as any;
                 continue;
