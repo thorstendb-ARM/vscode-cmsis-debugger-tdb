@@ -63,11 +63,7 @@ export class ScvdOut extends ScvdBase {
 
     public set value(value: string | undefined) {
         if (value !== undefined) {
-            if( this._value === undefined) {
-                this._value = new ScvdExpression(this, value, 'value');
-                return;
-            }
-            this._value.expression = value;
+            this._value = new ScvdExpression(this, value, 'value');
         }
     }
     public get value(): ScvdExpression | undefined {
@@ -125,6 +121,9 @@ export class ScvdOut extends ScvdBase {
         return guiItems && guiItems.length > 0 ? guiItems : undefined;
     }
 
+    public hasGuiChildren(): boolean {
+        return this.item.length > 0 || this.list.length > 0;
+    }
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];

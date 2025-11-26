@@ -14,37 +14,90 @@
  * limitations under the License.
  */
 
+import { CachedMemoryHost } from './cache/cache';
+import { Cm81MRegisterCache } from './cache/register-cache';
 import { EvalContext } from './evaluator';
+import { createMockCm81MRegisterReader } from './mock/cm81m-registers';
 import { ScvdBase } from './model/scvd-base';
+import { ScvdComponentViewer } from './model/scvd-comonent-viewer';
+import { ScvdDebugTarget } from './model/scvd-debug-target';
 import { printfHook } from './printf-hook';
-import { ScvdEvalInterface, setActiveEvalHost } from './scvd-eval-interface';
+import { ScvdEvalInterface } from './scvd-eval-interface';
+
+export interface ExecutionContext {
+    memoryHost: CachedMemoryHost;
+    registerHost: Cm81MRegisterCache;
+    evalContext: EvalContext;
+    debugTarget: ScvdDebugTarget;
+}
 
 
 export class ScvdEvalContext {
     private _ctx: EvalContext;
-    private _host: ScvdEvalInterface;
+    private _evalHost: ScvdEvalInterface;
+    private _memoryHost: CachedMemoryHost;
+    private _registerHost: Cm81MRegisterCache;
+    private _debugTarget: ScvdDebugTarget;
+    private _model: ScvdComponentViewer;
 
     constructor(
-        baseContainer: ScvdBase
+        model: ScvdComponentViewer
     ) {
-        // Create the DataHost (stateless; you can reuse a single instance)
-        this._host = new ScvdEvalInterface({
-            // …your options…
-            autoDeclareGlobalsOnWrite: true,
-            declareGlobal: (base, name) => (base as any).declareScvdVar?.(name, 32) // example
-        });
-        setActiveEvalHost(this._host);
+        this._model = model;
 
-        // Your model’s root ScvdBase (where symbol resolution starts)
+        this._memoryHost = new CachedMemoryHost({ endianness: 'little' });
+        this._registerHost = new Cm81MRegisterCache(createMockCm81MRegisterReader());
+        this._evalHost = new ScvdEvalInterface(this._memoryHost, this._registerHost);
+        this._debugTarget = new ScvdDebugTarget();
+        const outItem = this.getOutItem();
+        if(outItem === undefined) {
+            throw new Error('SCVD EvalContext: No output item defined');
+        }
+
         this._ctx = new EvalContext({
-            data: this._host,              // DataHost
-            container: baseContainer, // ScvdBase root for symbol resolution
+            data: this._evalHost,               // DataHost
+            container: outItem,                 // ScvdBase root for symbol resolution
             printf: printfHook,
-            // functions: this._host.functions, // optional external callables table
         });
     }
 
-    public get ctx(): EvalContext {
+    private get model(): ScvdComponentViewer {
+        return this._model;
+    }
+
+    private get memoryHost(): CachedMemoryHost {
+        return this._memoryHost;
+    }
+
+    private get registerHost(): Cm81MRegisterCache {
+        return this._registerHost;
+    }
+
+    private get ctx(): EvalContext {
         return this._ctx;
+    }
+
+    public getExecutionContext(): ExecutionContext {
+        return {
+            memoryHost: this.memoryHost,
+            registerHost: this.registerHost,
+            evalContext: this.ctx,
+            debugTarget: this._debugTarget,
+        };
+    }
+
+    public getOutItem(): ScvdBase | undefined {
+        const objects = this.model.objects;
+        if(objects === undefined) {
+            return undefined;
+        }
+        if(objects.objects.length > 0) {
+            const object = objects.objects[0];
+            return object;
+        }
+        return undefined;
+    }
+
+    public init() {
     }
 }

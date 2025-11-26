@@ -15,6 +15,7 @@
  */
 
 import { ScvdBase } from '../model/scvd-base';
+import { ExecutionContext } from '../scvd-eval-context';
 
 /**
  * Base statement node using an **array** for children.
@@ -77,21 +78,21 @@ export class StatementBase {
         }
     }
 
-    public executeStatement(): void {
+    public executeStatement(executionContext: ExecutionContext): void {
         const conditionResult = this.scvdItem.getConditionResult();
         if (conditionResult === false) {
             console.log(`  Skipping ${this.scvdItem.getExplorerDisplayName()} for condition result: ${conditionResult}`);
             return;
         }
 
-        this.onExecute();
+        this.onExecute(executionContext);
         for (const child of this._children) {
-            child.executeStatement();
+            child.executeStatement(executionContext);
         }
     }
 
     /** Override in subclasses to perform work for this node. */
-    protected onExecute(): void {
+    protected onExecute(_executionContext: ExecutionContext): void {
         // no-op in base
         //console.log(`${this.line}: Executing "${this.scvdItem.constructor.name}", ${this.scvdItem.getExplorerDisplayName()}`);
         console.log(`${this.line}: ${this.scvdItem.constructor.name}`);

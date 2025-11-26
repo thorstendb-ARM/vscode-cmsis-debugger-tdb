@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import { EvalContext } from '../evaluator';
 import { ResolveSymbolCb } from '../resolver';
+import { ExecutionContext } from '../scvd-eval-context';
 import { ScvdGuiInterface } from './scvd-gui-interface';
 import { getLineNumberFromJson, getStringFromJson } from './scvd-utils';
 
@@ -47,7 +47,7 @@ export abstract class ScvdBase implements ScvdGuiInterface {
     private _isModified: boolean = false;
     private _valid: boolean = false;
 
-    static #_evalContext?: EvalContext | undefined;
+    static _executionContext: ExecutionContext | undefined;
     private _symbolsCache: Map<string, ScvdBase> | undefined;
 
     constructor(
@@ -121,23 +121,11 @@ export abstract class ScvdBase implements ScvdGuiInterface {
         return undefined;
     }
 
-    /** Set once for the entire process / class hierarchy. */
-    static initEvalContext(ctx: EvalContext) {
-        ScvdBase.#_evalContext = ctx;
+    public getElementRef(): ScvdBase | undefined {
+        return undefined;
     }
 
-    /** Static accessor in case you need it from static contexts. */
-    static getEvalContext(): EvalContext | undefined{
-        return ScvdBase.#_evalContext;
-    }
-
-    /** Instance-level convenience that reads the shared static. */
-    get evalContext(): EvalContext | undefined {
-        return ScvdBase.getEvalContext();
-    }
-
-    set evalContext(_ctx: EvalContext) {
-        ScvdBase.initEvalContext(_ctx);
+    public setExecutionContext(_executionContext: ExecutionContext) {
     }
 
     // default condition always true
@@ -281,7 +269,7 @@ export abstract class ScvdBase implements ScvdGuiInterface {
 
     // expanded values
     public getValue(): string | number | undefined {
-        return 0;   // TODO: change to undefined to indicate no value
+        return undefined;   // TODO: change to undefined to indicate no value
     }
 
     public setValue(val: number | string | bigint): number | string | bigint | undefined {
@@ -335,7 +323,7 @@ export abstract class ScvdBase implements ScvdGuiInterface {
         return 1;
     }
 
-    // size of array type, to skip one instance to the next. Can be sizeof, or gaps
+    // element size in bytes, size of array type, to skip one instance to the next. Can be sizeof, or gaps
     // byte distance between adjacent elements in your model’s actual layout (not necessarily sizeof if there are hardware gaps).
     public getElementStride(): number {
         console.log(`GetElementStride not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
@@ -354,25 +342,14 @@ export abstract class ScvdBase implements ScvdGuiInterface {
         return 0;
     }
 
-    // __size_of intrinsic
     public getSize(): number | undefined {
         console.log(`GetSize not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
         return 4;
     }
-
-    public getTypeSize(_typeName: string): number {
-        console.log(`GetTypeSize not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
-        return 4;
-    }
-
-    public getMemberOffset(member: ScvdBase | undefined): number | undefined {
-        console.log(`GetMemberOffset not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}, member=${member?.getExplorerDisplayName()}`);
+    // member’s byte offset
+    public getMemberOffset(): number | undefined {
+        console.log(`GetMemberOffset not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
         return undefined;
-    }
-
-    public getBitWidth(): number {
-        console.log(`GetBitWidth not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
-        return 32;
     }
 
     public getElementBitWidth(): number {
@@ -387,6 +364,10 @@ export abstract class ScvdBase implements ScvdGuiInterface {
 
     public getGuiChildren(): ScvdBase[] | undefined {
         return undefined;
+    }
+
+    public hasGuiChildren(): boolean {
+        return false;
     }
 
     public getGuiName(): string | undefined {
@@ -412,6 +393,7 @@ export abstract class ScvdBase implements ScvdGuiInterface {
     public getGuiLineInfo(): string {
         return this.getLineInfoStr();
     }
+
     // ------------  GUI Interface End ------------
 
 

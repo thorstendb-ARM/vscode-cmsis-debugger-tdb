@@ -71,11 +71,7 @@ export class ScvdMember extends ScvdBase {
 
     set offset(value: string | undefined) {
         if(value !== undefined) {
-            if( this._offset === undefined) {
-                this._offset = new ScvdExpression(this, value, 'offset');
-                return;
-            }
-            this._offset.expression = value;
+            this._offset = new ScvdExpression(this, value, 'offset');
         }
     }
 
@@ -87,6 +83,15 @@ export class ScvdMember extends ScvdBase {
         if(value !== undefined) {
             this._size = new NumberType(value).value;
         }
+    }
+
+    public getSize(): number | undefined {
+        const size = this._size;
+        if( size !== undefined) {
+            return size;
+        }
+        const typeSize = this._type?.size;
+        return typeSize;
     }
 
     public addEnum(): ScvdEnum {
@@ -112,6 +117,18 @@ export class ScvdMember extends ScvdBase {
             return typeObj;
         }
         return undefined;
+    }
+
+    // member’s byte offset
+    public getMemberOffset(): number | undefined {
+        const offsetExpr = this._offset;
+        if (offsetExpr !== undefined) {
+            const offsetValue = offsetExpr.getValue();
+            if (typeof offsetValue === 'number') {
+                return offsetValue;
+            }
+        }
+        return 0;   // TODO: default?
     }
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {

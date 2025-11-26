@@ -40,6 +40,8 @@ export interface RefContainer {
   offsetBytes?: number | undefined;
   /** Final read width in bits (host may ignore if unknown). */
   widthBits?: number | undefined;
+  /** Bit offset within the first addressed byte (0..7). */
+  offsetBitRemainder?: number | undefined;
 
   /** Current ref resolved by the last resolution step (for chaining). */
   current?: ScvdBase | undefined;
@@ -70,6 +72,10 @@ export interface DataHost {
   getBitWidth?(ref: ScvdBase): number;                            // bits
   getElementBitWidth?(ref: ScvdBase): number;                     // bits (if array of scalars)
 
+
+  // Optional bit-precise layout
+  getElementStrideBits?(ref: ScvdBase): number;                 // bits per element
+  getMemberBitOffset?(base: ScvdBase, member: ScvdBase): number; // bits
   // **** OPTIONAL: provide an element model (prototype/type) for array-ish refs
   getElementRef?(ref: ScvdBase): ScvdBase | undefined;
 
@@ -196,6 +202,7 @@ function withIsolatedContainer<T>(ctx: EvalContext, fn: () => T): T {
     const saved = {
         anchor: c.anchor,
         offsetBytes: c.offsetBytes,
+        offsetBitRemainder: c.offsetBitRemainder,
         widthBits: c.widthBits,
         current: c.current,
         member: c.member,
@@ -206,6 +213,7 @@ function withIsolatedContainer<T>(ctx: EvalContext, fn: () => T): T {
     } finally {
         c.anchor = saved.anchor;
         c.offsetBytes = saved.offsetBytes;
+        c.offsetBitRemainder = saved.offsetBitRemainder;
         c.widthBits = saved.widthBits;
         c.current = saved.current;
         c.member = saved.member;
@@ -219,10 +227,14 @@ function withIsolatedContainer<T>(ctx: EvalContext, fn: () => T): T {
 
 type LValue = { get(): any; set(v: any): any };
 
-function addOffset(ctx: EvalContext, bytes: number) {
-    const c = ctx.container;
-    c.offsetBytes = ((c.offsetBytes ?? 0) + bytes);
+function addBitOffset(ctx: EvalContext, bits: number) {
+    const c = ctx.container as any;
+    const add = (bits | 0);
+    const total = ((c.offsetBitRemainder ?? 0) + add);
+    c.offsetBytes = ((c.offsetBytes ?? 0) + (total >> 3));
+    c.offsetBitRemainder = (total & 7);
 }
+
 
 function setWidth(ctx: EvalContext, bits: number | undefined) {
     if (bits !== undefined) ctx.container.widthBits = bits;
@@ -238,6 +250,7 @@ function mustRef(node: ASTNode, ctx: EvalContext, forWrite = false): ScvdBase {
             // Start a new anchor chain at this identifier
             ctx.container.anchor = ref;
             ctx.container.offsetBytes = 0;
+            ctx.container.offsetBitRemainder = 0;
             ctx.container.widthBits = ctx.data.getBitWidth?.(ref);
             // Reset last-context hints for a plain identifier
             ctx.container.member = undefined;
@@ -260,21 +273,27 @@ function mustRef(node: ASTNode, ctx: EvalContext, forWrite = false): ScvdBase {
                 // Evaluate index in isolation (so i/j/mem.length don't clobber outer anchor)
                 const idx = asNumber(withIsolatedContainer(ctx, () => evalNode(ai.index, ctx))) | 0;
 
-                // Apply array byte offset
-                const stride = ctx.data.getElementStride?.(baseRef);
-                if (typeof stride === 'number') addOffset(ctx, idx * stride);
+                // Remember the index for hosts that use it
+                ctx.container.index = idx;
+
+                // Use the thing we're actually indexing (supports nested arr[i][j].field)
+                const arrayRef = ctx.container.current ?? baseRef;
+
+                // Apply array bit offset using the correct dimension's stride
+                const strideBits = ctx.data.getElementStrideBits?.(arrayRef) ?? ((ctx.data.getElementStride?.(arrayRef) ?? 0) * 8);
+                if (typeof strideBits === 'number') addBitOffset(ctx, idx * strideBits);
 
                 // Base for member resolution = element model if host provides one
-                const baseForMember = ctx.data.getElementRef?.(baseRef) ?? baseRef;
+                const baseForMember = ctx.data.getElementRef?.(arrayRef) ?? arrayRef;
                 ctx.container.current = baseForMember;
 
                 // Resolve member
                 const child = ctx.data.getMemberRef(ctx.container, ma.property, forWrite);
                 if (!child) throw new Error(`Missing member '${ma.property}'`);
 
-                // Accumulate member offset & width
-                const off = ctx.data.getMemberOffset?.(baseForMember, child);
-                if (typeof off === 'number') addOffset(ctx, off);
+                // Accumulate member bit offset & width
+                const memberBits = ctx.data.getMemberBitOffset?.(baseForMember, child) ?? ((ctx.data.getMemberOffset?.(baseForMember, child) ?? 0) * 8);
+                if (typeof memberBits === 'number') addBitOffset(ctx, memberBits);
                 setWidth(ctx, ctx.data.getBitWidth?.(child));
 
                 // Finalize hints
@@ -290,8 +309,8 @@ function mustRef(node: ASTNode, ctx: EvalContext, forWrite = false): ScvdBase {
             const child = ctx.data.getMemberRef(ctx.container, ma.property, forWrite);
             if (!child) throw new Error(`Missing member '${ma.property}'`);
 
-            const off = ctx.data.getMemberOffset?.(baseRef, child);
-            if (typeof off === 'number') addOffset(ctx, off);
+            const memberBits = ctx.data.getMemberBitOffset?.(baseRef, child) ?? ((ctx.data.getMemberOffset?.(baseRef, child) ?? 0) * 8);
+            if (typeof memberBits === 'number') addBitOffset(ctx, memberBits);
             setWidth(ctx, ctx.data.getBitWidth?.(child));
 
             ctx.container.member = child;
@@ -309,14 +328,19 @@ function mustRef(node: ASTNode, ctx: EvalContext, forWrite = false): ScvdBase {
             const idx = asNumber(withIsolatedContainer(ctx, () => evalNode(ai.index, ctx))) | 0;
 
             // Translate index -> byte offset
-            const stride = ctx.data.getElementStride?.(baseRef);
-            if (typeof stride === 'number') addOffset(ctx, idx * stride);
+            ctx.container.index = idx;
+
+            const arrayRef = ctx.container.current ?? baseRef;
+            ctx.container.member = undefined;
+
+            const strideBits = ctx.data.getElementStrideBits?.(arrayRef) ?? ((ctx.data.getElementStride?.(arrayRef) ?? 0) * 8);
+            if (typeof strideBits === 'number') addBitOffset(ctx, idx * strideBits);
 
             // Current target remains base for subsequent member access (or element if host exposes it)
-            ctx.container.current = ctx.data.getElementRef?.(baseRef) ?? baseRef;
+            ctx.container.current = ctx.data.getElementRef?.(arrayRef) ?? arrayRef;
 
             // Update width to element width if host exposes it
-            setWidth(ctx, ctx.data.getElementBitWidth?.(baseRef));
+            setWidth(ctx, ctx.data.getElementBitWidth?.(arrayRef));
             return baseRef;
         }
 
@@ -333,6 +357,7 @@ function mustRef(node: ASTNode, ctx: EvalContext, forWrite = false): ScvdBase {
                 // Treat found symbol as a new anchor
                 ctx.container.anchor = ref;
                 ctx.container.offsetBytes = 0;
+                ctx.container.offsetBitRemainder = 0;
                 ctx.container.widthBits = ctx.data.getBitWidth?.(ref);
                 return ref;
             }
@@ -346,26 +371,37 @@ function mustRef(node: ASTNode, ctx: EvalContext, forWrite = false): ScvdBase {
 
 function mustRead(ctx: EvalContext, label?: string): any {
     const v = ctx.data.readValue(ctx.container);
-    if (v === undefined) throw new Error(label ? `Undefined value for ${label}` : 'Undefined value');
+    if (v === undefined) {
+        throw new Error(label ? `Undefined value for ${label}` : 'Undefined value');
+    }
     return v;
 }
 
 function lref(node: ASTNode, ctx: EvalContext): LValue {
     // Resolve and set the current target in the container for writes
     mustRef(node, ctx, true);
+
+    // ⬇️ NEW: snapshot the LHS write target so RHS evaluation can't clobber it
+    const target: RefContainer = {
+        base: ctx.container.base,
+        anchor: ctx.container.anchor,
+        offsetBytes: ctx.container.offsetBytes,
+        widthBits: ctx.container.widthBits,
+        offsetBitRemainder: ctx.container.offsetBitRemainder,
+        index: (ctx.container as any).index,  // if you record it
+    };
     return {
         get(): any {
             mustRef(node, ctx, false);
             return mustRead(ctx);
         },
         set(v: any): any {
-            const out = ctx.data.writeValue(ctx.container, v);
+            const out = ctx.data.writeValue(target, v); // ⬅️ use frozen target
             if (out === undefined) throw new Error('Write returned undefined');
             return out;
         }
     };
 }
-
 /* =============================================================================
  * Evaluation
  * ============================================================================= */
@@ -455,7 +491,10 @@ export function evalNode(node: ASTNode, ctx: EvalContext): any {
         case 'AssignmentExpression': {
             const a = node as AssignmentExpression;
             const ref = lref(a.left, ctx);
-            if (a.operator === '=') return ref.set(evalNode(a.right, ctx));
+            if (a.operator === '=') {
+                const value = withIsolatedContainer(ctx, () => evalNode(a.right, ctx));
+                return ref.set(value);
+            }
             const L = evalNode(a.left, ctx);
             const R = evalNode(a.right, ctx);
             let out: any;

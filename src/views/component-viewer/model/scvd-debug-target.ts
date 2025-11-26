@@ -16,20 +16,50 @@
 
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
-import { ExplorerInfo, ScvdBase } from './scvd-base';
+export interface MemberInfo {
+    name: string;
+    size: number;
+    offset: number;
+}
 
-export class ScvdDebugTarget extends ScvdBase {
+export interface SymbolInfo {
+    name: string;
+    address: number;
+    member: MemberInfo[];
+}
+
+export class ScvdDebugTarget {
 
     constructor(
-        parent: ScvdBase | undefined,
     ) {
-        super(parent);
     }
 
-    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
-        const info: ExplorerInfo[] = [];
+    public getSymbolInfo(symbol: string): SymbolInfo | undefined {
+        if(symbol === undefined) {
+            return undefined;
+        }
 
-        info.push(...itemInfo);
-        return super.getExplorerInfo(info);
+        return this.getMockSymbolInfo(symbol);
     }
+
+    private getMockSymbolInfo(symbol: string): SymbolInfo | undefined {
+        if(symbol === 'mySymbol') {
+            const symbolInfo: SymbolInfo = { name: symbol, address: 0x12345678, member: [] };
+            symbolInfo.member.push(this.mockMemberInfo('A', 1, 4+0));
+            symbolInfo.member.push(this.mockMemberInfo('B', 1, 4+1));
+            symbolInfo.member.push(this.mockMemberInfo('C', 1, 4+2));
+            symbolInfo.member.push(this.mockMemberInfo('D', 1, 4+3));
+            return symbolInfo;
+        }
+        return undefined;
+    }
+
+    private mockMemberInfo(memberName: string, size: number, offset: number): MemberInfo {
+        return {
+            name: memberName,
+            size,
+            offset
+        };
+    }
+
 }

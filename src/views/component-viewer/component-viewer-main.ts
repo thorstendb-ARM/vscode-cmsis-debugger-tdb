@@ -37,7 +37,7 @@ enum scvdExamples {
     MyTest = 7,
 }
 
-const scvdFile1 = scvdFiles[scvdExamples.RTX5];
+const scvdFile1 = scvdFiles[scvdExamples.MyTest];
 
 export class ComponentViewer {
     private instance: ComponentViewerInstance | undefined;

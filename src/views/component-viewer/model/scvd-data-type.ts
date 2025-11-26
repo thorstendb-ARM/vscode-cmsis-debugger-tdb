@@ -46,10 +46,6 @@ export class ScvdDataType extends ScvdBase {
         this.type = type;
     }
 
-    public get size(): number | undefined {
-        return this._type?.size;
-    }
-
     public get type(): ScvdScalarDataType | ScvdComplexDataType | undefined {
         return this._type;
     }
@@ -71,12 +67,21 @@ export class ScvdDataType extends ScvdBase {
         return this._type?.getMember(property);
     }
 
+    public getSize(): number | undefined {
+        const size = this._type?.size;
+        return size;
+    }
+
+    public get size(): number | undefined {
+        return this._type?.size;
+    }
+
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
 
         if (this._type !== undefined) {
             info.push({ name: 'Type', value: this._type.getExplorerDisplayName() });
-            info.push({ name: 'Size', value: this.size?.toString() ?? '' });
+            info.push({ name: 'Size', value: this.getSize()?.toString() ?? '' });
         } else {
             info.push({ name: 'Type', value: 'undefined' });
         }
@@ -93,6 +98,7 @@ export class ScvdDataType extends ScvdBase {
 
 export class ScvdScalarDataType extends ScvdBase {
     private _type: string | undefined;
+    private _isPointer: boolean = false;
 
     constructor(
         parent: ScvdBase | undefined,
@@ -100,22 +106,38 @@ export class ScvdScalarDataType extends ScvdBase {
     ) {
         super(parent);
         if (typeof type === 'string') {
+            const isPointer = type.indexOf('*') === 0;
+            if(isPointer) {
+                this.isPointer = true;
+            }
+
+            const typeStr = type.replace(/\*/g, '').trim();
             Object.keys(ScvdScalarDataTypeMap).forEach(element => {
-                if (element === type) {
-                    this._type = type;
+                if (element === typeStr) {
+                    this._type = element;
                 }
             });
         }
     }
 
     public get size(): number | undefined {
+        if(this.isPointer) {
+            return 4;   // pointer size 4 bytes
+        }
         const info = this._type && ScvdScalarDataTypeMap[this._type];
-        const value = info ? info[0] / 8 : undefined;
-        return value;
+        const value = info ? info[0]: undefined;
+        return value ? value / 8 : undefined;
     }
 
     public get type(): string | undefined {
         return this._type;
+    }
+
+    public get isPointer(): boolean {
+        return this._isPointer;
+    }
+    private set isPointer(value: boolean) {
+        this._isPointer = value;
     }
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
@@ -155,7 +177,14 @@ export class ScvdComplexDataType extends ScvdBase{
     }
 
     public get size(): number | undefined {
-        return this._type?.size;
+        if(this.isPointer) {
+            return 4;   // pointer size 4 bytes
+        }
+        const sizeInBytes = this._type?.size;
+        if (sizeInBytes !== undefined) {
+            return sizeInBytes;
+        }
+        return undefined;
     }
 
     public get isPointer(): boolean {

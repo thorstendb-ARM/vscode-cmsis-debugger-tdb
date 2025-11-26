@@ -16,13 +16,15 @@
 
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
-import { ResolveSymbolCb, ResolveType } from '../resolver';
+import { ExecutionContext } from '../scvd-eval-context';
 import { ExplorerInfo, ScvdBase } from './scvd-base';
-import { ScvdDebugTarget } from './scvd-debug-target';
+import { MemberInfo } from './scvd-debug-target';
 
 export class ScvdSymbol extends ScvdBase {
     private _symbol: string | undefined;
-    private _debugTarget: ScvdDebugTarget | undefined;
+    private _executionContext: ExecutionContext | undefined;
+    private _address: number | undefined;
+    private _memberInfo: MemberInfo[] = [];
 
     constructor(
         parent: ScvdBase | undefined,
@@ -39,23 +41,47 @@ export class ScvdSymbol extends ScvdBase {
         this._symbol = value;
     }
 
-    public get debugTarget(): ScvdDebugTarget | undefined {
-        return this._debugTarget;
+    public get address(): number | undefined {
+        return this._address;
     }
-    public set debugTarget(value: ScvdDebugTarget | undefined) {
-        this._debugTarget = value;
+    public set address(value: number | undefined) {
+        this._address = value;
     }
 
-    public resolveAndLink(resolveFunc: ResolveSymbolCb): boolean {
-        if(this.symbol === undefined) {
+    public get memberInfo(): MemberInfo[] {
+        return this._memberInfo;
+    }
+    private addMemberInfo(name: string, size: number, offset: number) {
+        this._memberInfo.push({ name: name, size: size, offset: offset });
+    }
+
+    public fetchSymbolInformation(): boolean {
+        if(this.symbol === undefined || this._executionContext === undefined) {
             return false;
         }
 
-        const item = resolveFunc(this.symbol, ResolveType.targetType);
-        if(item === undefined ) {
-            return false;
+        const symbolInfo = this._executionContext.debugTarget.getSymbolInfo(this.symbol);
+        if (symbolInfo !== undefined) {
+            this.address = symbolInfo.address;
+            symbolInfo.member.forEach(member => {
+                this.addMemberInfo(member.name, member.size, member.offset);
+            });
         }
+
         return true;
+    }
+
+    public getOffset(name: string | undefined): number | undefined {
+        if(name === undefined || this.memberInfo === undefined) {
+            return undefined;
+        }
+
+        const memberInfo = this.memberInfo.find(member => member.name === name);
+        return memberInfo?.offset;
+    }
+
+    public setExecutionContext(executionContext: ExecutionContext) {
+        this._executionContext = executionContext;
     }
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {

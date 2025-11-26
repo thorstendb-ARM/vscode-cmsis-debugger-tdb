@@ -21,6 +21,7 @@ import { parseExpression, ParseResult } from '../parser';
 import {  evaluateParseResult, EvaluateResult } from '../evaluator';
 
 import { ExplorerInfo, ScvdBase } from './scvd-base';
+import { ExecutionContext } from '../scvd-eval-context';
 
 
 export class ScvdExpression extends ScvdBase {
@@ -31,6 +32,7 @@ export class ScvdExpression extends ScvdBase {
     private _isPrintExpression: boolean = false;
     private _rangeMin: number | undefined;
     private _rangeMax: number | undefined;
+    private _executionContext: ExecutionContext | undefined;
 
     constructor(
         parent: ScvdBase | undefined,
@@ -70,10 +72,10 @@ export class ScvdExpression extends ScvdBase {
     }
 
     public evaluateExpression(): EvaluateResult {
-        if(this.expressionAst === undefined || this.evalContext === undefined) {
+        if(this.expressionAst === undefined || this._executionContext === undefined) {
             return undefined;
         }
-        const result = evaluateParseResult(this.expressionAst, this.evalContext /*, this*/); // pass 'this' for local variable resolution
+        const result = evaluateParseResult(this.expressionAst, this._executionContext.evalContext /*, this*/); // pass 'this' for local variable resolution
         return result;
     }
 
@@ -81,17 +83,19 @@ export class ScvdExpression extends ScvdBase {
         return this._result;
     }
 
-    public get value(): number | string | undefined {
+    private get value(): number | string | undefined {
         this.evaluate();
         return this._result;
     }
 
     public getValue(): number | undefined {
-        return (typeof this.value === 'number') ? this.value : undefined;
+        const val = this.value;
+        return (typeof val === 'number') ? val : undefined;
     }
 
     public setValue(val: number): number | undefined {
         if(typeof this._result === 'number') {
+            this.resetExpression();
             this._result = val;
         } else {
             this.expression = val.toString();
@@ -133,9 +137,16 @@ export class ScvdExpression extends ScvdBase {
         }
     }
 
+    private resetExpression() {
+        this._expression = undefined;
+        this._expressionAst = undefined;
+        this._result = undefined;
+    }
+
     private parseExpression(): boolean {
         const expression = this.expression;
         if (expression === undefined) {
+            this.expressionAst = undefined;
             return false;
         }
 
@@ -152,6 +163,10 @@ export class ScvdExpression extends ScvdBase {
     public configure(): boolean {
         this.parseExpression();
         return super.configure();
+    }
+
+    public setExecutionContext(_executionContext: ExecutionContext) {
+        this._executionContext = _executionContext;
     }
 
     public validate(prevResult: boolean): boolean {

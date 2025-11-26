@@ -56,6 +56,17 @@ export class ScvdTypedefs extends ScvdBase {
         return typedefItem;
     }
 
+    public calculateTypedefs(): void {
+        const typedefs = this.typedef;
+        if(typedefs === undefined || typedefs.length === 0) {
+            return;
+        }
+
+        typedefs.forEach( (typedef: ScvdTypedef) => {
+            typedef.calculateTypedef();
+        });
+    }
+
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
 
@@ -70,6 +81,7 @@ export class ScvdTypedef extends ScvdBase {
     private _import: ScvdSymbol | undefined;
     private _member: ScvdMember[] = [];     // target system variable
     private _var: ScvdVar[] = [];       // local SCVD variable
+    private _fullSize: number | undefined;
 
     constructor(
         parent: ScvdBase | undefined,
@@ -90,27 +102,36 @@ export class ScvdTypedef extends ScvdBase {
             const memberItem = this.addMember();
             memberItem.readXml(v);
         });
+        this._member.sort(this.sortByLine);
 
         const vars = getArrayFromJson(xml.var);
         vars?.forEach( (v: Json) => {
             const varItem = this.addVar();
             varItem.readXml(v);
         });
+        this._var.sort(this.sortByLine);
 
         return super.readXml(xml);
     }
 
     get size(): number | undefined {
+        const fullSize = this._fullSize;    // calculated size including vars
+        if(fullSize !== undefined) {
+            return fullSize;
+        }
         return this._size?.getValue();
     }
     set size(value: string | undefined) {
         if(value !== undefined) {
-            if( this._size === undefined) {
-                this._size = new ScvdExpression(this, value, 'size');
-                return;
-            }
-            this._size.expression = value;
+            this._size = new ScvdExpression(this, value, 'size');
         }
+    }
+
+    get fullSize(): number | undefined {
+        return this._fullSize;
+    }
+    set fullSize(value: number | undefined) {
+        this._fullSize = value;
     }
 
     set import(value: string | undefined) {
@@ -152,11 +173,75 @@ export class ScvdTypedef extends ScvdBase {
         );
     }
 
+    public calculateTypedef() {
+        if(this.import !== undefined) {
+            this.import.fetchSymbolInformation();
+        }
+
+        this.calculateOffsets();
+    }
+
+    private alignToDword(addr: number): number {
+        return (addr + 3) & ~3;
+    }
+    /* TODO: must use symbol information from debugger to check if symbols are present.
+     * For now, use the information that is available in the SCVD file only.
+     */
+    public calculateOffsets() {
+        let currentNextOffset = 0;
+        this._member.forEach( (member: ScvdMember) => {
+            const memberOffset = member.offset;
+            if(memberOffset !== undefined) {   // ---- offset expression is set ----
+                const offsetVal = memberOffset.getValue();
+                if(offsetVal !== undefined) {   // TODO: on error?!
+                    if(offsetVal > currentNextOffset) {
+                        currentNextOffset = offsetVal;  // store offset
+                    }
+                }
+            } else {    // ---- offset expression is not set ----
+                if(this.import !== undefined) { // import from Debugger
+                    const offset = this.import.getOffset(member.name);
+                    if(offset !== undefined) {
+                        member.offset = offset.toString();
+                    }
+                } else {
+                    member.offset = currentNextOffset.toString();  // set current offset
+                }
+                member.offset?.configure();
+            }
+
+            const memberSize = member.getSize();
+            if(memberSize !== undefined) {   // TODO: on error?!
+                currentNextOffset += memberSize;
+            }
+        });
+
+        const typedefSize = this.size;
+        if(typedefSize !== undefined && typedefSize > 0) {
+            if(currentNextOffset > typedefSize) {
+                console.warn(`Current offset ${currentNextOffset} exceeds typedef size ${typedefSize}`);
+            }
+            if(typedefSize > currentNextOffset) {   // adjust to typedef size if padding is included
+                currentNextOffset = typedefSize;
+            }
+        }
+
+        currentNextOffset = this.alignToDword(currentNextOffset + 8);   // make sure no overlaps happen when reading target memory
+
+        this.var.forEach( (varItem: ScvdVar) => {
+            const varSize = varItem.getSize() ?? 4; // default size 4 bytes
+            varItem.offset = currentNextOffset.toString();  // set current offset
+            varItem.offset?.configure();
+            currentNextOffset += varSize;
+        });
+        this._fullSize = currentNextOffset;
+    }
+
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
         if (this._size !== undefined) {
             info.push({ name: 'Size', value: this._size.expression ?? '' });
-            if (this._size.value !== undefined) {
+            if (this._size.getValue() !== undefined) {
                 info.push({ name: 'Size Value', value: this._size.getGuiValue() ?? 'undefined' });
             }
         }

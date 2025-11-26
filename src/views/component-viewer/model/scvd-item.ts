@@ -181,6 +181,10 @@ export class ScvdItem extends ScvdBase {
         return guiItems && guiItems.length > 0 ? guiItems : undefined;
     }
 
+    public hasGuiChildren(): boolean {
+        return this.item.length > 0 || this.listOut.length > 0 || this.print.length > 0;
+    }
+
     public getGuiValue(): string | undefined {
         return this.value?.getGuiValue();
     }

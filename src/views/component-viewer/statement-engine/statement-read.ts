@@ -16,6 +16,7 @@
 
 import { ScvdBase } from '../model/scvd-base';
 import { ScvdRead } from '../model/scvd-read';
+import { ExecutionContext } from '../scvd-eval-context';
 import { StatementBase } from './statement-base';
 
 
@@ -25,7 +26,7 @@ export class StatementRead extends StatementBase {
         super(item, parent);
     }
 
-    protected onExecute(): void {
+    protected onExecute(executionContext: ExecutionContext): void {
         const scvdRead = this.scvdItem.castToDerived(ScvdRead);
         if (scvdRead === undefined) {
             return;
@@ -39,11 +40,16 @@ export class StatementRead extends StatementBase {
         const size = scvdRead.size;
         let readLength: number = 4;
         if(size !== undefined) {
-            const sizeValue = size.value;
+            const sizeValue = size.getValue();
             if(typeof sizeValue === 'number') {
                 readLength = sizeValue;
                 console.log(`${this.line} Executing "read": ${scvdRead.name}, size expression: ${size.expression}, value: ${readLength}`);
             }
+        }
+
+        const name = scvdRead.name;
+        if(name !== undefined) {
+            executionContext.memoryHost.setVariable(name, readLength, 0);
         }
 
 
@@ -54,7 +60,7 @@ export class StatementRead extends StatementBase {
 
 
         const offsetExpr = scvdRead.offset;
-        if(symbol?.name === undefined && offsetExpr === undefined) {
+        if(symbol?.symbol === undefined && offsetExpr === undefined) {
             console.error(`${this.line}: Executing "read": ${scvdRead.name}, no symbol or offset defined`);
             return;
         }

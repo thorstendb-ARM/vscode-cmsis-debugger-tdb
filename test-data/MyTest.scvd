@@ -3,34 +3,132 @@
   <component name="RTOS" version="5.0.0"/>    <!-- name and version of the component  -->
 
   <typedefs>
-    <typedef name="elem_t" info="" size="36">
-      <member name="id"       type="uint32_t" offset="0"  info="name of the thread (type is const char *)"/>
-    </typedef>
-    <typedef name="tcb_t" info="" size="36">
-      <member name="element"       type="elem_t" offset="0"  info="name of the thread (type is const char *)"/>
+
+    <typedef name="memberTest_t" info="" size="10" import="mySymbol">
+      <member name="a" type="uint8_t" offset="0"  info="Member a"/>
+      <member name="b" type="uint8_t" offset="1"  info="Member b"/>
+      <member name="c" type="uint8_t" offset="2"  info="Member c"/>
+      <member name="d" type="uint8_t" offset="3"  info="Member d"/>
+      <member name="A" type="uint8_t"  info="Member noOffset A"/>
+      <member name="B" type="uint8_t"  info="Member noOffset B"/>
+      <member name="C" type="uint8_t"  info="Member noOffset C"/>
+      <member name="D" type="uint8_t"  info="Member noOffset D"/>
+      
+      <var name="sum"     type="uint32_t"  info="Member sum"/>
+      <var name="m_var1" type="uint32_t" info="Member Variable 1"/>
+      <var name="m_var2" type="uint16_t" info="Member Variable 2"/>
+      <var name="m_var3" type="uint32_t" info="Member Variable 3"/>
     </typedef>
 
   </typedefs>
 
   <objects>
-    <object name="RTX RTOS Object">
+    <object name="Test Object">
       <var name="R0" type="uint32_t" value="0x1"/>
-      <var name="ISR_FIFO" type="uint32_t" value="0x2"/>
       <var name="i" type="uint32_t" value="0"/>
       <var name="j" type="uint32_t" value="0"/>
-      <var name="TCB" type="tcb_t" value=""/>
+      <var name="k" type="uint32_t" value="0"/>
+      <var name="l" type="uint32_t" value="0"/>
+      <var name="memberTest" type="memberTest_t" value="0x00000000"/>
 
       <calc>
         R0  = __GetRegVal ("R0");
+        i = 0;
+        j = 1;
+        k = 2;
+        l = 0;
+      </calc>
+
+      <calc>
+        memberTest[j] = 0x44444444;
+        memberTest[k] = 0x88888888;
+        memberTest.m_var1 = 0x11111111;
+        memberTest.a = 0x12;
+        memberTest.b = 0x34;
+        memberTest.c = 0x56;
+        memberTest.d = 0x78;
+        memberTest.sum = memberTest.d + (memberTest.c &lt;&lt; 8) + (memberTest.b &lt;&lt; 16) + (memberTest.a &lt;&lt; 24);
+        memberTest.A = 0xAA;
+        memberTest.B = 0xBB;
+        memberTest.C = 0xCC;
+        memberTest.D = 0xDD;
+        memberTest.m_var2 = 0x22222222;
+        memberTest.m_var3[i+l] = 0xAAAAAAAA;
+        memberTest.m_var3[j+l] = 0xBBBBBBBB;
+        memberTest.m_var3[k+l] = 0xCCCCCCCC;
       </calc>
 
       <!-- Read Thread Control Block -->
       <!--readlist cond="(mem_list_com[i].len &amp; 1) &amp;&amp; (mem_list_com[i].id == 0xF1)" name="TCB" type="osRtxThread_t" offset="addr" count="1" /-->
 
       <out name="GetRegVal Test">
-        <!--item property="ISR_FIFO at i" value="%x[ISR_FIFO[i]]"/-->
-        <!--item property="TCB at i, element" value="%x[TCB[i].element]"/-->
-        <item property="TCB at i, element at i, id" value="%x[TCB[i].element[j].id]"/>
+        <item property="Vars">
+            <item property="R0"    value="%x[R0]"/>
+            <item property="i"     value="%x[i]"/>
+            <item property="j"     value="%x[j]"/>
+            <item property="k"     value="%x[k]"/>
+            <item property="l"     value="%x[l]"/>
+          </item>
+
+          <item property="memberTest offset">
+            <item property="memberTest a"     value="%x[memberTest.a]"/>
+            <item property="memberTest b"     value="%x[memberTest.b]"/>
+            <item property="memberTest c"     value="%x[memberTest.c]"/>
+            <item property="memberTest d"     value="%x[memberTest.d]"/>
+          </item>
+          
+          <item property="memberTest no offset">
+            <item property="memberTest A"     value="%x[memberTest.A]"/>
+            <item property="memberTest B"     value="%x[memberTest.B]"/>
+            <item property="memberTest C"     value="%x[memberTest.C]"/>
+            <item property="memberTest D"     value="%x[memberTest.D]"/>
+          </item>
+
+          <item property="memberTest both arrified">
+            <item property="memberTest[0].a"     value="%x[memberTest[0].a]"/>
+            <item property="memberTest[0].b"     value="%x[memberTest[0].b]"/>
+            <item property="memberTest[0].c"     value="%x[memberTest[0].c]"/>
+            <item property="memberTest[0].d"     value="%x[memberTest[0].d]"/>
+
+            <item property="memberTest[0].A"     value="%x[memberTest[0].A]"/>
+            <item property="memberTest[0].B"     value="%x[memberTest[0].B]"/>
+            <item property="memberTest[0].C"     value="%x[memberTest[0].C]"/>
+            <item property="memberTest[0].D"     value="%x[memberTest[0].D]"/>
+          </item>
+
+          <item property="memberTest sum"   value="%x[memberTest.sum]"/>
+
+          <item property="memberTest index array">
+            <item property="memberTest idx i"  value="%x[memberTest[i]]"/>
+            <item property="memberTest idx i+l"  value="%x[memberTest[i+l]]"/>
+
+            <item property="memberTest idx j"  value="%x[memberTest[j]]"/>
+            <item property="memberTest idx j+l"  value="%x[memberTest[j+l]]"/>
+
+            <item property="memberTest idx k"  value="%x[memberTest[k]]"/>
+            <item property="memberTest idx k+l"  value="%x[memberTest[k+l]]"/>
+          </item>
+
+          <item property="memberTest var">
+            <item property="memberTest m_var1"  value="%x[memberTest.m_var1]"/>
+            <item property="memberTest m_var2"  value="%x[memberTest.m_var2]"/>
+
+            <item property="memberTest m_var3[0]"  value="%x[memberTest.m_var3[0]]"/>
+            <item property="memberTest m_var3[1]"  value="%x[memberTest.m_var3[1]]"/>
+            <item property="memberTest m_var3[2]"  value="%x[memberTest.m_var3[2]]"/>
+
+            <item property="memberTest m_var3[i]"  value="%x[memberTest.m_var3[i]]"/>
+            <item property="memberTest m_var3[j]"  value="%x[memberTest.m_var3[j]]"/>
+            <item property="memberTest m_var3[k]"  value="%x[memberTest.m_var3[k]]"/>
+          </item>
+
+          <item property="String: true / false">
+            <item property="i"  value="%x[i? &quot;true&quot; : &quot;false&quot;]"/>
+            <item property="j"  value="%x[j? &quot;true&quot; : &quot;false&quot;]"/>
+            <item property="k"  value="%x[k? &quot;true&quot; : &quot;false&quot;]"/>
+            <item property="i+j"  value="%x[(i+j)? &quot;true&quot; : &quot;false&quot;]"/>
+          </item>
+
       </out>
     </object>
   </objects>

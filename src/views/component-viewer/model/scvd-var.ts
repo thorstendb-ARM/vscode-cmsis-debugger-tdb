@@ -24,6 +24,8 @@ import { getStringFromJson } from './scvd-utils';
 export class ScvdVar extends ScvdBase {
     private _value: ScvdExpression | undefined;
     private _type: ScvdDataType | undefined;
+    private _offset: ScvdExpression | undefined;
+
 
     constructor(
         parent: ScvdBase | undefined,
@@ -87,6 +89,34 @@ export class ScvdVar extends ScvdBase {
         }
     }
 
+    public getSize(): number | undefined {
+        const size = this._type?.getSize();
+        return size;
+    }
+
+    get offset(): ScvdExpression | undefined {
+        return this._offset;
+    }
+
+    set offset(value: string | undefined) {
+        if(value !== undefined) {
+            this._offset = new ScvdExpression(this, value, 'offset');
+        }
+    }
+
+    // member’s byte offset
+    public getMemberOffset(): number | undefined {
+        const offsetExpr = this._offset;
+        if (offsetExpr !== undefined) {
+            const offsetValue = offsetExpr.getValue();
+            if (typeof offsetValue === 'number') {
+                return offsetValue;
+            }
+        }
+        return 0;   // TODO: default?
+    }
+
+
     // search a member (member, var) in typedef
     public getMember(_property: string): ScvdBase | undefined {
         const type = this._type;
@@ -95,6 +125,18 @@ export class ScvdVar extends ScvdBase {
             return typeObj;
         }
         return undefined;
+    }
+
+    public getElementRef(): ScvdBase | undefined {
+        const typeObj = this._type;
+        if(typeObj !== undefined) {
+            return typeObj;
+        }
+        return undefined;
+    }
+
+    public getElementStride(): number {
+        return this._type?.getSize() ?? 0;
     }
 
 

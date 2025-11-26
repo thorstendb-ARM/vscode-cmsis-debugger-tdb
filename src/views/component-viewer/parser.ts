@@ -5,7 +5,7 @@
  *  - Printf-like formatting segments: `%x[ expr ]` (x = ANY single non-space char) and `%%` (escaped percent)
  *  - Intrinsic evaluation-point calls:
  *      __CalcMemUsed, __FindSymbol, __GetRegVal, __Offset_of, __size_of, __Symbol_exists, __Running
- *  - Constant folding (assignment expression value = RHS const value when foldable)
+ *  - Constant folding (never folds assignments; side-effecting nodes are kept as AST)
  *  - External symbol collection
  *  - Colon selector operators `typedef_name:member` and `typedef_name:member:enum`
  *  - Ternary conditional `?:` (right-associative)
@@ -697,8 +697,8 @@ export class Parser {
         if (k === 'AssignmentExpression') {
             const ae = node as AssignmentExpression;
             const right = this.fold(ae.right);
+            // Do not fold assignments to constants; keep side effects for evaluator
             const res: any = { ...ae, right };
-            if (ae.operator === '=' && (right as any).constValue !== undefined) res.constValue = (right as any).constValue;
             return res;
         }
 

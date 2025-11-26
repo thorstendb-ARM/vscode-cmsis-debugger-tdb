@@ -15,7 +15,8 @@
  */
 
 import { ScvdBase } from '../model/scvd-base';
-import { ensureGlobalVar, getGlobalValue, setGlobalValue } from '../scvd-eval-interface';
+import { ScvdVar } from '../model/scvd-var';
+import { ExecutionContext } from '../scvd-eval-context';
 import { StatementBase } from './statement-base';
 
 
@@ -25,13 +26,18 @@ export class StatementVar extends StatementBase {
         super(item, parent);
     }
 
-    protected onExecute(): void {
-
-        ensureGlobalVar(this.scvdItem, 'i', 0);  // creates symbol in model if missing, seeds cache
-        setGlobalValue('i', 123);
-        const v = getGlobalValue('i');
-
+    protected onExecute(executionContext: ExecutionContext): void {
         console.log(`${this.line}: Executing "var": ${this.scvdItem.name}`);
-        console.log(`   Global var 'i' value: ${v}`);
+
+        const varItem = this.scvdItem.castToDerived(ScvdVar);
+        if(varItem !== undefined) {
+            const name = varItem.name;
+            const size = varItem.getSize();
+            const value = varItem.getValue();
+            if(name !== undefined && size !== undefined && value !== undefined) {
+                executionContext.memoryHost.setVariable(name, size, value);
+                console.log(`${this.line} Variable "${name}" created with value: ${value}`);
+            }
+        }
     }
 }

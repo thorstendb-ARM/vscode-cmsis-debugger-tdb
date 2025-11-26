@@ -46,7 +46,7 @@ export class ScvdCondition extends ScvdBase {
 
     public get result(): boolean {
         return this._expression
-            ? this._expression.value ? true : false
+            ? this._expression.getValue() ? true : false
             : true;
     }
 
