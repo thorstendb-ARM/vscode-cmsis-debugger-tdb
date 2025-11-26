@@ -35,9 +35,6 @@
       <var name="StackUsage" type="uint32_t" value="0x00000000"/>
 
       <calc>
-        StackStart = __FindSymbol ("tstack");
-        StackSize  = __size_of ("tstack") * 4;
-        StackUsage = __CalcMemUsed (StackStart, StackSize, 0x8A8A8A8A, 0xE25A2EA5);
         R0  = __GetRegVal ("R0");
         i = 0;
         j = 1;
@@ -64,11 +61,23 @@
         memberTest.m_var3[k+l] = 0xCCCCCCCC;
       </calc>
 
+      <calc>
+        StackStart = __FindSymbol ("tstack");
+        StackSize  = __size_of ("tstack") * 4;
+        StackUsage = __CalcMemUsed (StackStart, StackSize, 0x8A8A8A8A, 0xE25A2EA5);
+      </calc>
+
       <!-- Read Thread Control Block -->
       <!--readlist cond="(mem_list_com[i].len &amp; 1) &amp;&amp; (mem_list_com[i].id == 0xF1)" name="TCB" type="osRtxThread_t" offset="addr" count="1" /-->
 
       <out name="GetRegVal Test">
-        <item property="Vars">
+          <item property="Stack">
+            <item property="StackStart"    value="%x[StackStart]"/>
+            <item property="StackSize"     value="%x[StackSize]"/>
+            <item property="StackUsage"    value="%d[StackUsage]"/>
+          </item>
+
+          <item property="Vars">
             <item property="R0"    value="%x[R0]"/>
             <item property="i"     value="%x[i]"/>
             <item property="j"     value="%x[j]"/>

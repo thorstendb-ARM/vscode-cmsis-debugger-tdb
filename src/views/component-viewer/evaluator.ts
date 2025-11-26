@@ -85,7 +85,7 @@ export interface DataHost {
 
   __GetRegVal?(reg: string): number | undefined;
   __FindSymbol?(symbol: string): number | undefined;
-  __CalcMemUsed?(args: any[]): number | undefined;
+  __CalcMemUsed?(args: number[]): number | undefined;
   __size_of?(symbol: string): number | undefined;
   __Symbol_exists?(symbol: string): number | undefined;
   __Offset_of?(container: RefContainer, typedefMember: string): number | undefined;
