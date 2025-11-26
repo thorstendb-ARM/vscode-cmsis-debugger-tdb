@@ -3,15 +3,8 @@
   <component name="RTOS" version="5.0.0"/>    <!-- name and version of the component  -->
 
   <typedefs>
-    <typedef name="elem_t" info="" size="36">
-      <member name="id"       type="uint32_t" offset="0"  info="name of the thread (type is const char *)"/>
-    </typedef>
 
-    <typedef name="tcb_t" info="" size="36">
-      <member name="element"       type="elem_t" offset="0"  info="name of the thread (type is const char *)"/>
-    </typedef>
-
-    <typedef name="memberTest_t" info="" size="8" import="mySymbol">
+    <typedef name="memberTest_t" info="" size="10" import="mySymbol">
       <member name="a" type="uint8_t" offset="0"  info="Member a"/>
       <member name="b" type="uint8_t" offset="1"  info="Member b"/>
       <member name="c" type="uint8_t" offset="2"  info="Member c"/>
@@ -30,10 +23,8 @@
   </typedefs>
 
   <objects>
-    <object name="RTX RTOS Object">
+    <object name="Test Object">
       <var name="R0" type="uint32_t" value="0x1"/>
-      <!-- <var name="ISR_FIFO" type="uint32_t" value="0x2"/> -->
-      <!-- <var name="TCB" type="tcb_t" value=""/> -->
       <var name="i" type="uint32_t" value="0"/>
       <var name="j" type="uint32_t" value="0"/>
       <var name="k" type="uint32_t" value="0"/>
@@ -138,9 +129,6 @@
             <item property="i+j"  value="%x[(i+j)? &quot;true&quot; : &quot;false&quot;]"/>
           </item>
 
-        <!-- <item property="ISR_FIFO at i" value="%x[ISR_FIFO[i]]"/>
-        <item property="TCB at i, element" value="%x[TCB[i].element]"/>
-        <item property="TCB at i, element at i, id" value="%x[TCB[i].element[j].id]"/> -->
       </out>
     </object>
   </objects>

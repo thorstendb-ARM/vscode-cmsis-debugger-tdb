@@ -208,15 +208,11 @@ export class ScvdTypedef extends ScvdBase {
                     member.offset = currentNextOffset.toString();  // set current offset
                 }
                 member.offset?.configure();
-                const memberSize = member.getSize();
-                if(memberSize !== undefined) {   // TODO: on error?!
-                    currentNextOffset += memberSize;
-                }
             }
 
-            const size = member.type?.size;
-            if(size !== undefined) {   // size expression is set
-                currentNextOffset += size;
+            const memberSize = member.getSize();
+            if(memberSize !== undefined) {   // TODO: on error?!
+                currentNextOffset += memberSize;
             }
         });
 
@@ -224,6 +220,9 @@ export class ScvdTypedef extends ScvdBase {
         if(typedefSize !== undefined && typedefSize > 0) {
             if(currentNextOffset > typedefSize) {
                 console.warn(`Current offset ${currentNextOffset} exceeds typedef size ${typedefSize}`);
+            }
+            if(typedefSize > currentNextOffset) {   // adjust to typedef size if padding is included
+                currentNextOffset = typedefSize;
             }
         }
 
