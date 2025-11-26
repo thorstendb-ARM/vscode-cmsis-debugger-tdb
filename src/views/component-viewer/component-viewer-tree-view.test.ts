@@ -75,35 +75,41 @@ describe('ComponentViewerTreeDataProvider', () => {
             expect(treeDataProvider['_objectOutRoots']).toEqual([]);
         });
 
-        it('should initialize with undefined scvd model', () => {
-            expect(treeDataProvider['_scvdModel']).toBeUndefined();
-            expect(treeDataProvider['_objects']).toBeUndefined();
+        it('should initialize with empty scvd models array', () => {
+            expect(treeDataProvider['_scvdModel']).toBeDefined();
+            expect(treeDataProvider['_scvdModel'].scvdModels).toEqual([]);
         });
     });
 
     describe('setModel', () => {
-        it('should set the SCVD model and objects', () => {
+        it('should add the SCVD model to scvdModels array', () => {
             const mockScvdModel = createMockScvdModel({ objects: [] });
             treeDataProvider.setModel(mockScvdModel);
 
-            expect(treeDataProvider['_scvdModel']).toBe(mockScvdModel);
-            expect(treeDataProvider['_objects']).toBe(mockScvdModel.objects);
+            expect(treeDataProvider['_scvdModel'].scvdModels).toHaveLength(1);
+            expect(treeDataProvider['_scvdModel'].scvdModels[0]).toBe(mockScvdModel);
         });
 
-        it('should not set model when undefined is passed', () => {
+        it('should not add model when undefined is passed', () => {
             const mockScvdModel = createMockScvdModel({ objects: [] });
             treeDataProvider.setModel(mockScvdModel);
+            const initialLength = treeDataProvider['_scvdModel'].scvdModels.length;
+            
             treeDataProvider.setModel(undefined);
 
-            expect(treeDataProvider['_scvdModel']).toBe(mockScvdModel);
+            expect(treeDataProvider['_scvdModel'].scvdModels).toHaveLength(initialLength);
         });
 
-        it('should handle model with undefined objects', () => {
-            const modelWithoutObjects = {} as ScvdComponentViewer;
-            treeDataProvider.setModel(modelWithoutObjects);
+        it('should handle multiple models being added', () => {
+            const model1 = createMockScvdModel({ objects: [] });
+            const model2 = createMockScvdModel({ objects: [] });
+            
+            treeDataProvider.setModel(model1);
+            treeDataProvider.setModel(model2);
 
-            expect(treeDataProvider['_scvdModel']).toBe(modelWithoutObjects);
-            expect(treeDataProvider['_objects']).toBeUndefined();
+            expect(treeDataProvider['_scvdModel'].scvdModels).toHaveLength(2);
+            expect(treeDataProvider['_scvdModel'].scvdModels[0]).toBe(model1);
+            expect(treeDataProvider['_scvdModel'].scvdModels[1]).toBe(model2);
         });
     });
 
@@ -329,15 +335,15 @@ describe('ComponentViewerTreeDataProvider', () => {
             expect(treeDataProvider['_objectOutRoots']).toEqual([mockOut1, mockOut2, mockOut3]);
         });
 
-        it('should not add objects when objects is undefined', () => {
-            treeDataProvider['_objects'] = undefined;
+        it('should not add objects when scvdModels array is empty', () => {
             treeDataProvider['addRootObject']();
 
             expect(treeDataProvider['_objectOutRoots']).toHaveLength(0);
         });
 
-        it('should not add objects when objects.objects is undefined', () => {
-            treeDataProvider['_objects'] = { objects: undefined } as any;
+        it('should handle model with undefined objects', () => {
+            const modelWithoutObjects = {} as ScvdComponentViewer;
+            treeDataProvider.setModel(modelWithoutObjects);
             treeDataProvider['addRootObject']();
 
             expect(treeDataProvider['_objectOutRoots']).toHaveLength(0);
@@ -363,6 +369,29 @@ describe('ComponentViewerTreeDataProvider', () => {
             treeDataProvider['addRootObject']();
 
             expect(treeDataProvider['_objectOutRoots']).toHaveLength(0);
+        });
+
+        it('should handle multiple models with different out objects', () => {
+            const mockOut1 = new MockScvdGuiElement('Out1', 'value1');
+            const mockOut2 = new MockScvdGuiElement('Out2', 'value2');
+            const mockOut3 = new MockScvdGuiElement('Out3', 'value3');
+            
+            const model1 = createMockScvdModel({
+                objects: [{ out: [mockOut1, mockOut2] }]
+            });
+            
+            const model2 = createMockScvdModel({
+                objects: [{ out: [mockOut3] }]
+            });
+
+            treeDataProvider.setModel(model1);
+            treeDataProvider.setModel(model2);
+            treeDataProvider['addRootObject']();
+
+            expect(treeDataProvider['_objectOutRoots']).toHaveLength(3);
+            expect(treeDataProvider['_objectOutRoots']).toContain(mockOut1);
+            expect(treeDataProvider['_objectOutRoots']).toContain(mockOut2);
+            expect(treeDataProvider['_objectOutRoots']).toContain(mockOut3);
         });
     });
 
@@ -420,6 +449,28 @@ describe('ComponentViewerTreeDataProvider', () => {
             const nestedChildren = await treeDataProvider.getChildren(root1Children[0]);
             expect(nestedChildren).toHaveLength(1);
             expect(nestedChildren[0].getGuiName()).toBe('NestedChild');
+        });
+
+        it('should handle multiple scvd models being added', async () => {
+            const out1 = new MockScvdGuiElement('Model1Object', 'value1');
+            const out2 = new MockScvdGuiElement('Model2Object', 'value2');
+            
+            const model1 = createMockScvdModel({
+                objects: [{ out: [out1] }]
+            });
+            
+            const model2 = createMockScvdModel({
+                objects: [{ out: [out2] }]
+            });
+
+            treeDataProvider.setModel(model1);
+            treeDataProvider.setModel(model2);
+            await treeDataProvider.activate();
+
+            const roots = await treeDataProvider.getChildren();
+            expect(roots).toHaveLength(2);
+            expect(roots).toContain(out1);
+            expect(roots).toContain(out2);
         });
     });
 });

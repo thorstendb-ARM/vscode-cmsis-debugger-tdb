@@ -10,7 +10,11 @@ export class ComponentViewerTargetAccess {
         this._activeSession = session;
     }
     
-    /** Function returns string only in case of failure */
+    // Function to reset active session
+    public setActiveSession(session: GDBTargetDebugSession | undefined): void {
+        this._activeSession = session;
+    }
+    
     public async evaluateSymbolAddress(address: string, context = 'hover'): Promise<string> {
         try {
             const frameId = (vscode.debug.activeStackItem as vscode.DebugStackFrame)?.frameId ?? 0;
@@ -20,7 +24,7 @@ export class ComponentViewerTargetAccess {
                 context: context
             };
             const response = await this._activeSession?.session.customRequest('evaluate', args) as DebugProtocol.EvaluateResponse['body'];
-            return response.result;
+            return response.result.split(' ')[0]; // Return only the address part
         } catch (error: unknown) {
             const errorMessage = (error as Error)?.message;
             logger.debug(`Session '${this._activeSession?.session.name}': Failed to evaluate address '${address}' - '${errorMessage}'`);
@@ -44,21 +48,21 @@ export class ComponentViewerTargetAccess {
         }
     }
 
-    public async isMemberInStruct(structure: string, member: string): Promise<boolean> {
+    public async doesSymbolExist(symbol: string): Promise<boolean> {
         try {
             const frameId = (vscode.debug.activeStackItem as vscode.DebugStackFrame)?.frameId ?? 0;
             const args: DebugProtocol.EvaluateArguments = {
-                expression: `ptype ${structure}`,
+                expression: `&${symbol}`,
                 frameId, // Currently required by CDT GDB Adapter
                 context: 'hover'
             };
             const response = await this._activeSession?.session.customRequest('evaluate', args) as DebugProtocol.EvaluateResponse['body'];
-            const structDefinition = response.result;
-            const isMemberInStructure = structDefinition.includes(member);
-            return isMemberInStructure;
+            const symbolInfo = response.result;
+            const doesExist = symbolInfo.includes(symbol);
+            return doesExist;
         } catch (error: unknown) {
             const errorMessage = (error as Error)?.message;
-            logger.debug(`Session '${this._activeSession?.session.name}': Failed to know if member ${member} is part of '${structure}' - '${errorMessage}'`);
+            logger.debug(`Session '${this._activeSession?.session.name}': Failed to know if symbol ${symbol} exists - '${errorMessage}'`);
             return false;
         }
     }
