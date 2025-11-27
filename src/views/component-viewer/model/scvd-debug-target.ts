@@ -25,7 +25,7 @@ export interface SymbolInfo {
     name: string;
     address: number;
     size: number;
-    member: MemberInfo[];
+    member?: MemberInfo[];
 }
 
 export class ScvdDebugTarget {
@@ -48,6 +48,11 @@ export class ScvdDebugTarget {
             return undefined;
         }
         return symbolInfo.address;
+    }
+
+    public readMemory(address: number, size: number): Uint8Array | undefined {
+        // For testing, return mock data
+        return this.getMockMemoryData(address, size);
     }
 
     public calculateMemoryUsage(startAddress: number, size: number, FillPattern: number, MagicValue: number): number | undefined {
@@ -118,7 +123,43 @@ export class ScvdDebugTarget {
         return undefined;
     }
 
-    private getMockMemoryData(_startAddress: number, size: number): Uint8Array | undefined {
+    public mockEncodeVersion(major: number, minor: number, patch: number): number {
+        const version = major * 10000000 + minor * 10000 + patch;
+        return version >>> 0;
+    }
+
+    private getMockMemoryData(startAddress: number, size: number): Uint8Array | undefined {
+        if(startAddress === 0x20002000) {
+            return this.getMockTStackData(size);
+        }
+        if(startAddress === 0x20003000) {
+            return this.getMockOsRtxInfoData(size);
+        }
+        return undefined;
+    }
+
+    private getMockOsRtxInfoData(size: number): Uint8Array {
+        // Mock memory data for osRtxInfo
+        const data = new Uint8Array(size);
+        data.fill(0);
+
+        const osId = 0x12345678;
+        const version = this.mockEncodeVersion(5, 1, 3);
+        if (size >= 8) {
+            data[0] = osId & 0xFF;
+            data[1] = (osId >> 8) & 0xFF;
+            data[2] = (osId >> 16) & 0xFF;
+            data[3] = (osId >> 24) & 0xFF;
+
+            data[4] = version & 0xFF;
+            data[5] = (version >> 8) & 0xFF;
+            data[6] = (version >> 16) & 0xFF;
+            data[7] = (version >> 24) & 0xFF;
+        }
+        return data;
+    }
+
+    private getMockTStackData(size: number): Uint8Array {
         // Mock memory data for tstack
         const data = new Uint8Array(size);
         // Fill with pattern 0x8A8A8A8A
@@ -147,14 +188,18 @@ export class ScvdDebugTarget {
     private getMockSymbolInfo(symbol: string): SymbolInfo | undefined {
         if(symbol === 'mySymbol') {
             const symbolInfo: SymbolInfo = { name: symbol, address: 0x12345678, size: 4*1, member: [] };
-            symbolInfo.member.push(this.mockMemberInfo('A', 1, 4+0));
-            symbolInfo.member.push(this.mockMemberInfo('B', 1, 4+1));
-            symbolInfo.member.push(this.mockMemberInfo('C', 1, 4+2));
-            symbolInfo.member.push(this.mockMemberInfo('D', 1, 4+3));
+            symbolInfo.member?.push(this.mockMemberInfo('A', 1, 4+0));
+            symbolInfo.member?.push(this.mockMemberInfo('B', 1, 4+1));
+            symbolInfo.member?.push(this.mockMemberInfo('C', 1, 4+2));
+            symbolInfo.member?.push(this.mockMemberInfo('D', 1, 4+3));
             return symbolInfo;
         }
         if(symbol === 'tstack') {
             const symbolInfo: SymbolInfo = { name: symbol, address: 0x20002000, size: 4*1, member: [] };
+            return symbolInfo;
+        }
+        if(symbol === 'osRtxInfo') {
+            const symbolInfo: SymbolInfo = { name: symbol, address: 0x20003000, size: 4*1, member: [] };
             return symbolInfo;
         }
         return undefined;

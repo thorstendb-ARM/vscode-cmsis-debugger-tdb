@@ -63,7 +63,7 @@ export class ScvdSymbol extends ScvdBase {
         const symbolInfo = this._executionContext.debugTarget.getSymbolInfo(this.symbol);
         if (symbolInfo !== undefined) {
             this.address = symbolInfo.address;
-            symbolInfo.member.forEach(member => {
+            symbolInfo.member?.forEach(member => {
                 this.addMemberInfo(member.name, member.size, member.offset);
             });
         }
