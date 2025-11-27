@@ -91,13 +91,23 @@ export class ScvdEvalInterface implements DataHost {
 
     /* ---------------- Read/Write via caches ---------------- */
     readValue(container: RefContainer): number | string | bigint | undefined {
-        const value = this.memHost.readValue(container);
-        return value;
+        try {
+            const value = this.memHost.readValue(container);
+            return value;
+        } catch (e) {
+            console.error(`ScvdEvalInterface.readValue: exception for container with base=${container.base.getExplorerDisplayName()}: ${e}`);
+            return undefined;
+        }
     }
 
     writeValue(container: RefContainer, value: number | string | bigint): any {
-        this.memHost.writeValue(container, value);
-        return value;
+        try {
+            this.memHost.writeValue(container, value);
+            return value;
+        } catch (e) {
+            console.error(`ScvdEvalInterface.writeValue: exception for container with base=${container.base.getExplorerDisplayName()}: ${e}`);
+            return undefined;
+        }
     }
 
     /* ---------------- Intrinsics ---------------- */
