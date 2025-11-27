@@ -148,11 +148,14 @@ export class CachedMemoryHost {
         const nBytes = Math.ceil((bitStart + widthBits) / 8);
 
         let valBig: bigint;
-        if (typeof value === 'bigint') valBig = value;
+        if (typeof value === 'boolean') valBig = BigInt(Math.trunc(value ? 1 : 0));
+        else if (typeof value === 'bigint') valBig = value;
         else if (typeof value === 'number') valBig = BigInt(Math.trunc(value));
         else if (value instanceof Uint8Array) {
             valBig = bytesToLEBigInt(value);
-        } else throw new Error('writeValue: unsupported value type');
+        } else {
+            throw new Error('writeValue: unsupported value type');
+        }
 
         const raw = entry.data.read(byteOff, nBytes);
         const next = injectBitsLE(raw, bitStart, widthBits, valBig);

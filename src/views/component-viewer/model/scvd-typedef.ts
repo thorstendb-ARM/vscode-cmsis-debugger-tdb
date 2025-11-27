@@ -237,9 +237,9 @@ export class ScvdTypedef extends ScvdBase {
             }
         });
 
-        const typedefSize = this.size?.getSize();
+        const typedefSize = this.size?.getValue();
         if(typedefSize !== undefined) {
-            if(currentNextOffset !== typedefSize) {
+            if(currentNextOffset > typedefSize) {
                 if(this.size !== undefined) {
                     this.size.setValue(currentNextOffset);
                 } else {
@@ -252,6 +252,7 @@ export class ScvdTypedef extends ScvdBase {
             }
         } else {
             this.size = currentNextOffset.toString();   // set typedef size if not set
+            this.size?.configure();
         }
 
 

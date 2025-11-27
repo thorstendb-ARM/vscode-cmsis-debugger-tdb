@@ -314,46 +314,46 @@ export abstract class ScvdBase implements ScvdGuiInterface {
     }
 
     public writeAt(byteOffset: number, widthBits: number, value: number | string | bigint): number | string | bigint | undefined {
-        console.log(`WriteAt not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}, offset=${byteOffset}, width=${widthBits}, value=${value}`);
+        console.error(`WriteAt not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}, offset=${byteOffset}, width=${widthBits}, value=${value}`);
         return 1;
     }
 
     public readAt(byteOffset: number, widthBits: number): number | bigint | string | undefined {
-        console.log(`ReadAt not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}, offset=${byteOffset}, width=${widthBits}`);
+        console.error(`ReadAt not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}, offset=${byteOffset}, width=${widthBits}`);
         return 1;
     }
 
     // element size in bytes, size of array type, to skip one instance to the next. Can be sizeof, or gaps
     // byte distance between adjacent elements in your model’s actual layout (not necessarily sizeof if there are hardware gaps).
     public getElementStride(): number {
-        console.log(`GetElementStride not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
+        console.error(`GetElementStride not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
         return 4;
     }
 
     // _count intrinsic: Counts the number of items in readlist and read elements.
     public getElementCount(): number | undefined {
-        console.log(`_count not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
+        console.error(`_count not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
         return 1;
     }
 
     // _addr intrinsic: Returns the memory address of a readlist member.
     public getAddress(): number | undefined {
-        console.log(`_addr via MS-DAP not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
+        console.error(`_addr via MS-DAP not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
         return 0;
     }
 
     public getSize(): number | undefined {
-        console.log(`GetSize not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
+        console.error(`GetSize not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
         return 4;
     }
     // member’s byte offset
     public getMemberOffset(): number | undefined {
-        console.log(`GetMemberOffset not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
+        console.error(`GetMemberOffset not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
         return undefined;
     }
 
     public getElementBitWidth(): number {
-        console.log(`GetElementBitWidth not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
+        console.error(`GetElementBitWidth not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
         return 32;
     }
 

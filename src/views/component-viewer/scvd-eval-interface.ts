@@ -52,12 +52,19 @@ export class ScvdEvalInterface implements DataHost {
     //     return ref.getElementRef(); // ref to type
     // }
 
-    // actual data width of one element in bits (no padding).
+    /*how far to move in memory to get from element i to element i+1.
+      Returns bytes (the evaluator multiplies by 8 to get bits). Think: addressing step / spacing / pitch.
+      Element bit width answers: “how many bits should I read/write for one element?”
+    */
     getElementBitWidth(ref: ScvdBase): number {
-        return ref.getElementBitWidth() ?? 0;
+        return this.getBitWidth(ref);
     }
 
-    // bytes per element (including any padding/alignment inside the array layout).
+    /* bytes per element (including any padding/alignment inside the array layout).
+       how many bits of the current element are meaningful when reading/writing.
+       Think: value width / mask size.
+       Stride only answers: “how far do I move to get from element i to i+1?”
+    */
     getElementStride(ref: ScvdBase): number {
         return ref.getElementStride() ?? 0;
     }
@@ -78,6 +85,7 @@ export class ScvdEvalInterface implements DataHost {
         if(size !== undefined) {
             return size * 8;
         }
+        console.error(`ScvdEvalInterface.getBitWidth: size undefined for ${ref.getExplorerDisplayName()}`);
         return 0;
     }
 
