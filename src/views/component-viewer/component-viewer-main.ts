@@ -37,11 +37,10 @@ enum scvdExamples {
     MyTest = 7,
 }
 
-const scvdFile1 = scvdFiles[scvdExamples.MyTest];
+const scvdFile1 = scvdFiles[scvdExamples.RTX5];
 
 export class ComponentViewer {
-    private instance: ComponentViewerInstance | undefined;
-    //private instance_0: ComponentViewerInstance | undefined;
+    //private instances: ComponentViewerInstance[] = [];
     private treeDataProvider: SidebarDebugView | undefined;
     private componentViewerTreeDataProvider: ComponentViewerTreeDataProvider | undefined;
 
@@ -49,20 +48,19 @@ export class ComponentViewer {
     ) {
     }
 
-    protected async createInstance(_ctx: vscode.ExtensionContext, filename: URI) {
-        const startTime = Date.now();
-        this.instance = new ComponentViewerInstance();
-        //this.instance_0 = new ComponentViewerInstance();
-        await this.instance.readModel(filename);
-        //await this.instance_0.readModel(URI.file(path.join(_ctx.extensionPath, scvdFiles[scvdExamples.RTX5])));
-        this.componentViewerTreeDataProvider?.setModel(this.instance.model);
-        //this.componentViewerTreeDataProvider?.setModel(this.instance_0.model);
-        this.treeDataProvider?.setModel(this.instance.model);
-        const endTime = Date.now();
-        console.log(`SCVD instance created in ${endTime - startTime} ms for file: ${filename}`);
+    protected async createInstance(context: vscode.ExtensionContext, filename: URI) {
+        const instance = new ComponentViewerInstance();
+        const instance_0 = new ComponentViewerInstance();
+        await instance.readModel(filename);
+        await instance_0.readModel(URI.file(path.join(context.extensionPath, scvdFiles[scvdExamples.GetRegVal_Test])));
+        this.componentViewerTreeDataProvider?.addModel(instance.model);
+        this.componentViewerTreeDataProvider?.addModel(instance_0.model);
+        // This line is for Thorsten's debugging purposes
+        this.treeDataProvider?.setModel(instance.model);
     }
 
-    public async activate(_ctx: vscode.ExtensionContext) {
+    public async activate(context: vscode.ExtensionContext) {
+        /* 
         interface CmsisConfig {
             componentViewer?: unknown;
             [key: string]: unknown;
@@ -76,6 +74,7 @@ export class ComponentViewer {
         const config = vscode.workspace.getConfiguration('launch');
         const configurations = config.get<unknown[]>('configurations') || [];
 
+        
         vscode.debug.registerDebugAdapterTrackerFactory('*', {
             createDebugAdapterTracker(session) {
                 console.log('Tracker created for session', session.id);
@@ -112,15 +111,14 @@ export class ComponentViewer {
                 };
             }
         });
-
+        */
         // debug side view
         this.treeDataProvider = new SidebarDebugView();
         this.componentViewerTreeDataProvider = new ComponentViewerTreeDataProvider();
         const providerDisposable = vscode.window.registerTreeDataProvider('cmsis-scvd-explorer', this.treeDataProvider);
-        const cmdDisposable = vscode.commands.registerCommand('cmsis-scvd-explorer.refreshEntry', () => this.treeDataProvider?.refresh());
         const treeProviderDisposable = vscode.window.registerTreeDataProvider('cmsis-debugger.componentViewer', this.componentViewerTreeDataProvider);
-        await this.createInstance(_ctx, URI.file(path.join(_ctx.extensionPath, scvdFile1)));
+        await this.createInstance(context, URI.file(path.join(context.extensionPath, scvdFile1)));
         await this.componentViewerTreeDataProvider.activate();
-        _ctx.subscriptions.push(providerDisposable, cmdDisposable, treeProviderDisposable);
+        context.subscriptions.push(providerDisposable, treeProviderDisposable);
     }
 }

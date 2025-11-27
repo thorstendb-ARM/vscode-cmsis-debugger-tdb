@@ -1,5 +1,3 @@
-<<<<<<< HEAD
-=======
 /**
  * Copyright 2025 Arm Limited
  *
@@ -480,4 +478,3 @@ describe('ComponentViewerTreeDataProvider', () => {
         });
     });
 });
->>>>>>> 6662950 (editing test file to implement hasGuiChildren)
