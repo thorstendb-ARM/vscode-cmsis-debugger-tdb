@@ -180,7 +180,7 @@ export class ScvdComplexDataType extends ScvdBase{
         if(this.isPointer) {
             return 4;   // pointer size 4 bytes
         }
-        const sizeInBytes = this._type?.size;
+        const sizeInBytes = this._type?.getSize();
         if (sizeInBytes !== undefined) {
             return sizeInBytes;
         }

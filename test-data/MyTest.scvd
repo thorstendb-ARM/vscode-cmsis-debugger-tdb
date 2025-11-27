@@ -67,6 +67,16 @@
         StackUsage = __CalcMemUsed (StackStart, StackSize, 0x8A8A8A8A, 0xE25A2EA5);
       </calc>
 
+      <calc>
+        memberTest._addr = 0xa1a1a1a1;
+        memberTest[1]._addr = 0xb2b2b2b2;
+      </calc>
+
+      <calc>
+        k = memberTest._addr;
+        l = memberTest._count;
+      </calc>
+
       <!-- Read Thread Control Block -->
       <!--readlist cond="(mem_list_com[i].len &amp; 1) &amp;&amp; (mem_list_com[i].id == 0xF1)" name="TCB" type="osRtxThread_t" offset="addr" count="1" /-->
 
@@ -86,6 +96,11 @@
             <item property="j"     value="%x[j]"/>
             <item property="k"     value="%x[k]"/>
             <item property="l"     value="%x[l]"/>
+          </item>
+
+          <item property="memberTest addr">
+            <item property="memberTest._addr"     value="%x[memberTest._addr]"/>
+            <item property="memberTest[1]._addr"  value="%x[memberTest[1]._addr]"/>
           </item>
 
           <item property="memberTest offset">

@@ -104,22 +104,45 @@ export class ScvdTypedef extends ScvdBase {
         });
         this._member.sort(this.sortByLine);
 
+        this.AddVirtualVarAddr();
+
         const vars = getArrayFromJson(xml.var);
         vars?.forEach( (v: Json) => {
             const varItem = this.addVar();
             varItem.readXml(v);
         });
+
         this._var.sort(this.sortByLine);
 
         return super.readXml(xml);
     }
 
-    get size(): number | undefined {
+    /* Add internal address var _addr
+       Returns the memory address of a readlist member.
+       Can have different base addresses for each readlist entry.
+     */
+    private AddVirtualVarAddr() {
+        const addrVarItem = this.addVar();
+        const varXml: Json = {
+            name: '_addr',
+            type: 'uint32_t',
+            value: '0x00000000',
+            '#name': 'var',
+            __line: '0',
+        };
+        addrVarItem.readXml(varXml);
+    }
+
+    public getSize(): number | undefined {
         const fullSize = this._fullSize;    // calculated size including vars
         if(fullSize !== undefined) {
             return fullSize;
         }
         return this._size?.getValue();
+    }
+
+    get size(): ScvdExpression | undefined {
+        return this._size;
     }
     set size(value: string | undefined) {
         if(value !== undefined) {
@@ -184,9 +207,7 @@ export class ScvdTypedef extends ScvdBase {
     private alignToDword(addr: number): number {
         return (addr + 3) & ~3;
     }
-    /* TODO: must use symbol information from debugger to check if symbols are present.
-     * For now, use the information that is available in the SCVD file only.
-     */
+
     public calculateOffsets() {
         let currentNextOffset = 0;
         this._member.forEach( (member: ScvdMember) => {
@@ -216,15 +237,23 @@ export class ScvdTypedef extends ScvdBase {
             }
         });
 
-        const typedefSize = this.size;
-        if(typedefSize !== undefined && typedefSize > 0) {
-            if(currentNextOffset > typedefSize) {
-                console.warn(`Current offset ${currentNextOffset} exceeds typedef size ${typedefSize}`);
+        const typedefSize = this.size?.getSize();
+        if(typedefSize !== undefined) {
+            if(currentNextOffset !== typedefSize) {
+                if(this.size !== undefined) {
+                    this.size.setValue(currentNextOffset);
+                } else {
+                    this.size = currentNextOffset.toString();
+                    this.size?.configure();
+                }
             }
             if(typedefSize > currentNextOffset) {   // adjust to typedef size if padding is included
                 currentNextOffset = typedefSize;
             }
+        } else {
+            this.size = currentNextOffset.toString();   // set typedef size if not set
         }
+
 
         currentNextOffset = this.alignToDword(currentNextOffset + 8);   // make sure no overlaps happen when reading target memory
 

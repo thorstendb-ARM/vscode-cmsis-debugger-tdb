@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-// https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
 export interface MemberInfo {
     name: string;

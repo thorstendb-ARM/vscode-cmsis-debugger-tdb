@@ -96,7 +96,7 @@ export interface DataHost {
 
   // Pseudo-member evaluators used as obj._count / obj._addr; must return numbers
   _count?(container: RefContainer): number | undefined;
-  _addr?(container: RefContainer): number | undefined;
+  //_addr?(container: RefContainer): number | undefined;    // added as var because arrays can have different base addresses
 }
 
 export type EvalPrintfHook = {
@@ -417,7 +417,7 @@ export function evalNode(node: ASTNode, ctx: EvalContext): any {
         case 'MemberAccess': {
             const ma = node as MemberAccess;
             // Support pseudo-members that evaluate to numbers: obj._count and obj._addr
-            if (ma.property === '_count' || ma.property === '_addr') {
+            if (ma.property === '_count' /*|| ma.property === '_addr'*/) {
                 const baseRef = mustRef(ma.object, ctx, false);
                 ctx.container.member = baseRef;
                 ctx.container.current = baseRef;
