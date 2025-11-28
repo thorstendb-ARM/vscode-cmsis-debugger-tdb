@@ -32,8 +32,8 @@ import { ScvdMember } from './scvd-member';
 export class ScvdReadList extends ScvdRead {
     private _count: ScvdExpression | undefined; // default is 1
     private _next: string | undefined;  // member name for the .next pointer
-    private _init: number = 0; // discard prev. read objects? default is 0
-    private _based: number = 0; // is attribute+offset a pointer? default is 0
+    private _init: number = 0; // When init="1" previous read items in the list are discarded. Default value is 0.
+    private _based: number = 0; // When based="1" the attribute symbol and attribute offset specifies a pointer (or pointer array). Default value is 0.
 
     private _nextObj: ScvdTypedef | undefined;
 
@@ -127,6 +127,25 @@ export class ScvdReadList extends ScvdRead {
 
         return true;
     }
+
+    public getCount(): number {
+        if(this._count !== undefined) {
+            return this._count.getValue() ?? 1;
+        }
+        return 1;
+    }
+
+    public getNext(): string | undefined {
+        return this._next;
+    }
+
+    public getInit(): number {
+        return this._init;
+    }
+    public getBased(): boolean {
+        return this._based === 1;
+    }
+
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];

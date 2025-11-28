@@ -20,7 +20,7 @@ import { EvalContext } from './evaluator';
 import { createMockCm81MRegisterReader } from './mock/cm81m-registers';
 import { ScvdBase } from './model/scvd-base';
 import { ScvdComponentViewer } from './model/scvd-comonent-viewer';
-import { ScvdDebugTarget } from './model/scvd-debug-target';
+import { ScvdDebugTarget } from './scvd-debug-target';
 import { printfHook } from './printf-hook';
 import { ScvdEvalInterface } from './scvd-eval-interface';
 

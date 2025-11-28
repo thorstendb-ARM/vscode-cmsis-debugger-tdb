@@ -15,6 +15,8 @@
  */
 
 import { ScvdBase } from '../model/scvd-base';
+import { ScvdReadList } from '../model/scvd-readlist';
+import { ExecutionContext } from '../scvd-eval-context';
 import { StatementBase } from './statement-base';
 
 
@@ -24,4 +26,107 @@ export class StatementReadList extends StatementBase {
         super(item, parent);
     }
 
+    protected onExecute(executionContext: ExecutionContext): void {
+        const mustRead = this.scvdItem.mustRead;
+        if(mustRead === false) {
+            console.log(`${this.line} Skipping "read" as already initialized: ${this.scvdItem.name}`);
+            return;
+        }
+
+        const scvdReadList = this.scvdItem.castToDerived(ScvdReadList);
+        if (scvdReadList === undefined) {
+            return;
+        }
+
+        const type = scvdReadList.type;
+        if(type === undefined) {
+            console.error(`${this.line} Executing "read": ${scvdReadList.name}, no type defined`);
+            return;
+        }
+
+        const typeSize = type.getElementReadSize(); // use size specified in SCVD
+        if(typeSize === undefined) {
+            console.error(`${this.line} Executing "read": ${scvdReadList.name}, type: ${type.getExplorerDisplayName()}, could not determine type size`);
+            return;
+        }
+
+        const readBytes = (scvdReadList.size?.getValue() ?? 1) * typeSize; // Is an Expressions representing the array size or the number of values to read from target. The maximum array size is limited to 512. Default value is 1.
+        const itemName = scvdReadList.name;
+        if(itemName === undefined) {
+            console.error(`${this.line}: Executing "read": no name defined`);
+            return;
+        }
+
+        const init = scvdReadList.getInit();    // When init="1" previous read items in the list are discarded. Default value is 0.
+        if(init === 1) {
+            executionContext.memoryHost.clearVariable(itemName);
+        }
+
+        let baseAddress: number | undefined = undefined;
+
+        // Check if symbol address is defined
+        const symbol = scvdReadList.symbol;
+        if(symbol?.symbol !== undefined) {
+            const symAddr = executionContext.debugTarget.findSymbolAddress(symbol.symbol);
+            if(symAddr === undefined) {
+                console.error(`${this.line}: Executing "read": ${scvdReadList.name}, symbol: ${symbol?.name}, could not find symbol address for symbol: ${symbol?.symbol}`);
+                return;
+            }
+            baseAddress = symAddr;
+        }
+
+        const offset = scvdReadList.offset?.getValue();
+        if(offset !== undefined) {
+            baseAddress = baseAddress
+                ? baseAddress + offset
+                : offset;
+        }
+
+        if(baseAddress === undefined) {
+            console.error(`${this.line}: Executing "read": ${scvdReadList.name}, symbol: ${symbol?.name}, could not find symbol address for symbol: ${symbol?.symbol}`);
+            return;
+        }
+
+        const count = scvdReadList.getCount();  // Number of list items to read from an array. Default value is 1.
+        //const next = scvdReadList.getNext();    // Name of a member element in the list that is used as next pointer. This is used to read a linked list. <readlist> stops reading on a NULL pointer.
+        const based = scvdReadList.getBased();  // When based="1" the attribute symbol and attribute offset specifies a pointer (or pointer array). Default value is 0.
+        //const nextPtrAddr = this.getNextPtrAddr(next);
+
+        for(let i = 0; i < count; i++) {
+            const itemAddress = baseAddress + (based ? i * 4 : i * typeSize);
+            const readData = executionContext.debugTarget.readMemory(itemAddress, readBytes);
+            if(readData === undefined) {
+                console.error(`${this.line}: Executing "read": ${scvdReadList.name}, symbol: ${symbol?.name}, address: ${baseAddress}, size: ${readBytes} bytes, readMemory failed`);
+                return;
+            }
+
+            executionContext.memoryHost.setVariable(itemName, readBytes, readData);
+        }
+
+        if(scvdReadList.const === true) {   // Mark variable as already initialized
+            scvdReadList.mustRead = false;
+        }
+        console.log(`${this.line}: Executing target read: ${scvdReadList.name}, symbol: ${symbol?.name}, address: ${baseAddress}, size: ${readBytes} bytes`);
+        return;
+    }
+
+    /*private getNextPtrAddr(name: string | undefined): number | undefined {
+        if(next !== undefined) {
+            const nextItem = type.getMember(next);
+            if(nextItem === undefined) {
+                console.error(`${this.line}: Executing "read": ${scvdReadList.name}, symbol: ${symbol?.name}, could not find next member: ${next} in type: ${type.getExplorerDisplayName()}`);
+                return;
+            }
+            const nextType = nextItem.type;
+            if(nextType === undefined) {
+                console.error(`${this.line}: Executing "read": ${scvdReadList.name}, symbol: ${symbol?.name}, could not find type of next member: ${next} in type: ${type.getExplorerDisplayName()}`);
+                return;
+            }
+            const nextTypeSize = nextType.getElementReadSize();
+            if(nextTypeSize === undefined) {
+                console.error(`${this.line}: Executing "read": ${scvdReadList.name}, symbol: ${symbol?.name}, could not determine size of next member: ${next} in type: ${type.getExplorerDisplayName()}`);
+                return;
+            }
+        }
+    }*/
 }

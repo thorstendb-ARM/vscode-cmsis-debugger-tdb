@@ -9,12 +9,12 @@ export class ComponentViewerTargetAccess {
     constructor (session: GDBTargetDebugSession) {
         this._activeSession = session;
     }
-    
+
     // Function to reset active session
     public setActiveSession(session: GDBTargetDebugSession | undefined): void {
         this._activeSession = session;
     }
-    
+
     public async evaluateSymbolAddress(address: string, context = 'hover'): Promise<string> {
         try {
             const frameId = (vscode.debug.activeStackItem as vscode.DebugStackFrame)?.frameId ?? 0;

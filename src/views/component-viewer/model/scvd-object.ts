@@ -187,7 +187,6 @@ export class ScvdObject extends ScvdBase {
         return undefined;
     }
 
-
     public addVar(): ScvdVar {
         const varItem = new ScvdVar(this);
         this._var.push(varItem);

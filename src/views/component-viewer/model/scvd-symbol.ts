@@ -18,7 +18,7 @@
 
 import { ExecutionContext } from '../scvd-eval-context';
 import { ExplorerInfo, ScvdBase } from './scvd-base';
-import { MemberInfo } from './scvd-debug-target';
+import { MemberInfo } from '../scvd-debug-target';
 
 export class ScvdSymbol extends ScvdBase {
     private _symbol: string | undefined;

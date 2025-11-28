@@ -46,6 +46,7 @@ export abstract class ScvdBase implements ScvdGuiInterface {
 
     private _isModified: boolean = false;
     private _valid: boolean = false;
+    private _mustRead: boolean = true;
 
     static _executionContext: ExecutionContext | undefined;
     private _symbolsCache: Map<string, ScvdBase> | undefined;
@@ -174,8 +175,17 @@ export abstract class ScvdBase implements ScvdGuiInterface {
         return this._valid;
     }
 
+    public get mustRead(): boolean {
+        return this._mustRead;
+    }
+
+    public set mustRead(value: boolean) {
+        this._mustRead = value;
+    }
+
     public invalidate() {
         this._valid = false;
+        this._mustRead = true;
     }
 
     public invalidateSubtree() {

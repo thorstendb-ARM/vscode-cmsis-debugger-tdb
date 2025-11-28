@@ -135,6 +135,9 @@ export class ScvdDebugTarget {
         if(startAddress === 0x20003000) {
             return this.getMockOsRtxInfoData(size);
         }
+        if(startAddress === 0x20004000) {
+            return this.getMockOsRtxConfigData(size);
+        }
         return undefined;
     }
 
@@ -185,6 +188,28 @@ export class ScvdDebugTarget {
         return data;
     }
 
+    private getMockOsRtxConfigData(size: number): Uint8Array {
+        // Mock memory data for osRtxConfig
+        const data = new Uint8Array(size);
+        data.fill(0);
+
+        const flags = 0x0000000F; // example flags
+        const tick_freq = 1000; // example tick frequency
+
+        if (size >= 8) {
+            data[0] = flags & 0xFF;
+            data[1] = (flags >> 8) & 0xFF;
+            data[2] = (flags >> 16) & 0xFF;
+            data[3] = (flags >> 24) & 0xFF;
+
+            data[4] = tick_freq & 0xFF;
+            data[5] = (tick_freq >> 8) & 0xFF;
+            data[6] = (tick_freq >> 16) & 0xFF;
+            data[7] = (tick_freq >> 24) & 0xFF;
+        }
+        return data;
+    }
+
     private getMockSymbolInfo(symbol: string): SymbolInfo | undefined {
         if(symbol === 'mySymbol') {
             const symbolInfo: SymbolInfo = { name: symbol, address: 0x12345678, size: 4*1, member: [] };
@@ -195,11 +220,15 @@ export class ScvdDebugTarget {
             return symbolInfo;
         }
         if(symbol === 'tstack') {
-            const symbolInfo: SymbolInfo = { name: symbol, address: 0x20002000, size: 4*1, member: [] };
+            const symbolInfo: SymbolInfo = { name: symbol, address: 0x20002000, size: 4*1 };
             return symbolInfo;
         }
         if(symbol === 'osRtxInfo') {
-            const symbolInfo: SymbolInfo = { name: symbol, address: 0x20003000, size: 4*1, member: [] };
+            const symbolInfo: SymbolInfo = { name: symbol, address: 0x20003000, size: 4*1 };
+            return symbolInfo;
+        }
+        if(symbol === 'osRtxConfig') {
+            const symbolInfo: SymbolInfo = { name: symbol, address: 0x20004000, size: 4*1 };
             return symbolInfo;
         }
         return undefined;
@@ -212,5 +241,6 @@ export class ScvdDebugTarget {
             offset
         };
     }
+
 
 }

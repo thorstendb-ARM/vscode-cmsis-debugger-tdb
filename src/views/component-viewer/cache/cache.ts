@@ -22,7 +22,34 @@ export class SymbolCache {
         return entry;
     }
 
+    /** Remove a symbol from the cache.
+     *  Returns true if an entry existed and was removed; false otherwise.
+     *  Attempts to dispose the underlying MemoryContainer if it supports it.
+     */
+    removeSymbol(name: string): boolean {
+        const entry = this.map.get(name);
+        if (!entry) return false;
+
+        // Best-effort cleanup of the backing container (optional)
+        const maybe = entry.data as unknown as {
+            dispose?: () => void;
+            free?: () => void;
+            clear?: () => void;
+        };
+        try {
+            if (typeof maybe?.dispose === 'function') maybe.dispose();
+            else if (typeof maybe?.free === 'function') maybe.free();
+            else if (typeof maybe?.clear === 'function') maybe.clear();
+        } catch {
+            // ignore cleanup errors but still remove from the map
+        }
+
+        this.map.delete(name);
+        return true;
+    }
+
     invalidate(name: string) { const e = this.map.get(name); if (e) e.valid = false; }
+    invalidateAll() { this.map.forEach((e) => e.valid = false); }
     clear() { this.map.clear(); }
 }
 
@@ -178,5 +205,20 @@ export class CachedMemoryHost {
         }
         entry.data.write(0, buf);
         entry.valid = true;
+    }
+
+    invalidate(name?: string): void {
+        if (name === undefined) this.cache.invalidateAll();
+        else this.cache.invalidate(name);
+    }
+
+    /** Remove a symbol from the host (delegates to SymbolCache). */
+    clearVariable(name: string): boolean {
+        return this.cache.removeSymbol(name);
+    }
+
+    /** Wipe everything in the cache. */
+    clear(): void {
+        this.cache.clear();
     }
 }

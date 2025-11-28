@@ -8,7 +8,7 @@ import { DataHost, RefContainer } from './evaluator';
 import { ScvdBase } from './model/scvd-base';
 import { CachedMemoryHost } from './cache/cache';
 import { Cm81MRegisterCache } from './cache/register-cache';
-import { ScvdDebugTarget } from './model/scvd-debug-target';
+import { ScvdDebugTarget } from './scvd-debug-target';
 
 export class ScvdEvalInterface implements DataHost {
     private _registerCache: Cm81MRegisterCache;

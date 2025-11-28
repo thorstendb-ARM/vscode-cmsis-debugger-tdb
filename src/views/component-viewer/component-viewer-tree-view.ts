@@ -31,7 +31,7 @@ export class ComponentViewerTreeDataProvider implements vscode.TreeDataProvider<
     public async activate(): Promise<void> {
     //public async activate(tracker: GDBTargetDebugTracker): Promise<void> {
         /*
-        // Subscribe to the debug tracker relevant events 
+        // Subscribe to the debug tracker relevant events
         const onDidChangeActiveDebugSessionDisposable = tracker.onDidChangeActiveDebugSession(
             async (session) => await this.handleOnDidChangeActiveDebugSession(session)
         );
@@ -55,14 +55,14 @@ export class ComponentViewerTreeDataProvider implements vscode.TreeDataProvider<
     }
 
     public getTreeItem(element: ScvdGuiInterface): vscode.TreeItem {
-       const treeItemLabel = element.getGuiName() ?? 'UNKNOWN';
-       const treeItem = new vscode.TreeItem(treeItemLabel);
-       treeItem.collapsibleState = element.getGuiChildren()
-           ? vscode.TreeItemCollapsibleState.Collapsed
-           : vscode.TreeItemCollapsibleState.None;
+        const treeItemLabel = element.getGuiName() ?? 'UNKNOWN';
+        const treeItem = new vscode.TreeItem(treeItemLabel);
+        treeItem.collapsibleState = element.getGuiChildren()
+            ? vscode.TreeItemCollapsibleState.Collapsed
+            : vscode.TreeItemCollapsibleState.None;
         // Needs fixing, getGuiValue() for ScvdBase returns 0 when undefined
-       treeItem.description = element.getGuiValue() ?? '';
-       treeItem.tooltip = element.getGuiLineInfo() ?? '';
+        treeItem.description = element.getGuiValue() ?? '';
+        treeItem.tooltip = element.getGuiLineInfo() ?? '';
         return treeItem;
     }
 
@@ -78,7 +78,7 @@ export class ComponentViewerTreeDataProvider implements vscode.TreeDataProvider<
         // Handle changes to the active debug session if needed
         this.refresh();
     }
-    
+
     private async handleOnWillStartSession(session: GDBTargetDebugSession): Promise<void> {
         // Handle actions before a debug session starts if needed
         this.refresh();
@@ -113,9 +113,9 @@ export class ComponentViewerTreeDataProvider implements vscode.TreeDataProvider<
                 return;
             }
             for(const objects of model.objects?.objects) {
-            this._objectOutRoots.push(...objects.out);
+                this._objectOutRoots.push(...objects.out);
             }
-        })
+        });
         this.refresh();
     }
 }
