@@ -13,6 +13,7 @@ import path from 'path';
 import { ComponentViewerInstance } from './component-viewer-instance';
 import { SidebarDebugView } from './sidebar-debug-view';
 import { ComponentViewerTreeDataProvider } from './component-viewer-tree-view';
+import { CbuildRunReader } from '../../cbuild-run';
 
 
 const scvdFiles: string[] = [
@@ -48,76 +49,66 @@ export class ComponentViewer {
     ) {
     }
 
-    protected async createInstance(context: vscode.ExtensionContext, filename: URI) {
+    protected async readScvdFiles(): Promise<ComponentViewerInstance[] | undefined> {
+        const cbuildRunReader = new CbuildRunReader();
+        const scvdFilesPaths: string [] = cbuildRunReader.getScvdFilePaths();
+        if (scvdFilesPaths.length === 0) {
+            return undefined;
+        }
+        const instances: ComponentViewerInstance[] = [];
+        for (const scvdFilePath of scvdFilesPaths) {
+            const instance = new ComponentViewerInstance();
+            await instance.readModel(URI.file(scvdFilePath));
+            instances.push(instance);
+        }
+        return instances;
+    }
+
+    protected async buildMockInstancesArray(context: vscode.ExtensionContext): Promise<ComponentViewerInstance[]> {
+        const instances: ComponentViewerInstance[] = [];
+        let counter = 0;
+        for (const scvdFile of scvdFiles) {
+            const instance = new ComponentViewerInstance();
+            await instance.readModel(URI.file(path.join(context.extensionPath, scvdFile)));
+            instances.push(instance);
+            counter++;
+            if (counter >= 3) {
+                break;
+            }
+        }
+        return instances;
+    }
+
+    protected async createInstance(context: vscode.ExtensionContext) {
+        // Try to read SCVD files from cbuild-run file first
+        const instancesFromCbuildRun = await this.readScvdFiles();
+        // If no SCVD files found in cbuild-run, use mock files
+        if (instancesFromCbuildRun) {
+            // Add all models from cbuild-run to the tree view
+            for (const instance of instancesFromCbuildRun) {
+                this.componentViewerTreeDataProvider?.addModel(instance.model);
+            }
+            return;
+        }
+        const instances = await this.buildMockInstancesArray(context);
+        // Add all mock models to the tree view
+        for (const instance of instances) {
+            this.componentViewerTreeDataProvider?.addModel(instance.model);
+        }
+        /* These lines are for Thorsten's debugging purposes */
         const instance = new ComponentViewerInstance();
-        const instance_0 = new ComponentViewerInstance();
-        await instance.readModel(filename);
-        await instance_0.readModel(URI.file(path.join(context.extensionPath, scvdFiles[scvdExamples.GetRegVal_Test])));
-        this.componentViewerTreeDataProvider?.addModel(instance.model);
-        this.componentViewerTreeDataProvider?.addModel(instance_0.model);
-        // This line is for Thorsten's debugging purposes
+        await instance.readModel(URI.file(path.join(context.extensionPath, scvdFile1)));
         this.treeDataProvider?.setModel(instance.model);
+        /** End of lines for Thorsten's debugging purposes */
     }
 
     public async activate(context: vscode.ExtensionContext) {
-        /* 
-        interface CmsisConfig {
-            componentViewer?: unknown;
-            [key: string]: unknown;
-        }
-        interface DebugConfiguration {
-            name?: string;
-            cmsis?: CmsisConfig;
-            [key: string]: unknown;
-        }
-
-        const config = vscode.workspace.getConfiguration('launch');
-        const configurations = config.get<unknown[]>('configurations') || [];
-
-        
-        vscode.debug.registerDebugAdapterTrackerFactory('*', {
-            createDebugAdapterTracker(session) {
-                console.log('Tracker created for session', session.id);
-                return {
-                    onWillReceiveMessage(_message) {
-                        // messages sent from vscode to debug adapter
-                    },
-                    onDidSendMessage(message) {
-                        if (message.event !== undefined) {
-                            console.log('Received message:', message.event, message.body);
-                        }
-
-                        if (message.event === 'stopped') {
-                            console.log('Debugger paused:', message);
-                        }
-
-                        // Wait for the 'initialized' event, which occurs when the debug session is ready and activeDebugSession is available
-                        // This does not run! activeDebugSession is not set
-                        if (message.event === 'initialized') {
-                            console.log('Debug session initialized:', session.id);
-                            const activeSession = vscode.debug.activeDebugSession;
-                            let componentViewerArgs: unknown = undefined;
-
-                            if (activeSession) {
-                                const sessionName = activeSession.name;
-                                const sessionConfig = (configurations as DebugConfiguration[]).find(cfg => cfg.name === sessionName);
-                                if (sessionConfig && sessionConfig.cmsis && sessionConfig.cmsis.componentViewer) {
-                                    componentViewerArgs = sessionConfig.cmsis.componentViewer;
-                                    console.log('cmsis:componentViewer arguments:', componentViewerArgs);
-                                }
-                            }
-                        }
-                    }
-                };
-            }
-        });
-        */
         // debug side view
         this.treeDataProvider = new SidebarDebugView();
         this.componentViewerTreeDataProvider = new ComponentViewerTreeDataProvider();
         const providerDisposable = vscode.window.registerTreeDataProvider('cmsis-scvd-explorer', this.treeDataProvider);
         const treeProviderDisposable = vscode.window.registerTreeDataProvider('cmsis-debugger.componentViewer', this.componentViewerTreeDataProvider);
-        await this.createInstance(context, URI.file(path.join(context.extensionPath, scvdFile1)));
+        await this.createInstance(context);
         await this.componentViewerTreeDataProvider.activate();
         context.subscriptions.push(providerDisposable, treeProviderDisposable);
     }

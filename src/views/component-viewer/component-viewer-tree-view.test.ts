@@ -85,10 +85,10 @@ describe('ComponentViewerTreeDataProvider', () => {
         });
     });
 
-    describe('setModel', () => {
+    describe('addModel', () => {
         it('should add the SCVD model to scvdModels array', () => {
             const mockScvdModel = createMockScvdModel({ objects: [] });
-            treeDataProvider.setModel(mockScvdModel);
+            treeDataProvider.addModel(mockScvdModel);
 
             expect(treeDataProvider['_scvdModel'].scvdModels).toHaveLength(1);
             expect(treeDataProvider['_scvdModel'].scvdModels[0]).toBe(mockScvdModel);
@@ -96,10 +96,10 @@ describe('ComponentViewerTreeDataProvider', () => {
 
         it('should not add model when undefined is passed', () => {
             const mockScvdModel = createMockScvdModel({ objects: [] });
-            treeDataProvider.setModel(mockScvdModel);
+            treeDataProvider.addModel(mockScvdModel);
             const initialLength = treeDataProvider['_scvdModel'].scvdModels.length;
             
-            treeDataProvider.setModel(undefined);
+            treeDataProvider.addModel(undefined);
 
             expect(treeDataProvider['_scvdModel'].scvdModels).toHaveLength(initialLength);
         });
@@ -108,8 +108,8 @@ describe('ComponentViewerTreeDataProvider', () => {
             const model1 = createMockScvdModel({ objects: [] });
             const model2 = createMockScvdModel({ objects: [] });
             
-            treeDataProvider.setModel(model1);
-            treeDataProvider.setModel(model2);
+            treeDataProvider.addModel(model1);
+            treeDataProvider.addModel(model2);
 
             expect(treeDataProvider['_scvdModel'].scvdModels).toHaveLength(2);
             expect(treeDataProvider['_scvdModel'].scvdModels[0]).toBe(model1);
@@ -132,7 +132,7 @@ describe('ComponentViewerTreeDataProvider', () => {
 
             const refreshSpy = jest.spyOn(treeDataProvider as any, 'refresh');
             
-            treeDataProvider.setModel(mockScvdModel);
+            treeDataProvider.addModel(mockScvdModel);
             await treeDataProvider.activate();
 
             expect(treeDataProvider['_objectOutRoots']).toHaveLength(2);
@@ -162,7 +162,7 @@ describe('ComponentViewerTreeDataProvider', () => {
                 ]
             });
 
-            treeDataProvider.setModel(mockScvdModel);
+            treeDataProvider.addModel(mockScvdModel);
             await treeDataProvider.activate();
 
             expect(treeDataProvider['_objectOutRoots']).toHaveLength(3);
@@ -235,7 +235,7 @@ describe('ComponentViewerTreeDataProvider', () => {
                 ]
             });
 
-            treeDataProvider.setModel(mockScvdModel);
+            treeDataProvider.addModel(mockScvdModel);
             await treeDataProvider.activate();
 
             const children = await treeDataProvider.getChildren();
@@ -311,7 +311,7 @@ describe('ComponentViewerTreeDataProvider', () => {
                 objects: [{ out: [mockOut] }]
             });
 
-            treeDataProvider.setModel(mockScvdModel);
+            treeDataProvider.addModel(mockScvdModel);
             await treeDataProvider.activate();
 
             // Should fire at least once during activation
@@ -332,7 +332,7 @@ describe('ComponentViewerTreeDataProvider', () => {
                 ]
             });
 
-            treeDataProvider.setModel(mockScvdModel);
+            treeDataProvider.addModel(mockScvdModel);
             treeDataProvider['addRootObject']();
 
             expect(treeDataProvider['_objectOutRoots']).toHaveLength(3);
@@ -347,7 +347,7 @@ describe('ComponentViewerTreeDataProvider', () => {
 
         it('should handle model with undefined objects', () => {
             const modelWithoutObjects = {} as ScvdComponentViewer;
-            treeDataProvider.setModel(modelWithoutObjects);
+            treeDataProvider.addModel(modelWithoutObjects);
             treeDataProvider['addRootObject']();
 
             expect(treeDataProvider['_objectOutRoots']).toHaveLength(0);
@@ -355,7 +355,7 @@ describe('ComponentViewerTreeDataProvider', () => {
 
         it('should handle empty objects array', () => {
             const mockScvdModel = createMockScvdModel({ objects: [] });
-            treeDataProvider.setModel(mockScvdModel);
+            treeDataProvider.addModel(mockScvdModel);
             treeDataProvider['addRootObject']();
 
             expect(treeDataProvider['_objectOutRoots']).toHaveLength(0);
@@ -369,7 +369,7 @@ describe('ComponentViewerTreeDataProvider', () => {
                 ]
             });
 
-            treeDataProvider.setModel(mockScvdModel);
+            treeDataProvider.addModel(mockScvdModel);
             treeDataProvider['addRootObject']();
 
             expect(treeDataProvider['_objectOutRoots']).toHaveLength(0);
@@ -388,8 +388,8 @@ describe('ComponentViewerTreeDataProvider', () => {
                 objects: [{ out: [mockOut3] }]
             });
 
-            treeDataProvider.setModel(model1);
-            treeDataProvider.setModel(model2);
+            treeDataProvider.addModel(model1);
+            treeDataProvider.addModel(model2);
             treeDataProvider['addRootObject']();
 
             expect(treeDataProvider['_objectOutRoots']).toHaveLength(3);
@@ -409,7 +409,7 @@ describe('ComponentViewerTreeDataProvider', () => {
                 objects: [{ out: [parent] }]
             });
 
-            treeDataProvider.setModel(mockScvdModel);
+            treeDataProvider.addModel(mockScvdModel);
             await treeDataProvider.activate();
 
             const roots = await treeDataProvider.getChildren();
@@ -441,7 +441,7 @@ describe('ComponentViewerTreeDataProvider', () => {
                 ]
             });
 
-            treeDataProvider.setModel(mockScvdModel);
+            treeDataProvider.addModel(mockScvdModel);
             await treeDataProvider.activate();
 
             const roots = await treeDataProvider.getChildren();
@@ -467,8 +467,8 @@ describe('ComponentViewerTreeDataProvider', () => {
                 objects: [{ out: [out2] }]
             });
 
-            treeDataProvider.setModel(model1);
-            treeDataProvider.setModel(model2);
+            treeDataProvider.addModel(model1);
+            treeDataProvider.addModel(model2);
             await treeDataProvider.activate();
 
             const roots = await treeDataProvider.getChildren();
