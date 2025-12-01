@@ -142,11 +142,7 @@ export class ScvdTypedef extends ScvdBase {
     }
 
     public getElementReadSize(): number | undefined {
-        const fullSize = this._fullSize;    // calculated size including vars
-        if(fullSize !== undefined) {
-            return fullSize;
-        }
-        return this.getSize();
+        return this._size?.getValue();
     }
 
     get size(): ScvdExpression | undefined {

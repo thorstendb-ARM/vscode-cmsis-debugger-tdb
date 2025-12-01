@@ -89,11 +89,25 @@ export class MemoryContainer {
         return this.buf.subarray(rel, rel + size);
     }
 
-    write(off: number, data: Uint8Array): void {
-        this.ensure(off, data.length);
+    // (updated) allow writing with optional zero padding to `actualSize`
+    write(off: number, data: Uint8Array, actualSize?: number): void {
+        const total = actualSize !== undefined ? Math.max(actualSize, data.length) : data.length;
+        this.ensure(off, total);
         if (!this.buf) throw new Error('window not initialized');
         const rel = off - this.winStart;
+
+        // write payload bytes
         this.buf.set(data, rel);
+
+        // zero-fill any remaining bytes up to total
+        const extra = total - data.length;
+        if (extra > 0) {
+            this.buf.fill(0, rel + data.length, rel + total);
+        }
+    }
+
+    get byteLength(): number {
+        return this.store.length;
     }
 }
 
@@ -164,7 +178,9 @@ export class CachedMemoryHost {
         return leBigIntToBytes(masked, outBytes);
     }
 
-    writeValue(container: RefContainer, value: any): void {
+    // cache.ts — inside export class CachedMemoryHost
+
+    writeValue(container: RefContainer, value: any, actualSize?: number): void {
         const variableName = container.anchor?.name;
         const widthBits = container.widthBits ?? 0;
         if (!variableName || widthBits <= 0) throw new Error('writeValue: invalid target');
@@ -175,36 +191,58 @@ export class CachedMemoryHost {
         const nBytes = Math.ceil((bitStart + widthBits) / 8);
 
         let valBig: bigint;
-        if (typeof value === 'boolean') valBig = BigInt(Math.trunc(value ? 1 : 0));
+        if (typeof value === 'boolean') valBig = BigInt(value ? 1 : 0);
         else if (typeof value === 'bigint') valBig = value;
         else if (typeof value === 'number') valBig = BigInt(Math.trunc(value));
-        else if (value instanceof Uint8Array) {
-            valBig = bytesToLEBigInt(value);
-        } else {
-            throw new Error('writeValue: unsupported value type');
+        else if (value instanceof Uint8Array) valBig = bytesToLEBigInt(value);
+        else throw new Error('writeValue: unsupported value type');
+
+        if (actualSize !== undefined && actualSize < nBytes) {
+            throw new Error(`writeValue: actualSize (${actualSize}) must be >= computed byte width (${nBytes})`);
         }
 
         const raw = entry.data.read(byteOff, nBytes);
         const next = injectBitsLE(raw, bitStart, widthBits, valBig);
-        entry.data.write(byteOff, next);
+
+        // `next` length is nBytes; pad zeros out to `actualSize` if provided
+        entry.data.write(byteOff, next, actualSize ?? nBytes);
     }
 
-    setVariable(name: string, size: number, value: number | bigint | Uint8Array): void {
+    setVariable(
+        name: string,
+        size: number,
+        value: number | bigint | Uint8Array,
+        actualSize?: number   // (new) total logical bytes to write (>= size)
+    ): void {
         const entry = this.getEntry(name);
+
+        // we append "like an array" if the symbol already exists
+        const appendOff = entry.data.byteLength ?? 0;
+
+        // normalize payload to exactly `size` bytes
         const buf = new Uint8Array(size);
         if (typeof value === 'bigint') {
-            const valBytes = leBigIntToBytes(value, size);
-            buf.set(valBytes, 0);
+            buf.set(leBigIntToBytes(value, size), 0);
         } else if (typeof value === 'number') {
-            const valBytes = leBigIntToBytes(BigInt(Math.trunc(value)), size);
-            buf.set(valBytes, 0);
+            buf.set(leBigIntToBytes(BigInt(Math.trunc(value)), size), 0);
         } else if (value instanceof Uint8Array) {
-            buf.set(value.subarray(0, size), 0);
+            buf.set(value.subarray(0, size), 0); // truncate/zero-pad to `size`
         } else {
             throw new Error('setVariable: unsupported value type');
         }
-        entry.data.write(0, buf);
+
+        // validate `actualSize` if provided
+        if (actualSize !== undefined && actualSize < size) {
+            throw new Error(`setVariable: actualSize (${actualSize}) must be >= size (${size})`);
+        }
+
+        // write and zero-pad up to `actualSize` (or `size` if not provided)
+        entry.data.write(appendOff, buf, actualSize ?? size);
         entry.valid = true;
+    }
+
+    writeBytes(name: string, offset: number, bytes: Uint8Array, size = bytes.length): void {
+        this.setVariable(name, size, bytes, offset);
     }
 
     invalidate(name?: string): void {

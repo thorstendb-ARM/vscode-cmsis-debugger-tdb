@@ -34,10 +34,10 @@
     <typedef name="MyList" size="12" >
         <member name="nextL"   type="*MyList"  offset="0" />
         <member name="valueL"  type="uint32_t" offset="4" />
-        <member name="nameL"   type="uint32_t" offset="8" />
+        <member name="nameL"   type="*int8_t" offset="8" />
         <var    name="nameS"   type="int8_t"   size="20"  />
-      </typedef>
-      
+    </typedef>
+
   </typedefs>
 
   <objects>
@@ -114,10 +114,26 @@
         V_Patch =  os_Info.version % 10000;
       </calc>
 
+      <!-- Read the linked list starting with ValueA: -->
+      <readlist name="MyListA" type="MyList" symbol="ValueA" next="nextL" />
+
+      <!-- Read the linked list starting with head pointer ListStart: -->
+      <readlist name="MyListB" type="MyList" symbol="ListStart" based="1" next="nextL" />
+
+      <!-- Clear a previous list and read ValueA, ValueB, and ValueArray. -->
+      <readlist name="MyListC" type="MyList" symbol="ValueA" init="1"                          /> 
+      <readlist name="MyListC" type="MyList" symbol="ValueB"                                   />
+      <readlist name="MyListC" type="MyList" symbol="ValueArray" count="__size_of(ValueArray)" />
+
+      <!-- Read the list based on the pointers stored in pArray: -->
+      <readlist name="MyListD" type="MyList" symbol="pArray" based="1" count="__size_of(pArray)" />
+
+      <!-- Read the pArray using read and read the list items addressed with pArray[1] and pArray[2]. -->
       <read name="pArray" type="*MyList" symbol="pArray" count="__size_of(pArray)" /> 
       <readlist name="MyListE" type="MyList" offset="pArray[1]"  />
       <readlist name="MyListE" type="MyList" offset="pArray[2]"  />
 
+  
       <out name="MyTest">
           <item property="System" value="">
             <item property="Kernel ID"    value="RTX V%d[V_Major].%d[V_Minor].%d[V_Patch]" cond="RTX_En != 0"/>
@@ -125,11 +141,10 @@
 
           <item property="Stack">
             <item property="StackStart"    value="%x[StackStart]"/>
-            <item property="StackSize"     value="%x[StackSize]"/>
-            <item property="StackUsage"    value="%d[StackUsage]"/>
+            <item property="StackSize"     value="%d[StackSize] bytes"/>
             <item alert="(StackUsage >> 31)"    
               property="tstack @%x[StackStart] size=%x[StackSize]"
-              value="Usage %x[StackUsage &amp; 0xFFFFF] %d[(StackUsage>>20) &amp; 0xFF]%%" />
+              value="Usage %x[StackUsage &amp; 0xFFFFF] %d[(StackUsage &gt;&gt; 20) &amp; 0xFF]%%" />
           </item>
 
           <item property="Vars">

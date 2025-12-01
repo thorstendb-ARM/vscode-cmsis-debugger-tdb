@@ -149,10 +149,9 @@ export class ScvdEvalInterface implements DataHost {
     }
 
     __size_of(symbol: string): number | undefined {
-        const symbolRef = this.debugTarget.getSymbolInfo(symbol);
-        if (symbolRef) {
-            const size = symbolRef.size;
-            return size;
+        const arrayElements = this.debugTarget.getNumArrayElements(symbol);
+        if (arrayElements != undefined) {
+            return arrayElements;
         }
         return undefined;
     }

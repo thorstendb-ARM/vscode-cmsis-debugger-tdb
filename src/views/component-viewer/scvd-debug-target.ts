@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import { DebugTargetMock } from './debug-target-mock';
+
 
 export interface MemberInfo {
     name: string;
@@ -29,6 +31,7 @@ export interface SymbolInfo {
 }
 
 export class ScvdDebugTarget {
+    private mock = new DebugTargetMock();
 
     constructor(
     ) {
@@ -39,7 +42,19 @@ export class ScvdDebugTarget {
             return undefined;
         }
 
-        return this.getMockSymbolInfo(symbol);
+        return this.mock.getMockSymbolInfo(symbol);
+    }
+
+    public getNumArrayElements(symbol: string): number | undefined {
+        if(symbol === undefined) {
+            return undefined;
+        }
+
+        const symbolInfo = this.mock.getMockSymbolInfo(symbol);
+        if(symbolInfo !== undefined) {
+            return symbolInfo?.member?.length ?? 1;
+        }
+        return undefined;
     }
 
     public findSymbolAddress(symbol: string): number | undefined {
@@ -52,11 +67,23 @@ export class ScvdDebugTarget {
 
     public readMemory(address: number, size: number): Uint8Array | undefined {
         // For testing, return mock data
-        return this.getMockMemoryData(address, size);
+        return this.mock.getMockMemoryData(address, size);
+    }
+
+    public convertMemoryToNumber(data: Uint8Array): number | undefined {
+        if(data === undefined || data.length === 0 || data.length > 4) {
+            return undefined;
+        }
+
+        let value = 0;
+        for(let i = 0; i < data.length; i++) {
+            value |= (data[i] << (i * 8)); // little-endian
+        }
+        return value;
     }
 
     public calculateMemoryUsage(startAddress: number, size: number, FillPattern: number, MagicValue: number): number | undefined {
-        const memData = this.getMockMemoryData(startAddress, size);
+        const memData = this.mock.getMockMemoryData(startAddress, size);
         if(memData !== undefined) {
             let usedBytes = 0;
             const patternBytes1 = new Uint8Array(4);
@@ -122,125 +149,5 @@ export class ScvdDebugTarget {
 
         return undefined;
     }
-
-    public mockEncodeVersion(major: number, minor: number, patch: number): number {
-        const version = major * 10000000 + minor * 10000 + patch;
-        return version >>> 0;
-    }
-
-    private getMockMemoryData(startAddress: number, size: number): Uint8Array | undefined {
-        if(startAddress === 0x20002000) {
-            return this.getMockTStackData(size);
-        }
-        if(startAddress === 0x20003000) {
-            return this.getMockOsRtxInfoData(size);
-        }
-        if(startAddress === 0x20004000) {
-            return this.getMockOsRtxConfigData(size);
-        }
-        return undefined;
-    }
-
-    private getMockOsRtxInfoData(size: number): Uint8Array {
-        // Mock memory data for osRtxInfo
-        const data = new Uint8Array(size);
-        data.fill(0);
-
-        const osId = 0x12345678;
-        const version = this.mockEncodeVersion(5, 1, 3);
-        if (size >= 8) {
-            data[0] = osId & 0xFF;
-            data[1] = (osId >> 8) & 0xFF;
-            data[2] = (osId >> 16) & 0xFF;
-            data[3] = (osId >> 24) & 0xFF;
-
-            data[4] = version & 0xFF;
-            data[5] = (version >> 8) & 0xFF;
-            data[6] = (version >> 16) & 0xFF;
-            data[7] = (version >> 24) & 0xFF;
-        }
-        return data;
-    }
-
-    private getMockTStackData(size: number): Uint8Array {
-        // Mock memory data for tstack
-        const data = new Uint8Array(size);
-        // Fill with pattern 0x8A8A8A8A
-        for(let i = 0; i < size; i +=4) {
-            data[i] = 0x8A;
-            data[i+1] = 0x8A;
-            data[i+2] = 0x8A;
-            data[i+3] = 0x8A;
-        }
-        // Overwrite some bytes to simulate usage
-        data[0] = 0x00;
-        data[1] = 0x00;
-        data[2] = 0x00;
-        data[3] = 0x00;
-
-        // Set MagicValue at the end
-        const magicOffset = size - 4;
-        data[magicOffset] = 0xA5;
-        data[magicOffset + 1] = 0x2E;
-        data[magicOffset + 2] = 0x5A;
-        data[magicOffset + 3] = 0xE2;
-
-        return data;
-    }
-
-    private getMockOsRtxConfigData(size: number): Uint8Array {
-        // Mock memory data for osRtxConfig
-        const data = new Uint8Array(size);
-        data.fill(0);
-
-        const flags = 0x0000000F; // example flags
-        const tick_freq = 1000; // example tick frequency
-
-        if (size >= 8) {
-            data[0] = flags & 0xFF;
-            data[1] = (flags >> 8) & 0xFF;
-            data[2] = (flags >> 16) & 0xFF;
-            data[3] = (flags >> 24) & 0xFF;
-
-            data[4] = tick_freq & 0xFF;
-            data[5] = (tick_freq >> 8) & 0xFF;
-            data[6] = (tick_freq >> 16) & 0xFF;
-            data[7] = (tick_freq >> 24) & 0xFF;
-        }
-        return data;
-    }
-
-    private getMockSymbolInfo(symbol: string): SymbolInfo | undefined {
-        if(symbol === 'mySymbol') {
-            const symbolInfo: SymbolInfo = { name: symbol, address: 0x12345678, size: 4*1, member: [] };
-            symbolInfo.member?.push(this.mockMemberInfo('A', 1, 4+0));
-            symbolInfo.member?.push(this.mockMemberInfo('B', 1, 4+1));
-            symbolInfo.member?.push(this.mockMemberInfo('C', 1, 4+2));
-            symbolInfo.member?.push(this.mockMemberInfo('D', 1, 4+3));
-            return symbolInfo;
-        }
-        if(symbol === 'tstack') {
-            const symbolInfo: SymbolInfo = { name: symbol, address: 0x20002000, size: 4*1 };
-            return symbolInfo;
-        }
-        if(symbol === 'osRtxInfo') {
-            const symbolInfo: SymbolInfo = { name: symbol, address: 0x20003000, size: 4*1 };
-            return symbolInfo;
-        }
-        if(symbol === 'osRtxConfig') {
-            const symbolInfo: SymbolInfo = { name: symbol, address: 0x20004000, size: 4*1 };
-            return symbolInfo;
-        }
-        return undefined;
-    }
-
-    private mockMemberInfo(memberName: string, size: number, offset: number): MemberInfo {
-        return {
-            name: memberName,
-            size,
-            offset
-        };
-    }
-
 
 }
