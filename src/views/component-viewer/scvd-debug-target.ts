@@ -37,6 +37,7 @@ export class ScvdDebugTarget {
     ) {
     }
 
+    // -------------  Interface to debugger  -----------------
     public getSymbolInfo(symbol: string): SymbolInfo | undefined {
         if(symbol === undefined) {
             return undefined;
@@ -70,6 +71,9 @@ export class ScvdDebugTarget {
         return this.mock.getMockMemoryData(address, size);
     }
 
+
+
+    // -------------  Utility functions  -----------------
     public convertMemoryToNumber(data: Uint8Array): number | undefined {
         if(data === undefined || data.length === 0 || data.length > 4) {
             return undefined;
