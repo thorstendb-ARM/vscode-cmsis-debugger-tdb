@@ -17,32 +17,45 @@
 import { MemberInfo, SymbolInfo } from './scvd-debug-target';
 
 /** ---------- MyList fixture: addresses (32-bit, little-endian) ---------- */
-const MYLIST_ADDR = {
-    // Globals
-    ValueA:     0x20005100,
-    ValueB:     0x20005120,
-    ValueC:     0x20005140,
-    ListStart:  0x20005160,   // holds pointer to ValueA
-    ValueArray: 0x20005200,   // 3 x MyList (12 bytes each) => 36 bytes
-    pArray:     0x20005000,   // 5 pointers (20 bytes)
+// ── RTOS mock addresses ─────────────────────────────────────────────────────
+// ── Consolidated addresses for tests ────────────────────────────────────────
+export const ADDR = {
+    Stack: {
+        TStack: 0x20001000,                   // pick any free RAM slot
+    },
+    RTOS: {
+        OsRtxInfo:   0x20003000,
+        OsRtxConfig: 0x20004000,
+    },
+    MyList: {
+        // Globals
+        ValueA:     0x20005100,
+        ValueB:     0x20005120,
+        ValueC:     0x20005140,
+        ListStart:  0x20005160,   // holds pointer to ValueA
+        ValueArray: 0x20005200,   // 3 x MyList (12 bytes each) => 36 bytes
+        pArray:     0x20005000,   // 5 pointers (20 bytes)
 
-    // Strings
-    Str: {
-        ListValueA: 0x20006000,
-        ListValueB: 0x20006020,
-        ListValueC: 0x20006040,
-        V0:         0x20006060,
-        V1:         0x20006070,
-        V2:         0x20006080,
+        // Strings
+        Str: {
+            ListValueA: 0x20006000,
+            ListValueB: 0x20006020,
+            ListValueC: 0x20006040,
+            V0:         0x20006060,
+            V1:         0x20006070,
+            V2:         0x20006080,
+        }
     }
 } as const;
 
 // ── Stack mock configuration ───────────────────────────────────────────────────
 const STACK_BYTES  = 200;
 const STACK_WORDS  = STACK_BYTES / 4;   // 50
-const STACK_ADDR = {
-    TStack: 0x20006000,                   // pick any free RAM slot
-} as const;
+// ── RTOS mock constants ─────────────────────────────────────────────────────
+const OSRTX_INFO_OSID = 0x12345678;
+const OSRTX_INFO_VERSION_PARTS = { major: 5, minor: 1, patch: 3 } as const;
+const OSRTX_CONFIG_FLAGS = 0x0000000F;
+const OSRTX_CONFIG_TICK_FREQ = 1000;
 
 export class DebugTargetMock {
 
@@ -51,36 +64,36 @@ export class DebugTargetMock {
     }
 
     public getMockMemoryData(startAddress: number, size: number): Uint8Array | undefined {
-        if(startAddress === 0x20003000) return this.getMockOsRtxInfoData(size);
-        if(startAddress === 0x20004000) return this.getMockOsRtxConfigData(size);
+        if(startAddress === ADDR.RTOS.OsRtxInfo) return this.getMockOsRtxInfoData(size);
+        if(startAddress === ADDR.RTOS.OsRtxConfig) return this.getMockOsRtxConfigData(size);
 
         // --- Stack mock: support base reads and arbitrary sub-range/element reads ---
         if (
-            startAddress >= STACK_ADDR.TStack &&
-            startAddress <  STACK_ADDR.TStack + STACK_BYTES
+            startAddress >= ADDR.Stack.TStack &&
+            startAddress <  ADDR.Stack.TStack + STACK_BYTES
         ) {
-            const offset = startAddress - STACK_ADDR.TStack;
+            const offset = startAddress - ADDR.Stack.TStack;
             return this.getMockTStackSlice(size, offset);
         }
         // --- MyList fixture: variables/arrays ---
-        if (startAddress === MYLIST_ADDR.ValueC)     return this.getMockValueC(size);
-        if (startAddress === MYLIST_ADDR.ValueB)     return this.getMockValueB(size);
-        if (startAddress === MYLIST_ADDR.ValueA)     return this.getMockValueA(size);
-        if (startAddress === MYLIST_ADDR.ListStart)  return this.getMockListStart(size);
-        if (startAddress === MYLIST_ADDR.ValueArray) return this.getMockValueArray(size);
+        if (startAddress === ADDR.MyList.ValueC)     return this.getMockValueC(size);
+        if (startAddress === ADDR.MyList.ValueB)     return this.getMockValueB(size);
+        if (startAddress === ADDR.MyList.ValueA)     return this.getMockValueA(size);
+        if (startAddress === ADDR.MyList.ListStart)  return this.getMockListStart(size);
+        if (startAddress === ADDR.MyList.ValueArray) return this.getMockValueArray(size);
         // Per-element reads (e.g., when dereferencing pArray[3] or pArray[4]):
-        if (startAddress === MYLIST_ADDR.ValueArray + 12 * 0) return this.getMockValueArrayElem(size, 0);
-        if (startAddress === MYLIST_ADDR.ValueArray + 12 * 1) return this.getMockValueArrayElem(size, 1);
-        if (startAddress === MYLIST_ADDR.ValueArray + 12 * 2) return this.getMockValueArrayElem(size, 2);
-        if (startAddress === MYLIST_ADDR.pArray)     return this.getMockPArray(size);
+        if (startAddress === ADDR.MyList.ValueArray + 12 * 0) return this.getMockValueArrayElem(size, 0);
+        if (startAddress === ADDR.MyList.ValueArray + 12 * 1) return this.getMockValueArrayElem(size, 1);
+        if (startAddress === ADDR.MyList.ValueArray + 12 * 2) return this.getMockValueArrayElem(size, 2);
+        if (startAddress === ADDR.MyList.pArray)     return this.getMockPArray(size);
 
         // --- MyList fixture: strings ---
-        if (startAddress === MYLIST_ADDR.Str.ListValueC) return this.makeCString('List Value C', size);
-        if (startAddress === MYLIST_ADDR.Str.ListValueB) return this.makeCString('List Value B', size);
-        if (startAddress === MYLIST_ADDR.Str.ListValueA) return this.makeCString('List Value A', size);
-        if (startAddress === MYLIST_ADDR.Str.V0)         return this.makeCString('Value[0]', size);
-        if (startAddress === MYLIST_ADDR.Str.V1)         return this.makeCString('Value[1]', size);
-        if (startAddress === MYLIST_ADDR.Str.V2)         return this.makeCString('Value[2]', size);
+        if (startAddress === ADDR.MyList.Str.ListValueC) return this.makeCString('List Value C', size);
+        if (startAddress === ADDR.MyList.Str.ListValueB) return this.makeCString('List Value B', size);
+        if (startAddress === ADDR.MyList.Str.ListValueA) return this.makeCString('List Value A', size);
+        if (startAddress === ADDR.MyList.Str.V0)         return this.makeCString('Value[0]', size);
+        if (startAddress === ADDR.MyList.Str.V1)         return this.makeCString('Value[1]', size);
+        if (startAddress === ADDR.MyList.Str.V2)         return this.makeCString('Value[2]', size);
 
         return undefined;
     }
@@ -95,45 +108,37 @@ export class DebugTargetMock {
             return symbolInfo;
         }
         if (symbol === 'tstack') {
-            const s: SymbolInfo = { name: symbol, address: STACK_ADDR.TStack, size: STACK_BYTES, member: [] };
+            const s: SymbolInfo = { name: symbol, address: ADDR.Stack.TStack, size: STACK_BYTES, member: [] };
             for (let i = 0; i < STACK_WORDS; i++) {
                 s.member?.push(this.mockMemberInfo(`[${i}]`, 4, i * 4));
             }
             return s;
         }
         if(symbol === 'osRtxInfo') {
-            const symbolInfo: SymbolInfo = { name: symbol, address: 0x20003000, size: 4*1 };
+            const symbolInfo: SymbolInfo = { name: symbol, address: ADDR.RTOS.OsRtxInfo, size: 4*1 };
             return symbolInfo;
         }
         if(symbol === 'osRtxConfig') {
-            const symbolInfo: SymbolInfo = { name: symbol, address: 0x20004000, size: 4*1 };
-            return symbolInfo;
-        }
-        if (symbol === 'pArray') {
-            // pArray is 5 pointers (32‑bit each)
-            const symbolInfo: SymbolInfo = { name: symbol, address: 0x20005000, size: 4 * 5, member: [] };
-            for (let i = 0; i < 5; i++) {
-                symbolInfo.member?.push(this.mockMemberInfo(`[${i}]`, 4, i * 4));
-            }
+            const symbolInfo: SymbolInfo = { name: symbol, address: ADDR.RTOS.OsRtxConfig, size: 4*1 };
             return symbolInfo;
         }
         // ── MyList singletons ──────────────────────────────────────────────────────
         if (symbol === 'ValueC') {
-            const s: SymbolInfo = { name: symbol, address: MYLIST_ADDR.ValueC, size: 12, member: [] };
+            const s: SymbolInfo = { name: symbol, address: ADDR.MyList.ValueC, size: 12, member: [] };
             s.member?.push(this.mockMemberInfo('nextL', 4, 0));
             s.member?.push(this.mockMemberInfo('valueL', 4, 4));
             s.member?.push(this.mockMemberInfo('nameL', 4, 8));
             return s;
         }
         if (symbol === 'ValueB') {
-            const s: SymbolInfo = { name: symbol, address: MYLIST_ADDR.ValueB, size: 12, member: [] };
+            const s: SymbolInfo = { name: symbol, address: ADDR.MyList.ValueB, size: 12, member: [] };
             s.member?.push(this.mockMemberInfo('nextL', 4, 0));
             s.member?.push(this.mockMemberInfo('valueL', 4, 4));
             s.member?.push(this.mockMemberInfo('nameL', 4, 8));
             return s;
         }
         if (symbol === 'ValueA') {
-            const s: SymbolInfo = { name: symbol, address: MYLIST_ADDR.ValueA, size: 12, member: [] };
+            const s: SymbolInfo = { name: symbol, address: ADDR.MyList.ValueA, size: 12, member: [] };
             s.member?.push(this.mockMemberInfo('nextL', 4, 0));
             s.member?.push(this.mockMemberInfo('valueL', 4, 4));
             s.member?.push(this.mockMemberInfo('nameL', 4, 8));
@@ -143,12 +148,12 @@ export class DebugTargetMock {
         // ── Pointer to head of list ────────────────────────────────────────────────
         if (symbol === 'ListStart') {
             // global pointer variable: 4 bytes
-            return { name: symbol, address: MYLIST_ADDR.ListStart, size: 4 };
+            return { name: symbol, address: ADDR.MyList.ListStart, size: 4 };
         }
 
         // ── ValueArray (3 elements) ────────────────────────────────────────────────
         if (symbol === 'ValueArray') {
-            const s: SymbolInfo = { name: symbol, address: MYLIST_ADDR.ValueArray, size: 12 * 3, member: [] };
+            const s: SymbolInfo = { name: symbol, address: ADDR.MyList.ValueArray, size: 12 * 3, member: [] };
             // Treat each element as a 12-byte "member" for convenient indexing in UIs
             s.member?.push(this.mockMemberInfo('[0]', 12, 0));
             s.member?.push(this.mockMemberInfo('[1]', 12, 12));
@@ -158,7 +163,7 @@ export class DebugTargetMock {
 
         // ── pArray (5 pointers) ───────────────────────────────────────────────────
         if (symbol === 'pArray') {
-            const s: SymbolInfo = { name: symbol, address: MYLIST_ADDR.pArray, size: 4 * 5, member: [] };
+            const s: SymbolInfo = { name: symbol, address: ADDR.MyList.pArray, size: 4 * 5, member: [] };
             for (let i = 0; i < 5; i++) s.member?.push(this.mockMemberInfo(`[${i}]`, 4, i * 4));
             return s;
         }
@@ -175,8 +180,8 @@ export class DebugTargetMock {
         const data = new Uint8Array(size);
         data.fill(0);
 
-        const osId = 0x12345678;
-        const version = this.mockEncodeVersion(5, 1, 3);
+        const osId = OSRTX_INFO_OSID;
+        const version = this.mockEncodeVersion(OSRTX_INFO_VERSION_PARTS.major, OSRTX_INFO_VERSION_PARTS.minor, OSRTX_INFO_VERSION_PARTS.patch);
         if (size >= 8) {
             data[0] = osId & 0xFF;
             data[1] = (osId >> 8) & 0xFF;
@@ -222,8 +227,8 @@ export class DebugTargetMock {
         const data = new Uint8Array(size);
         data.fill(0);
 
-        const flags = 0x0000000F; // example flags
-        const tick_freq = 1000; // example tick frequency
+        const flags = OSRTX_CONFIG_FLAGS;
+        const tick_freq = OSRTX_CONFIG_TICK_FREQ;
 
         if (size >= 8) {
             data[0] = flags & 0xFF;
@@ -278,19 +283,19 @@ export class DebugTargetMock {
 
     /** ValueC/B/A as standalone MyList values */
     public getMockValueC(size: number): Uint8Array {
-        return this.makeMyListStruct(size, /*next*/0, /*value*/50, /*name*/MYLIST_ADDR.Str.ListValueC);
+        return this.makeMyListStruct(size, /*next*/0, /*value*/50, /*name*/ADDR.MyList.Str.ListValueC);
     }
     public getMockValueB(size: number): Uint8Array {
-        return this.makeMyListStruct(size, /*next*/MYLIST_ADDR.ValueC, /*value*/12, /*name*/MYLIST_ADDR.Str.ListValueB);
+        return this.makeMyListStruct(size, /*next*/ADDR.MyList.ValueC, /*value*/12, /*name*/ADDR.MyList.Str.ListValueB);
     }
     public getMockValueA(size: number): Uint8Array {
-        return this.makeMyListStruct(size, /*next*/MYLIST_ADDR.ValueB, /*value*/4,  /*name*/MYLIST_ADDR.Str.ListValueA);
+        return this.makeMyListStruct(size, /*next*/ADDR.MyList.ValueB, /*value*/4,  /*name*/ADDR.MyList.Str.ListValueA);
     }
 
     /** ListStart holds a single pointer to ValueA */
     public getMockListStart(size: number): Uint8Array {
         const out = new Uint8Array(size);
-        if (size >= 4) this.writeU32LE(out, 0, MYLIST_ADDR.ValueA);
+        if (size >= 4) this.writeU32LE(out, 0, ADDR.MyList.ValueA);
         return out;
     }
 
@@ -300,9 +305,9 @@ export class DebugTargetMock {
         const out = new Uint8Array(size);
         const elemSize = 12;
         const elems = [
-            { next: 0, value: 10, name: MYLIST_ADDR.Str.V0 },
-            { next: 0, value: 20, name: MYLIST_ADDR.Str.V1 },
-            { next: 0, value: 30, name: MYLIST_ADDR.Str.V2 },
+            { next: 0, value: 10, name: ADDR.MyList.Str.V0 },
+            { next: 0, value: 20, name: ADDR.MyList.Str.V1 },
+            { next: 0, value: 30, name: ADDR.MyList.Str.V2 },
         ];
         for (let i = 0; i < elems.length; i++) {
             const base = i * elemSize;
@@ -316,9 +321,9 @@ export class DebugTargetMock {
     /** ValueArray[i] address reads for element-only loads (12 bytes each). */
     public getMockValueArrayElem(size: number, index: number): Uint8Array {
         const entries = [
-            { next: 0, value: 10, name: MYLIST_ADDR.Str.V0 },
-            { next: 0, value: 20, name: MYLIST_ADDR.Str.V1 },
-            { next: 0, value: 30, name: MYLIST_ADDR.Str.V2 },
+            { next: 0, value: 10, name: ADDR.MyList.Str.V0 },
+            { next: 0, value: 20, name: ADDR.MyList.Str.V1 },
+            { next: 0, value: 30, name: ADDR.MyList.Str.V2 },
         ];
         const e = entries[index] ?? entries[0];
         return this.makeMyListStruct(size, e.next, e.value, e.name);
@@ -328,11 +333,11 @@ export class DebugTargetMock {
     public getMockPArray(size: number): Uint8Array {
         const out = new Uint8Array(size);
         const ptrs = [
-            MYLIST_ADDR.ValueA,
-            MYLIST_ADDR.ValueB,
-            MYLIST_ADDR.ValueC,
-            MYLIST_ADDR.ValueArray + 12 * 0,
-            MYLIST_ADDR.ValueArray + 12 * 1,
+            ADDR.MyList.ValueA,
+            ADDR.MyList.ValueB,
+            ADDR.MyList.ValueC,
+            ADDR.MyList.ValueArray + 12 * 0,
+            ADDR.MyList.ValueArray + 12 * 1,
         ];
         for (let i = 0; i < ptrs.length; i++) {
             const off = i * 4;
