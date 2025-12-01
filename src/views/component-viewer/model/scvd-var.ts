@@ -139,7 +139,6 @@ export class ScvdVar extends ScvdBase {
         return this._type?.getSize() ?? 0;
     }
 
-
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
         if (this._type !== undefined && this._type.type !== undefined) {

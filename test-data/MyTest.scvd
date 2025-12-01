@@ -42,18 +42,22 @@
 
   <objects>
     <object name="Test Object">
+
+      <!-- Read the pArray using read and read the list items addressed with pArray[1] and pArray[2]. -->
+      <readlist name="pArray" type="*MyList" symbol="pArray" count="__size_of(pArray)" /> 
+      <readlist name="MyListE" type="MyList" offset="pArray[1]"  />
+      <readlist name="MyListE" type="MyList" offset="pArray[2]"  />
+
+
+
       <var name="R0" type="uint32_t" value="0x1"/>
       <var name="i" type="uint32_t" value="0"/>
       <var name="j" type="uint32_t" value="0"/>
       <var name="k" type="uint32_t" value="0"/>
       <var name="l" type="uint32_t" value="0"/>
       <var name="memberTest" type="memberTest_t" value="0x00000000"/>
-      <var name="StackStart" type="uint32_t" value="0x00000000"/>
-      <var name="StackSize" type="uint32_t" value="0x00000000"/>
-      <var name="StackUsage" type="uint32_t" value="0x00000000"/>
+      
       <var name="RTX_En" type="uint8_t" value="0" />
-
-
       <calc cond="1">
         RTX_En = 1;
       </calc>
@@ -83,15 +87,6 @@
         memberTest.m_var3[i+l] = 0xAAAAAAAA;
         memberTest.m_var3[j+l] = 0xBBBBBBBB;
         memberTest.m_var3[k+l] = 0xCCCCCCCC;
-      </calc>
-
-      <calc>
-        StackStart = __FindSymbol ("tstack");
-        StackSize  = __size_of ("tstack") * 4;
-        StackUsage = __CalcMemUsed (StackStart, StackSize, 0x8A8A8A8A, 0xE25A2EA5);
-      </calc>
-
-      <calc>
         memberTest._addr = 0xa1a1a1a1;
         memberTest[1]._addr = 0xb2b2b2b2;
       </calc>
@@ -101,14 +96,22 @@
         l = memberTest._count;
       </calc>
 
+      <var name="StackStart" type="uint32_t" value="0x00000000"/>
+      <var name="StackSize" type="uint32_t" value="0x00000000"/>
+      <var name="StackUsage" type="uint32_t" value="0x00000000"/>
+      <calc>
+        StackStart = __FindSymbol ("tstack");
+        StackSize  = __size_of ("tstack") * 4;
+        StackUsage = __CalcMemUsed (StackStart, StackSize, 0x8A8A8A8A, 0xE25A2EA5);
+      </calc>
+
       <var name="V_Major" type="uint32_t" value="0"/>
       <var name="V_Minor" type="uint32_t" value="0"/>
       <var name="V_Patch" type="uint32_t" value="0"/>
-
       <read name="os_Info"   type="osRtxInfo_t"   symbol="osRtxInfo"/>
       <read name="os_Config" type="osRtxConfig_t" symbol="osRtxConfig" const="1"/>
 
-      <calc cond="1">
+      <calc cond="RTX_En != 0">
         V_Major =  os_Info.version / 10000000;
         V_Minor = (os_Info.version / 10000) % 1000;
         V_Patch =  os_Info.version % 10000;
@@ -128,10 +131,6 @@
       <!-- Read the list based on the pointers stored in pArray: -->
       <readlist name="MyListD" type="MyList" symbol="pArray" based="1" count="__size_of(pArray)" />
 
-      <!-- Read the pArray using read and read the list items addressed with pArray[1] and pArray[2]. -->
-      <read name="pArray" type="*MyList" symbol="pArray" count="__size_of(pArray)" /> 
-      <readlist name="MyListE" type="MyList" offset="pArray[1]"  />
-      <readlist name="MyListE" type="MyList" offset="pArray[2]"  />
 
   
       <out name="MyTest">

@@ -66,7 +66,16 @@ export class ScvdEvalInterface implements DataHost {
        Stride only answers: “how far do I move to get from element i to i+1?”
     */
     getElementStride(ref: ScvdBase): number {
-        return ref.getElementStride() ?? 0;
+        const stride = ref.getElementStride() ?? 0;
+        if(stride !== 0) {
+            return stride;
+        }
+        const size = ref.getSize();
+        if(size !== undefined) {
+            return size;
+        }
+        console.error(`ScvdEvalInterface.getElementStride: size/stride undefined for ${ref.getExplorerDisplayName()}`);
+        return 0;
     }
 
     getMemberOffset(_base: ScvdBase, member: ScvdBase): number {
@@ -171,11 +180,22 @@ export class ScvdEvalInterface implements DataHost {
 
     _count(container: RefContainer): number | undefined {
         const base = container.current;
-        return base?.getElementCount();
+        const name = base?.name;
+        if(name !== undefined) {
+            const count = this.memHost.getArrayElementCount(name);
+            return count;
+        }
+        return undefined;
     }
 
     _addr(container: RefContainer): number | undefined {
         const base = container.current;
-        return base?.getAddress();
+        const name = base?.name;
+        const index = container.index;
+        if(name !== undefined && index !== undefined) {
+            const addr = this.memHost.getElementTargetBase(name, index);
+            return addr;
+        }
+        return undefined;
     }
 }

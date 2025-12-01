@@ -169,7 +169,7 @@ export class StatementReadList extends StatementBase {
                 return;
             }
 
-            executionContext.memoryHost.setVariable(itemName, readBytes, readData, actualSize);
+            executionContext.memoryHost.setVariable(itemName, readBytes, readData, itemAddress, actualSize);
 
             const nextU8Arr = executionContext.debugTarget.readMemory(nextPtrAddr + nextOffset, nextSize);
             if(nextU8Arr !== undefined) {
@@ -200,7 +200,7 @@ export class StatementReadList extends StatementBase {
                 return;
             }
 
-            executionContext.memoryHost.setVariable(itemName, readBytes, readData, actualSize);
+            executionContext.memoryHost.setVariable(itemName, readBytes, readData, itemAddress, actualSize);
         }
     }
 

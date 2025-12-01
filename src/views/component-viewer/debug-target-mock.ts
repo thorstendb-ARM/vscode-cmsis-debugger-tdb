@@ -16,9 +16,9 @@
 
 import { MemberInfo, SymbolInfo } from './scvd-debug-target';
 
-/** ---------- MyList fixture: addresses (32-bit, little-endian) ---------- */
-// ── RTOS mock addresses ─────────────────────────────────────────────────────
-// ── Consolidated addresses for tests ────────────────────────────────────────
+/* Mock data
+ * Stack: https://arm-software.github.io/CMSIS-View/main/elem_readlist.html
+ */
 export const ADDR = {
     Stack: {
         TStack: 0x20001000,                   // pick any free RAM slot
@@ -29,18 +29,18 @@ export const ADDR = {
     },
     MyList: {
         // Globals
-        ValueA:     0x20005100,
+        ValueC:     0x20005100,
         ValueB:     0x20005120,
-        ValueC:     0x20005140,
+        ValueA:     0x20005140,
         ListStart:  0x20005160,   // holds pointer to ValueA
         ValueArray: 0x20005200,   // 3 x MyList (12 bytes each) => 36 bytes
         pArray:     0x20005000,   // 5 pointers (20 bytes)
 
         // Strings
         Str: {
-            ListValueA: 0x20006000,
+            ListValueC: 0x20006000,
             ListValueB: 0x20006020,
-            ListValueC: 0x20006040,
+            ListValueA: 0x20006040,
             V0:         0x20006060,
             V1:         0x20006070,
             V2:         0x20006080,
@@ -56,6 +56,8 @@ const OSRTX_INFO_OSID = 0x12345678;
 const OSRTX_INFO_VERSION_PARTS = { major: 5, minor: 1, patch: 3 } as const;
 const OSRTX_CONFIG_FLAGS = 0x0000000F;
 const OSRTX_CONFIG_TICK_FREQ = 1000;
+// bytes in pArray (5 pointers)
+const PARRAY_BYTES = 5 * 4;
 
 export class DebugTargetMock {
 
@@ -68,10 +70,7 @@ export class DebugTargetMock {
         if(startAddress === ADDR.RTOS.OsRtxConfig) return this.getMockOsRtxConfigData(size);
 
         // --- Stack mock: support base reads and arbitrary sub-range/element reads ---
-        if (
-            startAddress >= ADDR.Stack.TStack &&
-            startAddress <  ADDR.Stack.TStack + STACK_BYTES
-        ) {
+        if (startAddress >= ADDR.Stack.TStack && startAddress <  ADDR.Stack.TStack + STACK_BYTES) {
             const offset = startAddress - ADDR.Stack.TStack;
             return this.getMockTStackSlice(size, offset);
         }
@@ -85,7 +84,12 @@ export class DebugTargetMock {
         if (startAddress === ADDR.MyList.ValueArray + 12 * 0) return this.getMockValueArrayElem(size, 0);
         if (startAddress === ADDR.MyList.ValueArray + 12 * 1) return this.getMockValueArrayElem(size, 1);
         if (startAddress === ADDR.MyList.ValueArray + 12 * 2) return this.getMockValueArrayElem(size, 2);
-        if (startAddress === ADDR.MyList.pArray)     return this.getMockPArray(size);
+
+        if (
+            startAddress >= ADDR.MyList.pArray && startAddress < ADDR.MyList.pArray + PARRAY_BYTES) {
+            const offset = startAddress - ADDR.MyList.pArray;
+            return this.getMockPArraySlice(size, offset);
+        }
 
         // --- MyList fixture: strings ---
         if (startAddress === ADDR.MyList.Str.ListValueC) return this.makeCString('List Value C', size);
@@ -222,6 +226,23 @@ export class DebugTargetMock {
         return out;
     }
 
+    private getMockPArraySlice(size: number, offset: number): Uint8Array {
+        const full = new Uint8Array(5 * 4);
+        const ptrs = [
+            ADDR.MyList.ValueA,
+            ADDR.MyList.ValueB,
+            ADDR.MyList.ValueC,
+            ADDR.MyList.ValueArray + 12 * 0,
+            ADDR.MyList.ValueArray + 12 * 1,
+        ];
+        for (let i = 0; i < ptrs.length; i++) {
+            this.writeU32LE(full, i * 4, ptrs[i]);
+        }
+        const out = new Uint8Array(size);
+        out.set(full.subarray(offset, offset + size));
+        return out;
+    }
+
     public getMockOsRtxConfigData(size: number): Uint8Array {
         // Mock memory data for osRtxConfig
         const data = new Uint8Array(size);
@@ -329,20 +350,5 @@ export class DebugTargetMock {
         return this.makeMyListStruct(size, e.next, e.value, e.name);
     }
 
-    /** pArray: 5 pointers: &ValueA, &ValueB, &ValueC, &ValueArray[0], &ValueArray[1] */
-    public getMockPArray(size: number): Uint8Array {
-        const out = new Uint8Array(size);
-        const ptrs = [
-            ADDR.MyList.ValueA,
-            ADDR.MyList.ValueB,
-            ADDR.MyList.ValueC,
-            ADDR.MyList.ValueArray + 12 * 0,
-            ADDR.MyList.ValueArray + 12 * 1,
-        ];
-        for (let i = 0; i < ptrs.length; i++) {
-            const off = i * 4;
-            if (size >= off + 4) this.writeU32LE(out, off, ptrs[i]);
-        }
-        return out;
-    }
+
 }

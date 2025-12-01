@@ -146,6 +146,17 @@ export class ScvdReadList extends ScvdRead {
         return this._based === 1;
     }
 
+    public getSize(): number | undefined {
+        return this.getElementStride();   // TODO!
+    }
+
+    public getElementStride(): number | undefined {
+        const typeSize = this.type?.getSize();
+        if(typeSize !== undefined) {
+            return typeSize;
+        }
+        return undefined;
+    }
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];

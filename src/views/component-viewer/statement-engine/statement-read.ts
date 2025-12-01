@@ -49,6 +49,7 @@ export class StatementRead extends StatementBase {
             console.error(`${this.line} Executing "read": ${scvdRead.name}, type: ${type.getExplorerDisplayName()}, could not determine type size`);
             return;
         }
+        const actualSize = type.getSize() ?? typeSize;
 
         const readBytes = (scvdRead.size?.getValue() ?? 1) * typeSize; // Is an Expressions representing the array size or the number of values to read from target. The maximum array size is limited to 512. Default value is 1.
         const name = scvdRead.name;
@@ -88,7 +89,7 @@ export class StatementRead extends StatementBase {
             return;
         }
 
-        executionContext.memoryHost.setVariable(name, readBytes, readData);
+        executionContext.memoryHost.setVariable(name, readBytes, readData, baseAddress, actualSize);
 
         if(scvdRead.const === true) {   // Mark variable as already initialized
             scvdRead.mustRead = false;

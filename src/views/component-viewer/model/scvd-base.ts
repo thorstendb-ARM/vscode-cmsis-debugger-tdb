@@ -325,36 +325,30 @@ export abstract class ScvdBase implements ScvdGuiInterface {
 
     public writeAt(byteOffset: number, widthBits: number, value: number | string | bigint): number | string | bigint | undefined {
         console.error(`WriteAt not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}, offset=${byteOffset}, width=${widthBits}, value=${value}`);
-        return 1;
+        return undefined;
     }
 
     public readAt(byteOffset: number, widthBits: number): number | bigint | string | undefined {
         console.error(`ReadAt not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}, offset=${byteOffset}, width=${widthBits}`);
-        return 1;
+        return undefined;
     }
 
     // element size in bytes, size of array type, to skip one instance to the next. Can be sizeof, or gaps
     // byte distance between adjacent elements in your model’s actual layout (not necessarily sizeof if there are hardware gaps).
-    public getElementStride(): number {
+    public getElementStride(): number | undefined {
         console.error(`GetElementStride not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
-        return 4;
-    }
-
-    // _count intrinsic: Counts the number of items in readlist and read elements.
-    public getElementCount(): number | undefined {
-        console.error(`_count not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
-        return 1;
+        return undefined;
     }
 
     // _addr intrinsic: Returns the memory address of a readlist member.
     public getAddress(): number | undefined {
         console.error(`_addr via MS-DAP not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
-        return 0;
+        return undefined;
     }
 
     public getSize(): number | undefined {
         console.error(`GetSize not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
-        return 4;
+        return undefined;
     }
     // member’s byte offset
     public getMemberOffset(): number | undefined {
@@ -362,9 +356,9 @@ export abstract class ScvdBase implements ScvdGuiInterface {
         return undefined;
     }
 
-    public getElementBitWidth(): number {
+    public getElementBitWidth(): number | undefined {
         console.error(`GetElementBitWidth not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
-        return 32;
+        return undefined;
     }
 
     // ------------  GUI Interface Begin ------------

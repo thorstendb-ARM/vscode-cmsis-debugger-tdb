@@ -52,8 +52,9 @@ export class ScvdDataType extends ScvdBase {
 
     public set type(type: string | undefined) {
         if (typeof type === 'string') {
+            const typeStr = type.replace(/\*/g, '').trim();
             Object.keys(ScvdScalarDataTypeMap).forEach(element => { // test, then create object
-                if (element === type) {
+                if (element === typeStr) {
                     this._type = new ScvdScalarDataType(this, type);
                 }
             });
