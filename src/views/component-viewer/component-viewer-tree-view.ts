@@ -104,6 +104,11 @@ export class ComponentViewerTreeDataProvider implements vscode.TreeDataProvider<
         }
     }
 
+    public showModelData() {
+        this.addRootObject();
+        this.refresh();
+    }
+    
     private addRootObject(): void {
         if(this._scvdModel?.scvdModels.length === 0) {
             return;
