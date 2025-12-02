@@ -29,13 +29,12 @@ export class ScvdRead extends ScvdBase {
     private _type: ScvdDataType | undefined;
     private _symbol: ScvdSymbol | undefined;
     private _offset: ScvdExpression | undefined;
-    private _const: number = 0; // default is 0
+    private _const: boolean = false; // Variables with attribute const set to "1" are constants that are read only once after debugger start. Default value is 0.
     private _cond: ScvdCondition | undefined;
     private _size: ScvdExpression | undefined;
     private _endian: ScvdEndian | undefined;
     static readonly ARRAY_SIZE_MIN = 1;
     static readonly ARRAY_SIZE_MAX = 512;
-
 
     constructor(
         parent: ScvdBase | undefined,
@@ -92,11 +91,11 @@ export class ScvdRead extends ScvdBase {
 
     set const(value: NumberTypeInput | undefined) {
         if(value !== undefined) {
-            this._const = new NumberType(value).value;
+            this._const = new NumberType(value).value ? true : false;
         }
     }
 
-    get const(): number {
+    get const(): boolean {
         return this._const;
     }
 
@@ -117,6 +116,11 @@ export class ScvdRead extends ScvdBase {
 
     get size(): ScvdExpression | undefined {
         return this._size;
+    }
+
+    public getSize(): number | undefined {
+        const size = this._size?.getValue();
+        return size ?? 1;   // Is an Expressions representing the array size or the number of values to read from target. The maximum array size is limited to 512. Default value is 1.
     }
 
     get minMaxSize(): { min: number; max: number } {

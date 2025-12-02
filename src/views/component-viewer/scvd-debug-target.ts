@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-// https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
+import { DebugTargetMock } from './debug-target-mock';
+
 
 export interface MemberInfo {
     name: string;
@@ -26,21 +27,35 @@ export interface SymbolInfo {
     name: string;
     address: number;
     size: number;
-    member: MemberInfo[];
+    member?: MemberInfo[];
 }
 
 export class ScvdDebugTarget {
+    private mock = new DebugTargetMock();
 
     constructor(
     ) {
     }
 
+    // -------------  Interface to debugger  -----------------
     public getSymbolInfo(symbol: string): SymbolInfo | undefined {
         if(symbol === undefined) {
             return undefined;
         }
 
-        return this.getMockSymbolInfo(symbol);
+        return this.mock.getMockSymbolInfo(symbol);
+    }
+
+    public getNumArrayElements(symbol: string): number | undefined {
+        if(symbol === undefined) {
+            return undefined;
+        }
+
+        const symbolInfo = this.mock.getMockSymbolInfo(symbol);
+        if(symbolInfo !== undefined) {
+            return symbolInfo?.member?.length ?? 1;
+        }
+        return undefined;
     }
 
     public findSymbolAddress(symbol: string): number | undefined {
@@ -51,8 +66,28 @@ export class ScvdDebugTarget {
         return symbolInfo.address;
     }
 
+    public readMemory(address: number, size: number): Uint8Array | undefined {
+        // For testing, return mock data
+        return this.mock.getMockMemoryData(address, size);
+    }
+
+
+
+    // -------------  Utility functions  -----------------
+    public convertMemoryToNumber(data: Uint8Array): number | undefined {
+        if(data === undefined || data.length === 0 || data.length > 4) {
+            return undefined;
+        }
+
+        let value = 0;
+        for(let i = 0; i < data.length; i++) {
+            value |= (data[i] << (i * 8)); // little-endian
+        }
+        return value;
+    }
+
     public calculateMemoryUsage(startAddress: number, size: number, FillPattern: number, MagicValue: number): number | undefined {
-        const memData = this.getMockMemoryData(startAddress, size);
+        const memData = this.mock.getMockMemoryData(startAddress, size);
         if(memData !== undefined) {
             let usedBytes = 0;
             const patternBytes1 = new Uint8Array(4);
@@ -117,56 +152,6 @@ export class ScvdDebugTarget {
         }
 
         return undefined;
-    }
-
-    private getMockMemoryData(_startAddress: number, size: number): Uint8Array | undefined {
-        // Mock memory data for tstack
-        const data = new Uint8Array(size);
-        // Fill with pattern 0x8A8A8A8A
-        for(let i = 0; i < size; i +=4) {
-            data[i] = 0x8A;
-            data[i+1] = 0x8A;
-            data[i+2] = 0x8A;
-            data[i+3] = 0x8A;
-        }
-        // Overwrite some bytes to simulate usage
-        data[0] = 0x00;
-        data[1] = 0x00;
-        data[2] = 0x00;
-        data[3] = 0x00;
-
-        // Set MagicValue at the end
-        const magicOffset = size - 4;
-        data[magicOffset] = 0xA5;
-        data[magicOffset + 1] = 0x2E;
-        data[magicOffset + 2] = 0x5A;
-        data[magicOffset + 3] = 0xE2;
-
-        return data;
-    }
-
-    private getMockSymbolInfo(symbol: string): SymbolInfo | undefined {
-        if(symbol === 'mySymbol') {
-            const symbolInfo: SymbolInfo = { name: symbol, address: 0x12345678, size: 4*1, member: [] };
-            symbolInfo.member.push(this.mockMemberInfo('A', 1, 4+0));
-            symbolInfo.member.push(this.mockMemberInfo('B', 1, 4+1));
-            symbolInfo.member.push(this.mockMemberInfo('C', 1, 4+2));
-            symbolInfo.member.push(this.mockMemberInfo('D', 1, 4+3));
-            return symbolInfo;
-        }
-        if(symbol === 'tstack') {
-            const symbolInfo: SymbolInfo = { name: symbol, address: 0x20002000, size: 4*1, member: [] };
-            return symbolInfo;
-        }
-        return undefined;
-    }
-
-    private mockMemberInfo(memberName: string, size: number, offset: number): MemberInfo {
-        return {
-            name: memberName,
-            size,
-            offset
-        };
     }
 
 }

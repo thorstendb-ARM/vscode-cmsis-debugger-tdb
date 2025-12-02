@@ -18,7 +18,7 @@
 
 import { ExecutionContext } from '../scvd-eval-context';
 import { ExplorerInfo, ScvdBase } from './scvd-base';
-import { MemberInfo } from './scvd-debug-target';
+import { MemberInfo } from '../scvd-debug-target';
 
 export class ScvdSymbol extends ScvdBase {
     private _symbol: string | undefined;
@@ -63,7 +63,7 @@ export class ScvdSymbol extends ScvdBase {
         const symbolInfo = this._executionContext.debugTarget.getSymbolInfo(this.symbol);
         if (symbolInfo !== undefined) {
             this.address = symbolInfo.address;
-            symbolInfo.member.forEach(member => {
+            symbolInfo.member?.forEach(member => {
                 this.addMemberInfo(member.name, member.size, member.offset);
             });
         }

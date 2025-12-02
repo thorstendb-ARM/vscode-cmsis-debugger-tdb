@@ -20,19 +20,47 @@
       <var name="m_var3" type="uint32_t" info="Member Variable 3"/>
     </typedef>
 
+    <!-- OS Runtime Information structure -->
+    <typedef name="osRtxInfo_t" info="OS Runtime Information" size="164">
+      <member name="os_id"                      type="uint32_t"             offset="0" info="OS Identification (type is *uint8_t)"/>
+      <member name="version"                    type="uint32_t"             offset="4" info="OS Version"/>
+    </typedef>
+
+    <typedef name="osRtxConfig_t" const="1" info="OS Configuration Structure" size="112">
+      <member name="flags"                 type="uint32_t" offset="0" info="OS configuration flags"/>
+      <member name="tick_freq"             type="uint32_t" offset="4" info="Kernel tick frequency"/>
+    </typedef>
+
+    <typedef name="MyList" size="12" >
+        <member name="nextL"   type="*MyList"  offset="0" />
+        <member name="valueL"  type="uint32_t" offset="4" />
+        <member name="nameL"   type="*int8_t" offset="8" />
+        <var    name="nameS"   type="int8_t"   size="20"  />
+    </typedef>
+
   </typedefs>
 
   <objects>
     <object name="Test Object">
+
+      <!-- Read the pArray using read and read the list items addressed with pArray[1] and pArray[2]. -->
+      <readlist name="pArray" type="*MyList" symbol="pArray" count="__size_of(pArray)" /> 
+      <readlist name="MyListE" type="MyList" offset="pArray[1]"  />
+      <readlist name="MyListE" type="MyList" offset="pArray[2]"  />
+
+
+
       <var name="R0" type="uint32_t" value="0x1"/>
       <var name="i" type="uint32_t" value="0"/>
       <var name="j" type="uint32_t" value="0"/>
       <var name="k" type="uint32_t" value="0"/>
       <var name="l" type="uint32_t" value="0"/>
       <var name="memberTest" type="memberTest_t" value="0x00000000"/>
-      <var name="StackStart" type="uint32_t" value="0x00000000"/>
-      <var name="StackSize" type="uint32_t" value="0x00000000"/>
-      <var name="StackUsage" type="uint32_t" value="0x00000000"/>
+      
+      <var name="RTX_En" type="uint8_t" value="0" />
+      <calc cond="1">
+        RTX_En = 1;
+      </calc>
 
       <calc>
         R0  = __GetRegVal ("R0");
@@ -59,25 +87,84 @@
         memberTest.m_var3[i+l] = 0xAAAAAAAA;
         memberTest.m_var3[j+l] = 0xBBBBBBBB;
         memberTest.m_var3[k+l] = 0xCCCCCCCC;
+        memberTest._addr = 0xa1a1a1a1;
+        memberTest[1]._addr = 0xb2b2b2b2;
       </calc>
 
+      <calc>
+        k = memberTest._addr;
+        l = memberTest._count;
+      </calc>
+
+      <var name="StackStart" type="uint32_t" value="0x00000000"/>
+      <var name="StackSize" type="uint32_t" value="0x00000000"/>
+      <var name="StackUsage" type="uint32_t" value="0x00000000"/>
       <calc>
         StackStart = __FindSymbol ("tstack");
         StackSize  = __size_of ("tstack") * 4;
         StackUsage = __CalcMemUsed (StackStart, StackSize, 0x8A8A8A8A, 0xE25A2EA5);
       </calc>
 
-      <!-- Read Thread Control Block -->
-      <!--readlist cond="(mem_list_com[i].len &amp; 1) &amp;&amp; (mem_list_com[i].id == 0xF1)" name="TCB" type="osRtxThread_t" offset="addr" count="1" /-->
+      <var name="V_Major" type="uint32_t" value="0"/>
+      <var name="V_Minor" type="uint32_t" value="0"/>
+      <var name="V_Patch" type="uint32_t" value="0"/>
+      <read name="os_Info"   type="osRtxInfo_t"   symbol="osRtxInfo"/>
+      <read name="os_Config" type="osRtxConfig_t" symbol="osRtxConfig" const="1"/>
 
-      <out name="GetRegVal Test">
+      <calc cond="RTX_En != 0">
+        V_Major =  os_Info.version / 10000000;
+        V_Minor = (os_Info.version / 10000) % 1000;
+        V_Patch =  os_Info.version % 10000;
+      </calc>
+
+      <!-- Read the linked list starting with ValueA: -->
+      <readlist name="MyListA" type="MyList" symbol="ValueA" next="nextL" />
+
+      <!-- Read the linked list starting with head pointer ListStart: -->
+      <readlist name="MyListB" type="MyList" symbol="ListStart" based="1" next="nextL" />
+
+      <!-- Clear a previous list and read ValueA, ValueB, and ValueArray. -->
+      <readlist name="MyListC" type="MyList" symbol="ValueA" init="1"                          /> 
+      <readlist name="MyListC" type="MyList" symbol="ValueB"                                   />
+      <readlist name="MyListC" type="MyList" symbol="ValueArray" count="__size_of(ValueArray)" />
+
+      <!-- Read the list based on the pointers stored in pArray: -->
+      <readlist name="MyListD" type="MyList" symbol="pArray" based="1" count="__size_of(pArray)" />
+
+
+  
+      <out name="MyTest">
+          <item property="System" value="">
+            <item property="Kernel ID"    value="RTX V%d[V_Major].%d[V_Minor].%d[V_Patch]" cond="RTX_En != 0"/>
+          </item>
+
           <item property="Stack">
             <item property="StackStart"    value="%x[StackStart]"/>
-            <item property="StackSize"     value="%x[StackSize]"/>
-            <item property="StackUsage"    value="%d[StackUsage]"/>
+            <item property="StackSize"     value="%d[StackSize] bytes"/>
             <item alert="(StackUsage >> 31)"    
-              property="tstack @%x[StackStart] size=%x[StackSize]"
-              value="Usage %x[StackUsage &amp; 0xFFFFF] %d[(StackUsage>>20) &amp; 0xFF]%%" />
+              property="tstack @%x[StackStart] size=%d[StackSize]"
+              value="Usage %d[StackUsage &amp; 0xFFFFF] %d[(StackUsage &gt;&gt; 20) &amp; 0xFF]%%" />
+          </item>
+
+          <item property="Lists contents">
+            <item property="MyListA ValueA nextL" value="%x[MyListA[0].nextL]"/>
+            <item property="MyListA ValueA valueL" value="%x[MyListA[0].valueL]"/>
+            <item property="MyListA ValueA nameL" value="%x[MyListA[0].nameL]"/>
+            <item property="MyListA ValueA"       value="%x[MyListA[0].nextL], %x[MyListA[0].valuerL], %x[MyListA[0].nameL]"/>
+            <item property="MyListB ListStart"    value="%x[MyListB[0]]"/>
+            <item property="MyListC ValueA, ValueB, ValueArray"    value="%x[MyListC[0]], %x[MyListC[1]], %x[MyListC[2]], %x[MyListC[3]], %x[MyListC[4]]"/>
+            <item property="MyListD pArray"       value="%x[MyListD[0]], %x[MyListD[1]], %x[MyListD[2]], %x[MyListD[3]], %x[MyListD[4]]"/>
+            <item property="MyListE pArray"       value="%x[MyListE[0]]"/>
+            <item property="pArray"               value="%x[pArray[0]], %x[pArray[1]], %x[pArray[2]], %x[pArray[3]], %x[pArray[4]]"/>
+          </item>
+
+          <item property="Lists ._addr">
+            <item property="MyListA ValueA"       value="%x[MyListA[0]._addr]"/>
+            <item property="MyListB ListStart"    value="%x[MyListB[0]._addr]"/>
+            <item property="MyListC ValueA, ValueB, ValueArray"    value="%x[MyListC[0]._addr], %x[MyListC[1]._addr], %x[MyListC[2]._addr], %x[MyListC[3]._addr], %x[MyListC[4]._addr]"/>
+            <item property="MyListD pArray"       value="%x[MyListD[0]._addr], %x[MyListD[1]._addr], %x[MyListD[2]._addr], %x[MyListD[3]._addr], %x[MyListD[4]._addr]"/>
+            <item property="MyListE pArray"       value="%x[MyListE._addr]"/>
+            <item property="pArray"               value="%x[pArray[0]._addr], %x[pArray[1]._addr], %x[pArray[2]._addr], %x[pArray[3]._addr], %x[pArray[4]._addr]"/>
           </item>
 
           <item property="Vars">

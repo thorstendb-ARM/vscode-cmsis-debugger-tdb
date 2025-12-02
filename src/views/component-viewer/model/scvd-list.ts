@@ -23,12 +23,13 @@ import { ScvdRead } from './scvd-read';
 import { ScvdReadList } from './scvd-readlist';
 import { ScvdVar } from './scvd-var';
 import { getArrayFromJson, getStringFromJson } from './scvd-utils';
+import { ScvdCondition } from './scvd-condition';
 
 export class ScvdList extends ScvdBase {
     private _start: ScvdExpression | undefined = undefined;
     private _limit: ScvdExpression | undefined = undefined;
     private _while: ScvdExpression | undefined = undefined;
-    private _cond: ScvdExpression | undefined = undefined;
+    private _cond: ScvdCondition | undefined = undefined;
 
     private _list: ScvdList[] = [];
     private _readlist: ScvdReadList[] = [];
@@ -126,14 +127,18 @@ export class ScvdList extends ScvdBase {
         }
     }
 
-    get cond(): ScvdExpression | undefined {
+    get cond(): ScvdCondition | undefined {
         return this._cond;
     }
 
     set cond(value: string | undefined) {
         if(value !== undefined) {
-            this._cond = new ScvdExpression(this, value, 'cond');
+            this._cond = new ScvdCondition(this, value);
         }
+    }
+
+    public getConditionResult(): boolean {
+        return this._cond?.result ?? super.getConditionResult();
     }
 
     public applyInit(): boolean {

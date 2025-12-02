@@ -96,7 +96,7 @@ export interface DataHost {
 
   // Pseudo-member evaluators used as obj._count / obj._addr; must return numbers
   _count?(container: RefContainer): number | undefined;
-  _addr?(container: RefContainer): number | undefined;
+  _addr?(container: RefContainer): number | undefined;    // added as var because arrays can have different base addresses
 }
 
 export type EvalPrintfHook = {
@@ -195,6 +195,32 @@ function lteVals(a: any, b: any): boolean { return (typeof a === 'bigint' || typ
 function gtVals(a: any, b: any): boolean { return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) >  toBigInt(b)) : (asNumber(a) >  asNumber(b)); }
 function gteVals(a: any, b: any): boolean { return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) >= toBigInt(b)) : (asNumber(a) >= asNumber(b)); }
 
+
+// Intrinsics that expect identifier *names* instead of evaluated values.
+const NAME_ARG_INTRINSICS = new Set<string>([
+    '__size_of',
+    '__FindSymbol',
+    '__Symbol_exists',
+    '__GetRegVal', // keeps consistency: reg names not values
+]);
+
+function evalArgsForIntrinsic(name: string, rawArgs: ASTNode[], ctx: EvalContext): any[] {
+    const needsName = NAME_ARG_INTRINSICS.has(name);
+
+    return rawArgs.map((a, i) => {
+        if (!needsName) return evalNode(a, ctx);
+
+        // For name-based intrinsics, allow Identifier or "string literal"
+        if (a.kind === 'Identifier') {
+            return (a as Identifier).name;
+        }
+        if (a.kind === 'StringLiteral') {
+            return (a as StringLiteral).value;
+        }
+        // Make the failure explicit; this avoids silently passing evaluated values like 0.
+        throw new Error(`${name} expects an identifier or string literal for argument ${i + 1}`);
+    });
+}
 /* =============================================================================
  * Small utility to avoid container clobbering during nested evals
  * ============================================================================= */
@@ -503,17 +529,16 @@ export function evalNode(node: ASTNode, ctx: EvalContext): any {
 
         case 'CallExpression': {
             const c = node as CallExpression;
-            const args = c.args.map(a => evalNode(a, ctx));
 
-            // Fallback: allow value-returning intrinsics even if AST arrived as CallExpression
             if (c.callee.kind === 'Identifier') {
                 const name = (c.callee as Identifier).name;
                 if (VALUE_INTRINSICS.has(name)) {
+                    const args = evalArgsForIntrinsic(name, c.args, ctx);
                     return routeIntrinsic(ctx, name, args);
                 }
-
             }
 
+            const args = c.args.map(a => evalNode(a, ctx));
             const fnVal = evalNode(c.callee, ctx);
             if (typeof fnVal === 'function') return (fnVal as Function)(...args);
             throw new Error('Callee is not callable.');
@@ -522,7 +547,7 @@ export function evalNode(node: ASTNode, ctx: EvalContext): any {
         case 'EvalPointCall': {
             const c = node as EvalPointCall;
             const name = c.intrinsic as string;
-            const args = c.args.map(a => evalNode(a, ctx));
+            const args = evalArgsForIntrinsic(name, c.args, ctx);
             return routeIntrinsic(ctx, name, args);
         }
 

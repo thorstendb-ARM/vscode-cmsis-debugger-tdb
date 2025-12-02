@@ -46,6 +46,7 @@ export abstract class ScvdBase implements ScvdGuiInterface {
 
     private _isModified: boolean = false;
     private _valid: boolean = false;
+    private _mustRead: boolean = true;
 
     static _executionContext: ExecutionContext | undefined;
     private _symbolsCache: Map<string, ScvdBase> | undefined;
@@ -174,8 +175,17 @@ export abstract class ScvdBase implements ScvdGuiInterface {
         return this._valid;
     }
 
+    public get mustRead(): boolean {
+        return this._mustRead;
+    }
+
+    public set mustRead(value: boolean) {
+        this._mustRead = value;
+    }
+
     public invalidate() {
         this._valid = false;
+        this._mustRead = true;
     }
 
     public invalidateSubtree() {
@@ -314,47 +324,35 @@ export abstract class ScvdBase implements ScvdGuiInterface {
     }
 
     public writeAt(byteOffset: number, widthBits: number, value: number | string | bigint): number | string | bigint | undefined {
-        console.log(`WriteAt not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}, offset=${byteOffset}, width=${widthBits}, value=${value}`);
-        return 1;
+        console.error(`WriteAt not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}, offset=${byteOffset}, width=${widthBits}, value=${value}`);
+        return undefined;
     }
 
     public readAt(byteOffset: number, widthBits: number): number | bigint | string | undefined {
-        console.log(`ReadAt not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}, offset=${byteOffset}, width=${widthBits}`);
-        return 1;
+        console.error(`ReadAt not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}, offset=${byteOffset}, width=${widthBits}`);
+        return undefined;
     }
 
     // element size in bytes, size of array type, to skip one instance to the next. Can be sizeof, or gaps
     // byte distance between adjacent elements in your model’s actual layout (not necessarily sizeof if there are hardware gaps).
-    public getElementStride(): number {
-        console.log(`GetElementStride not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
-        return 4;
-    }
-
-    // _count intrinsic: Counts the number of items in readlist and read elements.
-    public getElementCount(): number | undefined {
-        console.log(`_count not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
-        return 1;
-    }
-
-    // _addr intrinsic: Returns the memory address of a readlist member.
-    public getAddress(): number | undefined {
-        console.log(`_addr via MS-DAP not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
-        return 0;
-    }
-
-    public getSize(): number | undefined {
-        console.log(`GetSize not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
-        return 4;
-    }
-    // member’s byte offset
-    public getMemberOffset(): number | undefined {
-        console.log(`GetMemberOffset not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
+    public getElementStride(): number | undefined {
+        console.error(`GetElementStride not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
         return undefined;
     }
 
-    public getElementBitWidth(): number {
-        console.log(`GetElementBitWidth not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
-        return 32;
+    public getSize(): number | undefined {
+        console.error(`GetSize not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
+        return undefined;
+    }
+    // member’s byte offset
+    public getMemberOffset(): number | undefined {
+        console.error(`GetMemberOffset not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
+        return undefined;
+    }
+
+    public getElementBitWidth(): number | undefined {
+        console.error(`GetElementBitWidth not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
+        return undefined;
     }
 
     // ------------  GUI Interface Begin ------------

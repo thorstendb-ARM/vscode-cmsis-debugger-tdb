@@ -22,7 +22,34 @@ export class SymbolCache {
         return entry;
     }
 
+    /** Remove a symbol from the cache.
+     *  Returns true if an entry existed and was removed; false otherwise.
+     *  Attempts to dispose the underlying MemoryContainer if it supports it.
+     */
+    removeSymbol(name: string): boolean {
+        const entry = this.map.get(name);
+        if (!entry) return false;
+
+        // Best-effort cleanup of the backing container (optional)
+        const maybe = entry.data as unknown as {
+            dispose?: () => void;
+            free?: () => void;
+            clear?: () => void;
+        };
+        try {
+            if (typeof maybe?.dispose === 'function') maybe.dispose();
+            else if (typeof maybe?.free === 'function') maybe.free();
+            else if (typeof maybe?.clear === 'function') maybe.clear();
+        } catch {
+            // ignore cleanup errors but still remove from the map
+        }
+
+        this.map.delete(name);
+        return true;
+    }
+
     invalidate(name: string) { const e = this.map.get(name); if (e) e.valid = false; }
+    invalidateAll() { this.map.forEach((e) => e.valid = false); }
     clear() { this.map.clear(); }
 }
 
@@ -55,6 +82,10 @@ export class MemoryContainer {
 
     }
 
+    get byteLength(): number {
+        return this.store.length;
+    }
+
     read(off: number, size: number): Uint8Array {
         this.ensure(off, size);
         if (!this.buf) throw new Error('window not initialized');
@@ -62,11 +93,21 @@ export class MemoryContainer {
         return this.buf.subarray(rel, rel + size);
     }
 
-    write(off: number, data: Uint8Array): void {
-        this.ensure(off, data.length);
+    // (updated) allow writing with optional zero padding to `actualSize`
+    write(off: number, data: Uint8Array, actualSize?: number): void {
+        const total = actualSize !== undefined ? Math.max(actualSize, data.length) : data.length;
+        this.ensure(off, total);
         if (!this.buf) throw new Error('window not initialized');
         const rel = off - this.winStart;
+
+        // write the payload
         this.buf.set(data, rel);
+
+        // zero-fill up to total
+        const extra = total - data.length;
+        if (extra > 0) {
+            this.buf.fill(0, rel + data.length, rel + total);
+        }
     }
 }
 
@@ -97,10 +138,44 @@ function injectBitsLE(raw: Uint8Array, bitStart: number, bitLen: number, value: 
 export type Endianness = 'little' | 'big';
 export interface HostOptions { endianness?: Endianness; }
 
+type ElementMeta = {
+  offsets: number[];              // append offsets within the symbol
+  sizes: number[];                // logical size (actualSize) per append
+  bases: number[];                // target base address per append
+  elementSize?: number;           // known uniform stride when consistent
+};
+
+
 /** The piece your DataHost delegates to for readValue/writeValue. */
 export class CachedMemoryHost {
     private cache: SymbolCache;
     private endianness: Endianness;
+    private elementMeta = new Map<string, ElementMeta>();
+
+    private getOrInitMeta(name: string): ElementMeta {
+        let m = this.elementMeta.get(name);
+        if (!m) {
+            // with exactOptionalPropertyTypes: do NOT assign elementSize: undefined
+            m = { offsets: [], sizes: [], bases: [] };
+            this.elementMeta.set(name, m);
+        }
+        return m;
+    }
+
+    // normalize number|bigint → safe JS number for addresses
+    private toAddrNumber(x: number | bigint): number {
+        if (typeof x === 'number') {
+            if (!Number.isFinite(x) || x < 0 || !Number.isSafeInteger(x)) {
+                throw new Error(`invalid target base address (number): ${x}`);
+            }
+            return x;
+        }
+        const n = Number(x);
+        if (n < 0 || !Number.isSafeInteger(n)) {
+            throw new Error(`invalid target base address (bigint out of range): ${x.toString()}`);
+        }
+        return n;
+    }
 
     constructor(opts?: HostOptions,
     ) {
@@ -137,7 +212,7 @@ export class CachedMemoryHost {
         return leBigIntToBytes(masked, outBytes);
     }
 
-    writeValue(container: RefContainer, value: any): void {
+    writeValue(container: RefContainer, value: any, actualSize?: number): void {
         const variableName = container.anchor?.name;
         const widthBits = container.widthBits ?? 0;
         if (!variableName || widthBits <= 0) throw new Error('writeValue: invalid target');
@@ -148,32 +223,135 @@ export class CachedMemoryHost {
         const nBytes = Math.ceil((bitStart + widthBits) / 8);
 
         let valBig: bigint;
-        if (typeof value === 'bigint') valBig = value;
+        if (typeof value === 'boolean') valBig = value ? 1n : 0n;
+        else if (typeof value === 'bigint') valBig = value;
         else if (typeof value === 'number') valBig = BigInt(Math.trunc(value));
-        else if (value instanceof Uint8Array) {
-            valBig = bytesToLEBigInt(value);
-        } else throw new Error('writeValue: unsupported value type');
+        else if (value instanceof Uint8Array) valBig = bytesToLEBigInt(value);
+        else throw new Error('writeValue: unsupported value type');
 
         const raw = entry.data.read(byteOff, nBytes);
         const next = injectBitsLE(raw, bitStart, widthBits, valBig);
-        entry.data.write(byteOff, next);
+
+        if (actualSize !== undefined && actualSize < nBytes) {
+            throw new Error(`writeValue: actualSize (${actualSize}) must be >= computed width (${nBytes})`);
+        }
+
+        entry.data.write(byteOff, next, actualSize ?? nBytes);
     }
 
-    setVariable(name: string, size: number, value: number | bigint | Uint8Array): void {
+
+    setVariable(
+        name: string,
+        size: number,
+        value: number | bigint | Uint8Array,
+        targetBase?: number | bigint,  // target base address where it was read from
+        actualSize?: number,            // total logical bytes for this element (>= size)
+    ): void {
         const entry = this.getEntry(name);
+
+        // append behind existing bytes
+        const appendOff = entry.data.byteLength ?? 0;
+
+        // normalize payload to exactly `size` bytes (numbers/bigints LE-encoded)
         const buf = new Uint8Array(size);
         if (typeof value === 'bigint') {
-            const valBytes = leBigIntToBytes(value, size);
-            buf.set(valBytes, 0);
+            buf.set(leBigIntToBytes(value, size), 0);
         } else if (typeof value === 'number') {
-            const valBytes = leBigIntToBytes(BigInt(Math.trunc(value)), size);
-            buf.set(valBytes, 0);
+            buf.set(leBigIntToBytes(BigInt(Math.trunc(value)), size), 0);
         } else if (value instanceof Uint8Array) {
-            buf.set(value.subarray(0, size), 0);
+            buf.set(value.subarray(0, size), 0); // truncate/zero-pad to `size`
         } else {
             throw new Error('setVariable: unsupported value type');
         }
-        entry.data.write(0, buf);
+
+        if (actualSize !== undefined && actualSize < size) {
+            throw new Error(`setVariable: actualSize (${actualSize}) must be >= size (${size})`);
+        }
+        const total = actualSize ?? size;
+
+        // write and zero-pad to `total`, extends as needed
+        entry.data.write(appendOff, buf, total);
+
+        // record per-append metadata
+        const meta = this.getOrInitMeta(name);
+        meta.offsets.push(appendOff);
+        meta.sizes.push(total);
+        meta.bases.push(targetBase !== undefined ? this.toAddrNumber(targetBase) : 0);
+
+        // maintain uniform stride when consistent
+        if (meta.elementSize === undefined && meta.sizes.length === 1) {
+            meta.elementSize = total;                // first append sets stride
+        } else if (meta.elementSize !== undefined && meta.elementSize !== total) {
+            delete meta.elementSize;                 // mixed sizes → remove the optional prop
+        }
+
         entry.valid = true;
     }
+
+    writeBytes(name: string, offset: number, bytes: Uint8Array, size = bytes.length): void {
+        this.setVariable(name, size, bytes, offset);
+    }
+
+    invalidate(name?: string): void {
+        if (name === undefined) this.cache.invalidateAll();
+        else this.cache.invalidate(name);
+    }
+
+    clearVariable(name: string): boolean {
+        this.elementMeta.delete(name);
+        return this.cache.removeSymbol(name);
+    }
+
+    clear(): void {
+        this.elementMeta.clear();
+        this.cache.clear();
+    }
+
+    /** Number of array elements recorded for `name`. Defaults to 1 when unknown. */
+    getArrayElementCount(name: string): number {
+        const m = this.elementMeta.get(name);
+        const n = m?.offsets.length ?? 0;
+        return n > 0 ? n : 1;
+    }
+
+    /** All recorded target base addresses (per append) for `name`. */
+    getArrayTargetBases(name: string): (number | undefined)[] {
+        const m = this.elementMeta.get(name);
+        return m ? m.bases.slice() : [];
+    }
+
+    /** Target base address for element `index` of `name` (number | undefined). */
+    getElementTargetBase(name: string, index: number): number | undefined {
+        const m = this.elementMeta.get(name);
+        if (!m) throw new Error(`getElementTargetBase: unknown symbol "${name}"`);
+        if (index < 0 || index >= m.bases.length) {
+            throw new Error(`getElementTargetBase: index ${index} out of range for "${name}"`);
+        }
+        return m.bases[index];
+    }
+
+    /** Optional: repair or set an address later. */
+    setElementTargetBase(name: string, index: number, base: number | bigint): void {
+        const m = this.elementMeta.get(name);
+        if (!m) throw new Error(`setElementTargetBase: unknown symbol "${name}"`);
+        if (index < 0 || index >= m.bases.length) {
+            throw new Error(`setElementTargetBase: index ${index} out of range for "${name}"`);
+        }
+        m.bases[index] = this.toAddrNumber(base);
+    }
+
+    // Optional: if you sometimes need to infer a count from bytes for legacy data
+    getArrayLengthFromBytes(name: string): number {
+        const m = this.elementMeta.get(name);
+        if (!m) return 1;
+        if (m.offsets.length > 0) return m.offsets.length;
+
+        const entry = this.getEntry(name);
+        const totalBytes = entry.data.byteLength ?? 0;
+        const stride = m.elementSize;
+        if (!stride || stride <= 0) return 1;
+        return Math.max(1, Math.floor(totalBytes / stride));
+    }
+
+
 }

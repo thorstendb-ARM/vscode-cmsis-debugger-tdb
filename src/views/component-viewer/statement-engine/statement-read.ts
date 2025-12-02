@@ -27,6 +27,12 @@ export class StatementRead extends StatementBase {
     }
 
     protected onExecute(executionContext: ExecutionContext): void {
+        const mustRead = this.scvdItem.mustRead;
+        if(mustRead === false) {
+            console.log(`${this.line} Skipping "read" as already initialized: ${this.scvdItem.name}`);
+            return;
+        }
+
         const scvdRead = this.scvdItem.castToDerived(ScvdRead);
         if (scvdRead === undefined) {
             return;
@@ -37,37 +43,58 @@ export class StatementRead extends StatementBase {
             console.error(`${this.line} Executing "read": ${scvdRead.name}, no type defined`);
             return;
         }
-        const size = scvdRead.size;
-        let readLength: number = 4;
-        if(size !== undefined) {
-            const sizeValue = size.getValue();
-            if(typeof sizeValue === 'number') {
-                readLength = sizeValue;
-                console.log(`${this.line} Executing "read": ${scvdRead.name}, size expression: ${size.expression}, value: ${readLength}`);
-            }
-        }
 
+        const typeSize = type.getElementReadSize(); // use size specified in SCVD
+        if(typeSize === undefined) {
+            console.error(`${this.line} Executing "read": ${scvdRead.name}, type: ${type.getExplorerDisplayName()}, could not determine type size`);
+            return;
+        }
+        const actualSize = type.getSize() ?? typeSize;
+
+        const readBytes = (scvdRead.size?.getValue() ?? 1) * typeSize; // Is an Expressions representing the array size or the number of values to read from target. The maximum array size is limited to 512. Default value is 1.
         const name = scvdRead.name;
-        if(name !== undefined) {
-            executionContext.memoryHost.setVariable(name, readLength, 0);
-        }
-
-
-        const symbol = scvdRead.symbol;
-        //const offset = scvdRead.offset;
-        //const endian = scvdRead.endian;
-
-
-
-        const offsetExpr = scvdRead.offset;
-        if(symbol?.symbol === undefined && offsetExpr === undefined) {
-            console.error(`${this.line}: Executing "read": ${scvdRead.name}, no symbol or offset defined`);
+        if(name === undefined) {
+            console.error(`${this.line}: Executing "read": no name defined`);
             return;
         }
 
-        console.log(`${this.line}: Executing "read": ${scvdRead.name}, symbol: ${symbol?.name}, offset: ${offsetExpr?.expression}`);
+        let baseAddress: number | undefined = undefined;
+
+        // Check if symbol address is defined
+        const symbol = scvdRead.symbol;
+        if(symbol?.symbol !== undefined) {
+            const symAddr = executionContext.debugTarget.findSymbolAddress(symbol.symbol);
+            if(symAddr === undefined) {
+                console.error(`${this.line}: Executing "read": ${scvdRead.name}, symbol: ${symbol?.name}, could not find symbol address for symbol: ${symbol?.symbol}`);
+                return;
+            }
+            baseAddress = symAddr;
+        }
+
+        const offset = scvdRead.offset?.getValue();
+        if(offset !== undefined) {
+            baseAddress = baseAddress
+                ? baseAddress + offset
+                : offset;
+        }
+
+        if(baseAddress === undefined) {
+            console.error(`${this.line}: Executing "read": ${scvdRead.name}, symbol: ${symbol?.name}, could not find symbol address for symbol: ${symbol?.symbol}`);
+            return;
+        }
+
+        const readData = executionContext.debugTarget.readMemory(baseAddress, readBytes);
+        if(readData === undefined) {
+            console.error(`${this.line}: Executing "read": ${scvdRead.name}, symbol: ${symbol?.name}, address: ${baseAddress}, size: ${readBytes} bytes, readMemory failed`);
+            return;
+        }
+
+        executionContext.memoryHost.setVariable(name, readBytes, readData, baseAddress, actualSize);
+
+        if(scvdRead.const === true) {   // Mark variable as already initialized
+            scvdRead.mustRead = false;
+        }
+        console.log(`${this.line}: Executing target read: ${scvdRead.name}, symbol: ${symbol?.name}, address: ${baseAddress}, size: ${readBytes} bytes`);
         return;
     }
-
-
 }

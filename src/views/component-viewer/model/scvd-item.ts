@@ -118,7 +118,6 @@ export class ScvdItem extends ScvdBase {
         return this._cond?.result ?? super.getConditionResult();
     }
 
-
     get bold(): ScvdCondition | undefined {
         return this._bold;
     }

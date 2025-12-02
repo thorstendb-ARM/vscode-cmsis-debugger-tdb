@@ -8,7 +8,7 @@ import { DataHost, RefContainer } from './evaluator';
 import { ScvdBase } from './model/scvd-base';
 import { CachedMemoryHost } from './cache/cache';
 import { Cm81MRegisterCache } from './cache/register-cache';
-import { ScvdDebugTarget } from './model/scvd-debug-target';
+import { ScvdDebugTarget } from './scvd-debug-target';
 
 export class ScvdEvalInterface implements DataHost {
     private _registerCache: Cm81MRegisterCache;
@@ -52,14 +52,31 @@ export class ScvdEvalInterface implements DataHost {
     //     return ref.getElementRef(); // ref to type
     // }
 
-    // actual data width of one element in bits (no padding).
     getElementBitWidth(ref: ScvdBase): number {
-        return ref.getElementBitWidth() ?? 0;
+        const size = ref.getSize();
+        if(size !== undefined) {
+            return size * 8;
+        }
+        console.error(`ScvdEvalInterface.getElementBitWidth: size undefined for ${ref.getExplorerDisplayName()}`);
+        return 0;
     }
 
-    // bytes per element (including any padding/alignment inside the array layout).
+    /* bytes per element (including any padding/alignment inside the array layout).
+       how many bits of the current element are meaningful when reading/writing.
+       Think: value width / mask size.
+       Stride only answers: “how far do I move to get from element i to i+1?”
+    */
     getElementStride(ref: ScvdBase): number {
-        return ref.getElementStride() ?? 0;
+        const stride = ref.getElementStride() ?? 0;
+        if(stride !== 0) {
+            return stride;
+        }
+        const size = ref.getSize();
+        if(size !== undefined) {
+            return size;
+        }
+        console.error(`ScvdEvalInterface.getElementStride: size/stride undefined for ${ref.getExplorerDisplayName()}`);
+        return 0;
     }
 
     getMemberOffset(_base: ScvdBase, member: ScvdBase): number {
@@ -78,18 +95,29 @@ export class ScvdEvalInterface implements DataHost {
         if(size !== undefined) {
             return size * 8;
         }
+        console.error(`ScvdEvalInterface.getBitWidth: size undefined for ${ref.getExplorerDisplayName()}`);
         return 0;
     }
 
     /* ---------------- Read/Write via caches ---------------- */
     readValue(container: RefContainer): number | string | bigint | undefined {
-        const value = this.memHost.readValue(container);
-        return value;
+        try {
+            const value = this.memHost.readValue(container);
+            return value;
+        } catch (e) {
+            console.error(`ScvdEvalInterface.readValue: exception for container with base=${container.base.getExplorerDisplayName()}: ${e}`);
+            return undefined;
+        }
     }
 
     writeValue(container: RefContainer, value: number | string | bigint): any {
-        this.memHost.writeValue(container, value);
-        return value;
+        try {
+            this.memHost.writeValue(container, value);
+            return value;
+        } catch (e) {
+            console.error(`ScvdEvalInterface.writeValue: exception for container with base=${container.base.getExplorerDisplayName()}: ${e}`);
+            return undefined;
+        }
     }
 
     /* ---------------- Intrinsics ---------------- */
@@ -131,10 +159,9 @@ export class ScvdEvalInterface implements DataHost {
     }
 
     __size_of(symbol: string): number | undefined {
-        const symbolRef = this.debugTarget.getSymbolInfo(symbol);
-        if (symbolRef) {
-            const size = symbolRef.size;
-            return size;
+        const arrayElements = this.debugTarget.getNumArrayElements(symbol);
+        if (arrayElements != undefined) {
+            return arrayElements;
         }
         return undefined;
     }
@@ -154,11 +181,22 @@ export class ScvdEvalInterface implements DataHost {
 
     _count(container: RefContainer): number | undefined {
         const base = container.current;
-        return base?.getElementCount();
+        const name = base?.name;
+        if(name !== undefined) {
+            const count = this.memHost.getArrayElementCount(name);
+            return count;
+        }
+        return undefined;
     }
 
     _addr(container: RefContainer): number | undefined {
         const base = container.current;
-        return base?.getAddress();
+        const name = base?.name;
+        const index = container.index ?? 0;
+        if(name !== undefined) {
+            const addr = this.memHost.getElementTargetBase(name, index);
+            return addr;
+        }
+        return undefined;
     }
 }
