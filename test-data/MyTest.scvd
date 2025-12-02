@@ -142,18 +142,29 @@
             <item property="StackStart"    value="%x[StackStart]"/>
             <item property="StackSize"     value="%d[StackSize] bytes"/>
             <item alert="(StackUsage >> 31)"    
-              property="tstack @%x[StackStart] size=%x[StackSize]"
-              value="Usage %x[StackUsage &amp; 0xFFFFF] %d[(StackUsage &gt;&gt; 20) &amp; 0xFF]%%" />
+              property="tstack @%x[StackStart] size=%d[StackSize]"
+              value="Usage %d[StackUsage &amp; 0xFFFFF] %d[(StackUsage &gt;&gt; 20) &amp; 0xFF]%%" />
           </item>
 
-          <item property="Lists">
-            <!-- <item property="MyListA"    value="%x[MyListA._addr]"/>
-            <item property="MyListB"    value="%x[MyListB._addr]"/>
-            <item property="MyListC"    value="%x[MyListC._addr]"/>
-            <item property="MyListD"    value="%x[MyListD._addr]"/>
-            <item property="MyListE"    value="%x[MyListE._addr]"/> -->
-            <item property="pArray"     value="%x[pArray[0]], %x[pArray[1]], %x[pArray[2]], %x[pArray[3]], %x[pArray[4]]"/>
-            <item property="pArray._addr"     value="%x[pArray[0]._addr], %x[pArray[1]._addr], %x[pArray[2]._addr], %x[pArray[3]._addr], %x[pArray[4]._addr]"/>
+          <item property="Lists contents">
+            <item property="MyListA ValueA nextL" value="%x[MyListA[0].nextL]"/>
+            <item property="MyListA ValueA valueL" value="%x[MyListA[0].valueL]"/>
+            <item property="MyListA ValueA nameL" value="%x[MyListA[0].nameL]"/>
+            <item property="MyListA ValueA"       value="%x[MyListA[0].nextL], %x[MyListA[0].valuerL], %x[MyListA[0].nameL]"/>
+            <item property="MyListB ListStart"    value="%x[MyListB[0]]"/>
+            <item property="MyListC ValueA, ValueB, ValueArray"    value="%x[MyListC[0]], %x[MyListC[1]], %x[MyListC[2]], %x[MyListC[3]], %x[MyListC[4]]"/>
+            <item property="MyListD pArray"       value="%x[MyListD[0]], %x[MyListD[1]], %x[MyListD[2]], %x[MyListD[3]], %x[MyListD[4]]"/>
+            <item property="MyListE pArray"       value="%x[MyListE[0]]"/>
+            <item property="pArray"               value="%x[pArray[0]], %x[pArray[1]], %x[pArray[2]], %x[pArray[3]], %x[pArray[4]]"/>
+          </item>
+
+          <item property="Lists ._addr">
+            <item property="MyListA ValueA"       value="%x[MyListA[0]._addr]"/>
+            <item property="MyListB ListStart"    value="%x[MyListB[0]._addr]"/>
+            <item property="MyListC ValueA, ValueB, ValueArray"    value="%x[MyListC[0]._addr], %x[MyListC[1]._addr], %x[MyListC[2]._addr], %x[MyListC[3]._addr], %x[MyListC[4]._addr]"/>
+            <item property="MyListD pArray"       value="%x[MyListD[0]._addr], %x[MyListD[1]._addr], %x[MyListD[2]._addr], %x[MyListD[3]._addr], %x[MyListD[4]._addr]"/>
+            <item property="MyListE pArray"       value="%x[MyListE._addr]"/>
+            <item property="pArray"               value="%x[pArray[0]._addr], %x[pArray[1]._addr], %x[pArray[2]._addr], %x[pArray[3]._addr], %x[pArray[4]._addr]"/>
           </item>
 
           <item property="Vars">
