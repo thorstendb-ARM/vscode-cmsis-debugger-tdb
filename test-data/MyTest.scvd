@@ -146,17 +146,22 @@
               value="Usage %x[StackUsage &amp; 0xFFFFF] %d[(StackUsage &gt;&gt; 20) &amp; 0xFF]%%" />
           </item>
 
+          <item property="Lists">
+            <!-- <item property="MyListA"    value="%x[MyListA._addr]"/>
+            <item property="MyListB"    value="%x[MyListB._addr]"/>
+            <item property="MyListC"    value="%x[MyListC._addr]"/>
+            <item property="MyListD"    value="%x[MyListD._addr]"/>
+            <item property="MyListE"    value="%x[MyListE._addr]"/> -->
+            <item property="pArray"     value="%x[pArray[0]], %x[pArray[1]], %x[pArray[2]], %x[pArray[3]], %x[pArray[4]]"/>
+            <item property="pArray._addr"     value="%x[pArray[0]._addr], %x[pArray[1]._addr], %x[pArray[2]._addr], %x[pArray[3]._addr], %x[pArray[4]._addr]"/>
+          </item>
+
           <item property="Vars">
             <item property="R0"    value="%x[R0]"/>
             <item property="i"     value="%x[i]"/>
             <item property="j"     value="%x[j]"/>
             <item property="k"     value="%x[k]"/>
             <item property="l"     value="%x[l]"/>
-          </item>
-
-          <item property="memberTest addr">
-            <item property="memberTest._addr"     value="%x[memberTest._addr]"/>
-            <item property="memberTest[1]._addr"  value="%x[memberTest[1]._addr]"/>
           </item>
 
           <item property="memberTest offset">

@@ -104,8 +104,6 @@ export class ScvdTypedef extends ScvdBase {
         });
         this._member.sort(this.sortByLine);
 
-        this.AddVirtualVarAddr();
-
         const vars = getArrayFromJson(xml.var);
         vars?.forEach( (v: Json) => {
             const varItem = this.addVar();
@@ -115,22 +113,6 @@ export class ScvdTypedef extends ScvdBase {
         this._var.sort(this.sortByLine);
 
         return super.readXml(xml);
-    }
-
-    /* Add internal address var _addr
-       Returns the memory address of a readlist member.
-       Can have different base addresses for each readlist entry.
-     */
-    private AddVirtualVarAddr() {
-        const addrVarItem = this.addVar();
-        const varXml: Json = {
-            name: '_addr',
-            type: 'uint32_t',
-            value: '0x00000000',
-            '#name': 'var',
-            __line: '0',
-        };
-        addrVarItem.readXml(varXml);
     }
 
     public getSize(): number | undefined {

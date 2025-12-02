@@ -52,12 +52,13 @@ export class ScvdEvalInterface implements DataHost {
     //     return ref.getElementRef(); // ref to type
     // }
 
-    /*how far to move in memory to get from element i to element i+1.
-      Returns bytes (the evaluator multiplies by 8 to get bits). Think: addressing step / spacing / pitch.
-      Element bit width answers: “how many bits should I read/write for one element?”
-    */
     getElementBitWidth(ref: ScvdBase): number {
-        return this.getBitWidth(ref);
+        const size = ref.getSize();
+        if(size !== undefined) {
+            return size * 8;
+        }
+        console.error(`ScvdEvalInterface.getElementBitWidth: size undefined for ${ref.getExplorerDisplayName()}`);
+        return 0;
     }
 
     /* bytes per element (including any padding/alignment inside the array layout).
@@ -191,8 +192,8 @@ export class ScvdEvalInterface implements DataHost {
     _addr(container: RefContainer): number | undefined {
         const base = container.current;
         const name = base?.name;
-        const index = container.index;
-        if(name !== undefined && index !== undefined) {
+        const index = container.index ?? 0;
+        if(name !== undefined) {
             const addr = this.memHost.getElementTargetBase(name, index);
             return addr;
         }

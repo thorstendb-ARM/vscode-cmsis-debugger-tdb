@@ -340,12 +340,6 @@ export abstract class ScvdBase implements ScvdGuiInterface {
         return undefined;
     }
 
-    // _addr intrinsic: Returns the memory address of a readlist member.
-    public getAddress(): number | undefined {
-        console.error(`_addr via MS-DAP not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
-        return undefined;
-    }
-
     public getSize(): number | undefined {
         console.error(`GetSize not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
         return undefined;

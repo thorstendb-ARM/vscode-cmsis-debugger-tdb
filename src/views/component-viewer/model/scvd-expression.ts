@@ -90,7 +90,18 @@ export class ScvdExpression extends ScvdBase {
 
     public getValue(): number | undefined {
         const val = this.value;
-        return (typeof val === 'number') ? val : undefined;
+        if (val == undefined || typeof val !== 'number') {
+            return undefined;
+        }
+        const min = this._rangeMin;
+        if (min !== undefined && val < min) {
+            return min;
+        }
+        const max = this._rangeMax;
+        if (max !== undefined && val > max) {
+            return max;
+        }
+        return val;
     }
 
     public setValue(val: number): number | undefined {

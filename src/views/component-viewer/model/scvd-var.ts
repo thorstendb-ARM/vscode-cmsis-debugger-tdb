@@ -20,11 +20,13 @@ import { ScvdDataType } from './scvd-data-type';
 import { ScvdExpression } from './scvd-expression';
 import { ExplorerInfo, Json, ScvdBase } from './scvd-base';
 import { getStringFromJson } from './scvd-utils';
+import { NumberType, NumberTypeInput } from './number-type';
 
 export class ScvdVar extends ScvdBase {
     private _value: ScvdExpression | undefined;
     private _type: ScvdDataType | undefined;
     private _offset: ScvdExpression | undefined;
+    private _size: number | undefined;
 
 
     constructor(
@@ -40,6 +42,7 @@ export class ScvdVar extends ScvdBase {
 
         this.value = getStringFromJson(xml.value);
         this.type = getStringFromJson(xml.type);
+        this.size = getStringFromJson(xml.size);
 
         return super.readXml(xml);
     }
@@ -50,6 +53,16 @@ export class ScvdVar extends ScvdBase {
     public set value(value: string | undefined) {
         if (value !== undefined) {
             this._value = new ScvdExpression(this, value, 'value');
+        }
+    }
+
+    get size(): number | undefined {
+        return this._size;
+    }
+
+    set size(value: NumberTypeInput | undefined) {
+        if(value !== undefined) {
+            this._size = new NumberType(value).value;
         }
     }
 
@@ -90,8 +103,13 @@ export class ScvdVar extends ScvdBase {
     }
 
     public getSize(): number | undefined {
-        const size = this._type?.getSize();
-        return size;
+        const typeSize = this._type?.getSize();
+        const size = this._size;
+        if (size !== undefined && typeSize !== undefined) {
+            return typeSize * size;
+        }
+
+        return typeSize;
     }
 
     get offset(): ScvdExpression | undefined {
