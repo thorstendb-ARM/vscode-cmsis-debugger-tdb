@@ -48,31 +48,27 @@ export class ScvdEvalInterface implements DataHost {
         return base?.getMember(property);
     }
 
-    // getElementRef(ref: ScvdBase): ScvdBase | undefined {
-    //     return ref.getElementRef(); // ref to type
-    // }
-
-    getElementBitWidth(ref: ScvdBase): number {
+    // Optional helper used by the evaluator via (ctx.data as any).getByteWidth(ref)
+    // Returns the byte width of a ref (scalars, structs, arrays – host-defined).
+    getByteWidth(ref: ScvdBase): number | undefined {
         const size = ref.getSize();
-        if(size !== undefined) {
-            return size * 8;
+        if (size !== undefined) {
+            return size;
         }
-        console.error(`ScvdEvalInterface.getElementBitWidth: size undefined for ${ref.getExplorerDisplayName()}`);
-        return 0;
+        console.error(`ScvdEvalInterface.getByteWidth: size undefined for ${ref.getExplorerDisplayName()}`);
+        return undefined;
     }
 
     /* bytes per element (including any padding/alignment inside the array layout).
-       how many bits of the current element are meaningful when reading/writing.
-       Think: value width / mask size.
        Stride only answers: “how far do I move to get from element i to i+1?”
     */
     getElementStride(ref: ScvdBase): number {
         const stride = ref.getElementStride() ?? 0;
-        if(stride !== 0) {
+        if (stride !== 0) {
             return stride;
         }
         const size = ref.getSize();
-        if(size !== undefined) {
+        if (size !== undefined) {
             return size;
         }
         console.error(`ScvdEvalInterface.getElementStride: size/stride undefined for ${ref.getExplorerDisplayName()}`);
@@ -85,22 +81,8 @@ export class ScvdEvalInterface implements DataHost {
         return offset;
     }
 
-    /* width in bits of that node itself:
-      - For scalars/structs/unions: their full bit width.
-      - For arrays: either the total array width (count × stride × 8)
-        if known, or leave it ambiguous. Do not return the element width for an array; that’s what getElementBitWidth is for.
-    */
-    getBitWidth(ref: ScvdBase): number {
-        const size = ref.getSize();
-        if(size !== undefined) {
-            return size * 8;
-        }
-        console.error(`ScvdEvalInterface.getBitWidth: size undefined for ${ref.getExplorerDisplayName()}`);
-        return 0;
-    }
-
     /* ---------------- Read/Write via caches ---------------- */
-    readValue(container: RefContainer): number | string | bigint | undefined {
+    readValue(container: RefContainer): number | string | bigint | Uint8Array | undefined {
         try {
             const value = this.memHost.readValue(container);
             return value;
@@ -110,7 +92,7 @@ export class ScvdEvalInterface implements DataHost {
         }
     }
 
-    writeValue(container: RefContainer, value: number | string | bigint): any {
+    writeValue(container: RefContainer, value: number | string | bigint | Uint8Array): any {
         try {
             this.memHost.writeValue(container, value);
             return value;
@@ -182,7 +164,7 @@ export class ScvdEvalInterface implements DataHost {
     _count(container: RefContainer): number | undefined {
         const base = container.current;
         const name = base?.name;
-        if(name !== undefined) {
+        if (name !== undefined) {
             const count = this.memHost.getArrayElementCount(name);
             return count;
         }
@@ -193,7 +175,7 @@ export class ScvdEvalInterface implements DataHost {
         const base = container.current;
         const name = base?.name;
         const index = container.index ?? 0;
-        if(name !== undefined) {
+        if (name !== undefined) {
             const addr = this.memHost.getElementTargetBase(name, index);
             return addr;
         }

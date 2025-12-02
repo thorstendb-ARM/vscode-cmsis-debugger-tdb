@@ -55,14 +55,14 @@ export class SymbolCache {
 
 export class MemoryContainer {
     constructor(
-    readonly symbolName: string
+        readonly symbolName: string
     ){ }
     private buf: Uint8Array | null = null;
     private winStart = 0;
     private winSize = 0;
 
-
     private store: Uint8Array = new Uint8Array(0);
+
     private ensure(off: number, size: number) {
         // Grow the local store if needed so [off, off+size) fits.
         const needed = off + size;
@@ -79,7 +79,6 @@ export class MemoryContainer {
         this.buf = this.store.subarray(off, off + size);
         this.winStart = off;
         this.winSize = size;
-
     }
 
     get byteLength(): number {
@@ -93,7 +92,7 @@ export class MemoryContainer {
         return this.buf.subarray(rel, rel + size);
     }
 
-    // (updated) allow writing with optional zero padding to `actualSize`
+    // allow writing with optional zero padding to `actualSize`
     write(off: number, data: Uint8Array, actualSize?: number): void {
         const total = actualSize !== undefined ? Math.max(actualSize, data.length) : data.length;
         this.ensure(off, total);
@@ -111,7 +110,7 @@ export class MemoryContainer {
     }
 }
 
-// --- bit helpers (LE) ---
+// --- helpers (LE encoding) ---
 function bytesToLEBigInt(bytes: Uint8Array): bigint {
     let acc = 0n;
     for (let i = 0; i < bytes.length; i++) acc |= BigInt(bytes[i] & 0xff) << BigInt(8 * i);
@@ -121,18 +120,6 @@ function leBigIntToBytes(v: bigint, size: number): Uint8Array {
     const out = new Uint8Array(size);
     for (let i = 0; i < size; i++) out[i] = Number((v >> BigInt(8 * i)) & 0xffn);
     return out;
-}
-function extractBitsLE(raw: Uint8Array, bitStart: number, bitLen: number): bigint {
-    const acc = bytesToLEBigInt(raw);
-    const mask = (1n << BigInt(bitLen)) - 1n;
-    return (acc >> BigInt(bitStart)) & mask;
-}
-function injectBitsLE(raw: Uint8Array, bitStart: number, bitLen: number, value: bigint): Uint8Array {
-    const acc = bytesToLEBigInt(raw);
-    const mask = ((1n << BigInt(bitLen)) - 1n) << BigInt(bitStart);
-    const v = (value & ((1n << BigInt(bitLen)) - 1n)) << BigInt(bitStart);
-    const next = (acc & ~mask) | v;
-    return leBigIntToBytes(next, raw.length);
 }
 
 export type Endianness = 'little' | 'big';
@@ -144,7 +131,6 @@ type ElementMeta = {
   bases: number[];                // target base address per append
   elementSize?: number;           // known uniform stride when consistent
 };
-
 
 /** The piece your DataHost delegates to for readValue/writeValue. */
 export class CachedMemoryHost {
@@ -177,8 +163,7 @@ export class CachedMemoryHost {
         return n;
     }
 
-    constructor(opts?: HostOptions,
-    ) {
+    constructor(opts?: HostOptions) {
         this.cache = new SymbolCache((name) => new MemoryContainer(name));
         this.endianness = opts?.endianness ?? 'little';
     }
@@ -188,57 +173,73 @@ export class CachedMemoryHost {
         return entry;
     }
 
+    /** Read a value, using byte-only offsets and widths. */
     readValue(container: RefContainer): any {
         const variableName = container.anchor?.name;
-        const widthBits = container.widthBits ?? 0;
-        if (!variableName || widthBits <= 0) throw new Error('readValue: invalid target');
+        const widthBytes = container.widthBytes ?? 0;
+        if (!variableName || widthBytes <= 0) throw new Error('readValue: invalid target');
 
         const entry = this.getEntry(variableName);
         const byteOff = container.offsetBytes ?? 0;
-        const bitStart = container.offsetBitRemainder ?? 0;
-        const nBytes = Math.ceil((bitStart + widthBits) / 8);
-        const raw = entry.data.read(byteOff, nBytes);
+
+        const raw = entry.data.read(byteOff, widthBytes);
 
         if (this.endianness !== 'little') {
-            // TODO: add BE bit numbering if needed
+            // TODO: add BE support if needed
         }
 
-        const val = extractBitsLE(raw, bitStart, widthBits);
-        if (widthBits <= 32) return Number(val);
-        if (widthBits <= 64) return val;
-        const outBytes = Math.ceil(widthBits / 8);
-        const full = bytesToLEBigInt(raw);
-        const masked = (full >> BigInt(bitStart)) & ((1n << BigInt(widthBits)) - 1n);
-        return leBigIntToBytes(masked, outBytes);
+        // Interpret the bytes:
+        //  - ≤4 bytes: JS number
+        //  - ≤8 bytes: bigint
+        //  - >8 bytes: return raw bytes
+        if (widthBytes <= 4) {
+            const val = bytesToLEBigInt(raw);
+            return Number(val);
+        }
+        if (widthBytes <= 8) {
+            return bytesToLEBigInt(raw);
+        }
+        // for larger widths, return a copy of the bytes
+        return raw.slice();
     }
 
+    /** Write a value, using byte-only offsets and widths. */
     writeValue(container: RefContainer, value: any, actualSize?: number): void {
         const variableName = container.anchor?.name;
-        const widthBits = container.widthBits ?? 0;
-        if (!variableName || widthBits <= 0) throw new Error('writeValue: invalid target');
+        const widthBytes = container.widthBytes ?? 0;
+        if (!variableName || widthBytes <= 0) throw new Error('writeValue: invalid target');
 
         const entry = this.getEntry(variableName);
         const byteOff = container.offsetBytes ?? 0;
-        const bitStart = container.offsetBitRemainder ?? 0;
-        const nBytes = Math.ceil((bitStart + widthBits) / 8);
 
-        let valBig: bigint;
-        if (typeof value === 'boolean') valBig = value ? 1n : 0n;
-        else if (typeof value === 'bigint') valBig = value;
-        else if (typeof value === 'number') valBig = BigInt(Math.trunc(value));
-        else if (value instanceof Uint8Array) valBig = bytesToLEBigInt(value);
-        else throw new Error('writeValue: unsupported value type');
+        let buf: Uint8Array;
 
-        const raw = entry.data.read(byteOff, nBytes);
-        const next = injectBitsLE(raw, bitStart, widthBits, valBig);
+        if (value instanceof Uint8Array) {
+            if (value.length === widthBytes) {
+                buf = value;
+            } else {
+                // truncate or pad to widthBytes
+                buf = new Uint8Array(widthBytes);
+                buf.set(value.subarray(0, widthBytes), 0);
+            }
+        } else {
+            // normalize value to bigint then to bytes
+            let valBig: bigint;
+            if (typeof value === 'boolean') valBig = value ? 1n : 0n;
+            else if (typeof value === 'bigint') valBig = value;
+            else if (typeof value === 'number') valBig = BigInt(Math.trunc(value));
+            else throw new Error('writeValue: unsupported value type');
 
-        if (actualSize !== undefined && actualSize < nBytes) {
-            throw new Error(`writeValue: actualSize (${actualSize}) must be >= computed width (${nBytes})`);
+            buf = leBigIntToBytes(valBig, widthBytes);
         }
 
-        entry.data.write(byteOff, next, actualSize ?? nBytes);
-    }
+        if (actualSize !== undefined && actualSize < widthBytes) {
+            throw new Error(`writeValue: actualSize (${actualSize}) must be >= widthBytes (${widthBytes})`);
+        }
 
+        const total = actualSize ?? widthBytes;
+        entry.data.write(byteOff, buf, total);
+    }
 
     setVariable(
         name: string,
@@ -352,6 +353,4 @@ export class CachedMemoryHost {
         if (!stride || stride <= 0) return 1;
         return Math.max(1, Math.floor(totalBytes / stride));
     }
-
-
 }
