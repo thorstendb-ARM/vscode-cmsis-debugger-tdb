@@ -53,7 +53,7 @@ export const activate = async (context: vscode.ExtensionContext): Promise<void> 
     // Live Watch view
     liveWatchTreeDataProvider.activate(gdbtargetDebugTracker);
     // Component Viewer: SCVD Evaluator
-    await componentViewer.activate(context);
+    await componentViewer.activate(context, gdbtargetDebugTracker);
 
     logger.debug('Extension Pack activated');
 };

@@ -15,6 +15,7 @@ import { Resolver } from './resolver';
 import { ScvdComponentViewer } from './model/scvd-comonent-viewer';
 import { StatementEngine } from './statement-engine/statement-engine';
 import { ScvdEvalContext } from './scvd-eval-context';
+import { GDBTargetDebugSession } from '../../debug-session';
 
 
 const xmlOpts: ParserOptions = {
@@ -71,7 +72,6 @@ export class ComponentViewerInstance {
 
         return `${text}, Time: ${timeUsage} ms, Mem: ${memUsage}, Mem Increase: ${memIncrease}, MB (Total: ${memCurrent} MB)`;
     }
-
 
     public async readModel(filename: URI) {
         const stats: string[] = [];
@@ -139,6 +139,7 @@ export class ComponentViewerInstance {
             throw error;
         }
     }
+    
     private async parseXml(text: string) {
         try {
             const json = await parseStringPromise(text, xmlOpts);
@@ -152,7 +153,13 @@ export class ComponentViewerInstance {
     public get model(): ScvdComponentViewer | undefined {
         return this._model;
     }
+    
     private set model(value: ScvdComponentViewer | undefined) {
         this._model = value;
+    }
+
+    public updateModel(activeSession: GDBTargetDebugSession): void {
+        // TODO: Update values in the model by re-evaluating necessary statements
+        console.log(activeSession);
     }
 }
