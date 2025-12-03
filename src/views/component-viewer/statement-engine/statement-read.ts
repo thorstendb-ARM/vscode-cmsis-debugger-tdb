@@ -38,6 +38,12 @@ export class StatementRead extends StatementBase {
             return;
         }
 
+        const name = scvdRead.name;
+        if(name === undefined) {
+            console.error(`${this.line}: Executing "read": no name defined`);
+            return;
+        }
+
         const type = scvdRead.type;
         if(type === undefined) {
             console.error(`${this.line} Executing "read": ${scvdRead.name}, no type defined`);
@@ -52,11 +58,6 @@ export class StatementRead extends StatementBase {
         const actualSize = type.getSize() ?? typeSize;
 
         const readBytes = (scvdRead.size?.getValue() ?? 1) * typeSize; // Is an Expressions representing the array size or the number of values to read from target. The maximum array size is limited to 512. Default value is 1.
-        const name = scvdRead.name;
-        if(name === undefined) {
-            console.error(`${this.line}: Executing "read": no name defined`);
-            return;
-        }
 
         let baseAddress: number | undefined = undefined;
 

@@ -36,14 +36,44 @@ export class ScvdFormatSpecifier {
         return (n >>> 0).toString(10);
     }
 
-    private format_t(value: number | string, _ctx: EvalContext): string {
-        if (typeof value === 'number' && Number.isInteger(value)) {
-            return `0x${value.toString(16)}`;
+    private format_t(
+        value: number | string | Uint8Array,
+        _ctx: EvalContext
+    ): string {
+        // Already a string: nothing to do
+        if (typeof value === 'string') {
+            return value;
         }
-        if( typeof value === 'string') {
-            return `${value}`;
+
+        // Number: whatever your existing formatting rule is
+        if (typeof value === 'number') {
+            return value.toString();
         }
-        return '';
+
+        // C string: null-terminated Uint8Array
+        if (value instanceof Uint8Array) {
+            // Find first 0 byte (C '\0')
+            let end = value.indexOf(0);
+            if (end === -1) {
+                end = value.length;
+            }
+
+            // Prefer UTF-8 decode (typical for C strings nowadays)
+            if (typeof TextDecoder !== 'undefined') {
+                const dec = new TextDecoder('utf-8', { fatal: false });
+                return dec.decode(value.subarray(0, end));
+            }
+
+            // Fallback: simple byte→char (ASCII / Latin-1 style)
+            let s = '';
+            for (let i = 0; i < end; i++) {
+                s += String.fromCharCode(value[i]);
+            }
+            return s;
+        }
+
+        // Fallback in case something weird sneaks in
+        return String(value);
     }
 
     private format_x(value: number | string, _ctx: EvalContext): string {
@@ -99,8 +129,44 @@ export class ScvdFormatSpecifier {
         return this.format_x(value, ctx);
     }
 
-    private format_N(value: number | string, _ctx: EvalContext): string {
-        return `${value}`;
+    private format_N(
+        value: number | string | Uint8Array,
+        _ctx: EvalContext
+    ): string {
+        // Already a string: nothing to do
+        if (typeof value === 'string') {
+            return value;
+        }
+
+        // Number: whatever your existing formatting rule is
+        if (typeof value === 'number') {
+            return value.toString();
+        }
+
+        // C string: null-terminated Uint8Array
+        if (value instanceof Uint8Array) {
+            // Find first 0 byte (C '\0')
+            let end = value.indexOf(0);
+            if (end === -1) {
+                end = value.length;
+            }
+
+            // Prefer UTF-8 decode (typical for C strings nowadays)
+            if (typeof TextDecoder !== 'undefined') {
+                const dec = new TextDecoder('utf-8', { fatal: false });
+                return dec.decode(value.subarray(0, end));
+            }
+
+            // Fallback: simple byte→char (ASCII / Latin-1 style)
+            let s = '';
+            for (let i = 0; i < end; i++) {
+                s += String.fromCharCode(value[i]);
+            }
+            return s;
+        }
+
+        // Fallback in case something weird sneaks in
+        return String(value);
     }
 
     private format_M(value: number | string, _ctx: EvalContext): string {

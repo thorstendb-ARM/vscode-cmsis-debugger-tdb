@@ -138,6 +138,8 @@
           <item property="System" value="">
             <item property="Kernel ID"    value="RTX V%d[V_Major].%d[V_Minor].%d[V_Patch]" cond="RTX_En != 0"/>
             <item property="OS ID"        value="%x[osId]"/>
+            <item property="OS ID Text"  value="%t[OS_ID_Text]"/>
+            <print property="OS ID Text"  value="%t[os_Info.os_id]"/>
           </item>
 
           <!-- <item property="Stack">
