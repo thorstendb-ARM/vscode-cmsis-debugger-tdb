@@ -147,15 +147,15 @@
           </item>
 
           <item property="Lists contents">
-            <item property="MyListA ValueA nextL" value="%x[MyListA[0].nextL]"/>
+            <!-- <item property="MyListA ValueA nextL" value="%x[MyListA[0].nextL]"/> -->
             <item property="MyListA ValueA valueL" value="%x[MyListA[0].valueL]"/>
-            <item property="MyListA ValueA nameL" value="%x[MyListA[0].nameL]"/>
+            <!-- <item property="MyListA ValueA nameL" value="%x[MyListA[0].nameL]"/>
             <item property="MyListA ValueA"       value="%x[MyListA[0].nextL], %x[MyListA[0].valuerL], %x[MyListA[0].nameL]"/>
             <item property="MyListB ListStart"    value="%x[MyListB[0]]"/>
             <item property="MyListC ValueA, ValueB, ValueArray"    value="%x[MyListC[0]], %x[MyListC[1]], %x[MyListC[2]], %x[MyListC[3]], %x[MyListC[4]]"/>
             <item property="MyListD pArray"       value="%x[MyListD[0]], %x[MyListD[1]], %x[MyListD[2]], %x[MyListD[3]], %x[MyListD[4]]"/>
             <item property="MyListE pArray"       value="%x[MyListE[0]]"/>
-            <item property="pArray"               value="%x[pArray[0]], %x[pArray[1]], %x[pArray[2]], %x[pArray[3]], %x[pArray[4]]"/>
+            <item property="pArray"               value="%x[pArray[0]], %x[pArray[1]], %x[pArray[2]], %x[pArray[3]], %x[pArray[4]]"/> -->
           </item>
 
           <item property="Lists ._addr">
@@ -167,7 +167,7 @@
             <item property="pArray"               value="%x[pArray[0]._addr], %x[pArray[1]._addr], %x[pArray[2]._addr], %x[pArray[3]._addr], %x[pArray[4]._addr]"/>
           </item>
 
-          <item property="Vars">
+          <!-- <item property="Vars">
             <item property="R0"    value="%x[R0]"/>
             <item property="i"     value="%x[i]"/>
             <item property="j"     value="%x[j]"/>
@@ -232,7 +232,7 @@
             <item property="j"  value="%x[j? &quot;true&quot; : &quot;false&quot;]"/>
             <item property="k"  value="%x[k? &quot;true&quot; : &quot;false&quot;]"/>
             <item property="i+j"  value="%x[(i+j)? &quot;true&quot; : &quot;false&quot;]"/>
-          </item>
+          </item> -->
 
       </out>
     </object>
