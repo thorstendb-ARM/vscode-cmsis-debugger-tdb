@@ -9,14 +9,14 @@ import { SidebarDebugView } from './sidebar-debug-view';
 // End of erase later
 
 const scvdMockTestFiles: Map<string, boolean> = new Map<string, boolean>([
-    ['test-data/MyTest.scvd', true],
-    ['test-data/BaseExample.scvd', false],
-    ['test-data/RTX5.scvd', true],
-    ['test-data/Network.scvd', false],
-    ['test-data/USB.scvd', false],
-    ['test-data/FileSystem.scvd', false],
-    ['test-data/EventRecorder.scvd', false],
-    ['test-data/GetRegVal_Test.scvd', false],
+    ['test-data/MyTest.scvd',           true],
+    ['test-data/RTX5.scvd',             false],
+    ['test-data/BaseExample.scvd',      false],
+    ['test-data/Network.scvd',          false],
+    ['test-data/USB.scvd',              false],
+    ['test-data/FileSystem.scvd',       false],
+    ['test-data/EventRecorder.scvd',    false],
+    ['test-data/GetRegVal_Test.scvd',   false],
 ]);
 
 const scvdMockFiles: string[] = Array.from(scvdMockTestFiles.entries())
@@ -66,6 +66,10 @@ export class ComponentViewerController {
             mockedInstances.push(instance);
         }
         this.instances = mockedInstances;
+        const sidebarModel = this.instances[0].model; // Shall be removed later
+        if(sidebarModel !== undefined) {
+            this.treeDataProvider?.setModel(sidebarModel); // Shall be removed later
+        }
     }
 
     protected async readScvdFiles(session?: GDBTargetDebugSession): Promise<void> {
