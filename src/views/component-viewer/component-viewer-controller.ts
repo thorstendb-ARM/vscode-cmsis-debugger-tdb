@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { GDBTargetDebugTracker, GDBTargetDebugSession, SessionStackItem} from '../../debug-session';
+import { GDBTargetDebugTracker, GDBTargetDebugSession, SessionStackItem } from '../../debug-session';
 import { ComponentViewerInstance } from './component-viewer-instance';
 import { URI } from 'vscode-uri';
 import path from 'path';
@@ -8,36 +8,20 @@ import { ComponentViewerTreeDataProvider } from './component-viewer-tree-view';
 import { SidebarDebugView } from './sidebar-debug-view';
 // End of erase later
 
+const scvdMockTestFiles: Map<string, boolean> = new Map<string, boolean>([
+    ['test-data/MyTest.scvd', true],
+    ['test-data/BaseExample.scvd', false],
+    ['test-data/RTX5.scvd', true],
+    ['test-data/Network.scvd', false],
+    ['test-data/USB.scvd', false],
+    ['test-data/FileSystem.scvd', false],
+    ['test-data/EventRecorder.scvd', false],
+    ['test-data/GetRegVal_Test.scvd', false],
+]);
 
-const scvdFiles: string[] = [
-    'test-data/BaseExample.scvd',
-    'test-data/RTX5.scvd',
-    'test-data/Network.scvd',
-    'test-data/USB.scvd',
-    'test-data/FileSystem.scvd',
-    'test-data/EventRecorder.scvd',
-    'test-data/GetRegVal_Test.scvd',
-    'test-data/MyTest.scvd',
-];
-
-enum scvdExamples {
-    BaseExample = 0,
-    RTX5 = 1,
-    Network = 2,
-    USB = 3,
-    FileSystem = 4,
-    EventRecorder = 5,
-    GetRegVal_Test = 6,
-    MyTest = 7,
-}
-
-const scvdFile1 = scvdFiles[scvdExamples.RTX5];
- // cherry pick 3 files for testing
-const scvdFile2 = scvdFiles.filter((_, index) => 
-    index === scvdExamples.BaseExample ||
-    index === scvdExamples.RTX5 ||
-    index === scvdExamples.GetRegVal_Test
-);
+const scvdMockFiles: string[] = Array.from(scvdMockTestFiles.entries())
+    .filter(([_, include]) => include)
+    .map(([filePath]) => filePath);
 
 
 export class ComponentViewerController {
@@ -75,14 +59,14 @@ export class ComponentViewerController {
     }
 
     protected async buildMockInstancesArray(context: vscode.ExtensionContext): Promise<void> {
-            const mockedInstances: ComponentViewerInstance[] = [];
-            for (const scvdFile of scvdFile2) {
-                const instance = new ComponentViewerInstance();
-                await instance.readModel(URI.file(path.join(context.extensionPath, scvdFile)));
-                mockedInstances.push(instance);
-            }
-            this.instances = mockedInstances;
+        const mockedInstances: ComponentViewerInstance[] = [];
+        for (const scvdFile of scvdMockFiles) {
+            const instance = new ComponentViewerInstance();
+            await instance.readModel(URI.file(path.join(context.extensionPath, scvdFile)));
+            mockedInstances.push(instance);
         }
+        this.instances = mockedInstances;
+    }
 
     protected async readScvdFiles(session?: GDBTargetDebugSession): Promise<void> {
         if (!session) {
@@ -107,30 +91,25 @@ export class ComponentViewerController {
     }
 
     private async useMocksInstances(context: vscode.ExtensionContext) : Promise<void> {
-            await this.buildMockInstancesArray(context);
-            // Add all mock models to the tree view
-            for (const instance of this.instances) {
-                this.componentViewerTreeDataProvider?.addModel(instance.model);
-            }
-            /* These lines are for Thorsten's debugging purposes and should be erased later */
-            const instance = new ComponentViewerInstance();
-            await instance.readModel(URI.file(path.join(context.extensionPath, scvdFile1)));
-            this.treeDataProvider?.setModel(instance.model);
-            /** End of lines for Thorsten's debugging purposes */
+        await this.buildMockInstancesArray(context);
+        // Add all mock models to the tree view
+        for (const instance of this.instances) {
+            this.componentViewerTreeDataProvider?.addModel(instance.model);
+        }
     }
 
     private async loadCbuildRunInstances(session: GDBTargetDebugSession) : Promise<void> {
-            // Try to read SCVD files from cbuild-run file first
-            await this.readScvdFiles(session);
-            // Are there any SCVD files found in cbuild-run?
-            if (this.instances.length > 0) {
-                // Add all models from cbuild-run to the tree view
-                for (const instance of this.instances) {
-                    this.componentViewerTreeDataProvider?.addModel(instance.model);
-                }
-                this.componentViewerTreeDataProvider?.showModelData();
-                return;
+        // Try to read SCVD files from cbuild-run file first
+        await this.readScvdFiles(session);
+        // Are there any SCVD files found in cbuild-run?
+        if (this.instances.length > 0) {
+            // Add all models from cbuild-run to the tree view
+            for (const instance of this.instances) {
+                this.componentViewerTreeDataProvider?.addModel(instance.model);
             }
+            this.componentViewerTreeDataProvider?.showModelData();
+            return;
+        }
     }
 
     private subscribetoDebugTrackerEvents(context: vscode.ExtensionContext, tracker: GDBTargetDebugTracker): void {
@@ -167,7 +146,7 @@ export class ComponentViewerController {
         // Update component viewer instance(s)
         this.updateInstances();
     }
-    
+
     private async handleOnConnected(session: GDBTargetDebugSession): Promise<void> {
         // Load SCVD files from cbuild-run
         this.loadCbuildRunInstances(session);
@@ -181,14 +160,14 @@ export class ComponentViewerController {
             }
         });
     }
-    
+
     private async handleOnDidChangeActiveStackItem(stackTraceItem: SessionStackItem): Promise<void> {
         if ((stackTraceItem.item as vscode.DebugStackFrame).frameId !== undefined) {
             // Update instance(s) with new stack frame info
             this.updateInstances();
         }
     }
-    
+
     private async handleOnDidChangeActiveDebugSession(session: GDBTargetDebugSession | undefined): Promise<void> {
         // Update debug session
         this.activeSession = session;
