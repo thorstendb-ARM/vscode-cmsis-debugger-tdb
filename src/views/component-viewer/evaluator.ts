@@ -97,30 +97,32 @@ export interface DataHost {
   // Pseudo-member evaluators used as obj._count / obj._addr; must return numbers
   _count?(container: RefContainer): number | undefined;
   _addr?(container: RefContainer): number | undefined;    // added as var because arrays can have different base addresses
-}
 
-export type EvalPrintfHook = {
-  format: (spec: string, value: any, ctx: EvalContext) => string | undefined;
-};
+  // Optional printf formatting hook used by % specifiers in PrintfExpression.
+  // If it returns a string, the evaluator uses it. If it returns undefined,
+  // the evaluator falls back to its built-in formatting.
+  formatPrintf?(
+    spec: FormatSegment['spec'],
+    value: any,
+    container: RefContainer
+  ): string | undefined;
+}
 
 
 export interface EvalContextInit {
   data: DataHost;
   /** Starting container for symbol resolution (root model). */
   container: ScvdBase;
-  printf?: EvalPrintfHook;
 }
 
 export class EvalContext {
     readonly data: DataHost;
     /** Composite container context (root + last member/index/current). */
     container: RefContainer;
-    readonly printf: { format?: (spec: FormatSegment['spec'], value: any, ctx: EvalContext) => string | undefined };
 
     constructor(init: EvalContextInit) {
         this.data = init.data;
         this.container = { base: init.container };
-        this.printf = init.printf ?? {};
     }
 }
 
@@ -648,9 +650,11 @@ function evalBinary(node: BinaryExpression, ctx: EvalContext): any {
  * ============================================================================= */
 
 function formatValue(spec: FormatSegment['spec'], v: any, ctx?: EvalContext): string {
-    const override = ctx?.printf?.format?.(spec, v, ctx as EvalContext);
+    // New: host-provided override
+    const override = ctx?.data.formatPrintf?.(spec, v, ctx.container);
     if (typeof override === 'string') return override;
 
+    // Existing fallback behaviour
     switch (spec) {
         case '%':  return '%';
         case 'd':  return (typeof v === 'bigint') ? v.toString(10) : String((asNumber(v) | 0));

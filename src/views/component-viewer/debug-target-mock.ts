@@ -49,7 +49,12 @@ export const ADDR = {
             V1:         0x20006070,
             V2:         0x20006080,
         }
-    }
+    },
+    // Additional global string variables
+    Strings: {
+        string:  0x20006100,      // volatile char string[10]  = "MyTest";
+        wString: 0x20006120,      // unsigned short wString[15] = L"USB_MSC1";
+    },
 } as const;
 
 /**
@@ -137,15 +142,33 @@ export const MOCK = {
             ADDR.MyList.ValueArray + 12 * 1,
         ],
     },
+
+    // Extra global string variables corresponding to:
+    //   volatile char string[10] = "MyTest";
+    //   unsigned short wString[15] = L"USB_MSC1";
+    Strings: {
+        string: {
+            text:        'MyTest',
+            lengthBytes: 10,
+        },
+        wString: {
+            text:        'USB_MSC1',
+            lengthChars: 15,   // 15 x unsigned short
+        },
+    },
 } as const;
 
 // ── Derived constants from global table ─────────────────────────────────────────
 
-const STACK_BYTES  = MOCK.Stack.TStack.totalBytes;
-const STACK_WORDS  = STACK_BYTES / MOCK.Stack.wordSizeBytes;
-const PARRAY_BYTES = MOCK.MyList.pArray.length * 4;
+const STACK_BYTES        = MOCK.Stack.TStack.totalBytes;
+const STACK_WORDS        = STACK_BYTES / MOCK.Stack.wordSizeBytes;
+const PARRAY_BYTES       = MOCK.MyList.pArray.length * 4;
 
-/** Map string addresses to their contents, driven entirely by ADDR + MOCK. */
+const STRING_LEN_BYTES   = MOCK.Strings.string.lengthBytes;
+const WSTRING_LEN_CHARS  = MOCK.Strings.wString.lengthChars;
+const WSTRING_LEN_BYTES  = WSTRING_LEN_CHARS * 2;
+
+/** Map ASCII string addresses to their contents, driven entirely by ADDR + MOCK. */
 const STRING_BY_ADDR: Record<number, string> = {
     // MyList strings
     [ADDR.MyList.Str.ListValueC]: MOCK.MyList.Strings.ListValueC,
@@ -157,6 +180,9 @@ const STRING_BY_ADDR: Record<number, string> = {
 
     // RTOS kernel ID string
     [ADDR.RTOS.Str.KernelId]:     MOCK.RTOS.OsRtxInfo.kernelId,
+
+    // Global char string[10] = "MyTest"
+    [ADDR.Strings.string]:        MOCK.Strings.string.text,
 };
 
 export class DebugTargetMock {
@@ -203,7 +229,12 @@ export class DebugTargetMock {
             return this.getMockPArraySlice(size, offset);
         }
 
-        // --- General string region (MyList + RTOS KernelId) ----------------------
+        // --- Global wide string: unsigned short wString[15] = L"USB_MSC1" -------
+        if (startAddress === ADDR.Strings.wString) {
+            return this.makeU16CString(MOCK.Strings.wString.text, size);
+        }
+
+        // --- General ASCII string region (MyList + RTOS KernelId + string[10]) ---
         const str = STRING_BY_ADDR[startAddress];
         if (str !== undefined) {
             return this.makeCString(str, size);
@@ -301,6 +332,24 @@ export class DebugTargetMock {
                 s.member?.push(this.mockMemberInfo(`[${i}]`, 4, i * 4));
             }
             return s;
+        }
+
+        // char string[10] = "MyTest"
+        if (symbol === 'string') {
+            return {
+                name: symbol,
+                address: ADDR.Strings.string,
+                size: STRING_LEN_BYTES,
+            };
+        }
+
+        // unsigned short wString[15] = L"USB_MSC1"
+        if (symbol === 'wString') {
+            return {
+                name: symbol,
+                address: ADDR.Strings.wString,
+                size: WSTRING_LEN_BYTES,
+            };
         }
 
         return undefined;
@@ -451,12 +500,43 @@ export class DebugTargetMock {
         dst[off + 3] = (value >>> 24) & 0xFF;
     }
 
-    /** Make a (possibly truncated) C-string buffer of 'size' bytes. */
+    /** Make a (possibly truncated) ASCII C-string buffer of 'size' bytes. */
     private makeCString(text: string, size: number): Uint8Array {
         const out = new Uint8Array(size);
         const n   = Math.max(0, Math.min(size - 1, text.length));
         for (let i = 0; i < n; i++) out[i] = text.charCodeAt(i) & 0xFF;
         if (size > 0) out[n] = 0; // NUL-terminate if there’s room
+        return out;
+    }
+
+    /**
+     * Make a (possibly truncated) UTF-16LE wide C-string buffer of 'size' bytes.
+     * Models: unsigned short wString[15] = L"USB_MSC1";
+     */
+    private makeU16CString(text: string, size: number): Uint8Array {
+        const out = new Uint8Array(size);
+        if (size < 2) {
+            // Too small even for a single wchar_t NUL, just leave as zeros.
+            return out;
+        }
+
+        const maxChars = Math.floor(size / 2) - 1; // reserve one wchar_t for NUL
+        const n        = Math.max(0, Math.min(maxChars, text.length));
+
+        for (let i = 0; i < n; i++) {
+            const code = text.charCodeAt(i);  // basic BMP is fine for this mock
+            const idx  = i * 2;
+            out[idx]     = code & 0xFF;
+            out[idx + 1] = (code >> 8) & 0xFF;
+        }
+
+        // NUL-terminate (one UTF-16 code unit)
+        const termIndex = n * 2;
+        if (termIndex + 1 < size) {
+            out[termIndex]     = 0;
+            out[termIndex + 1] = 0;
+        }
+
         return out;
     }
 

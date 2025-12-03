@@ -131,6 +131,15 @@ export class ScvdMember extends ScvdBase {
         return 0;   // TODO: default?
     }
 
+    public isPointerRef(): boolean {
+        const type = this._type?.type;
+        if(type !== undefined) {
+            return type.isPointer;
+        }
+        return false;
+    }
+
+
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
         if (this._size) {

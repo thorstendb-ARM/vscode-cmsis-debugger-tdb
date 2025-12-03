@@ -50,15 +50,15 @@ export class StatementRead extends StatementBase {
             return;
         }
 
-        const typeSize = type.getElementReadSize(); // use size specified in SCVD
-        if(typeSize === undefined) {
+        const elementReadSize = type.getElementReadSize(); // use size specified in SCVD
+        if(elementReadSize === undefined) {
             console.error(`${this.line} Executing "read": ${scvdRead.name}, type: ${type.getExplorerDisplayName()}, could not determine type size`);
             return;
         }
-        const actualSize = type.getSize() ?? typeSize;
-
-        const readBytes = (scvdRead.size?.getValue() ?? 1) * typeSize; // Is an Expressions representing the array size or the number of values to read from target. The maximum array size is limited to 512. Default value is 1.
-
+        const fullVirtualSize = type.getSize() ?? elementReadSize;
+        const numOfElements = (scvdRead.size?.getValue() ?? 1);
+        const readBytes = numOfElements * elementReadSize; // Is an Expressions representing the array size or the number of values to read from target. The maximum array size is limited to 512. Default value is 1.
+        const fullVirtualStrideSize = fullVirtualSize * numOfElements;
         let baseAddress: number | undefined = undefined;
 
         // Check if symbol address is defined
@@ -84,13 +84,15 @@ export class StatementRead extends StatementBase {
             return;
         }
 
+        // Read from target memory
         const readData = executionContext.debugTarget.readMemory(baseAddress, readBytes);
         if(readData === undefined) {
             console.error(`${this.line}: Executing "read": ${scvdRead.name}, symbol: ${symbol?.name}, address: ${baseAddress}, size: ${readBytes} bytes, readMemory failed`);
             return;
         }
 
-        executionContext.memoryHost.setVariable(name, readBytes, readData, baseAddress, actualSize);
+        // Write to local variable cache
+        executionContext.memoryHost.setVariable(name, readBytes, readData, baseAddress, fullVirtualStrideSize);
 
         if(scvdRead.const === true) {   // Mark variable as already initialized
             scvdRead.mustRead = false;

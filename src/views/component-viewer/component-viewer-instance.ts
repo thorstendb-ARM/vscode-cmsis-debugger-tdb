@@ -139,7 +139,7 @@ export class ComponentViewerInstance {
             throw error;
         }
     }
-    
+
     private async parseXml(text: string) {
         try {
             const json = await parseStringPromise(text, xmlOpts);
@@ -153,7 +153,7 @@ export class ComponentViewerInstance {
     public get model(): ScvdComponentViewer | undefined {
         return this._model;
     }
-    
+
     private set model(value: ScvdComponentViewer | undefined) {
         this._model = value;
     }

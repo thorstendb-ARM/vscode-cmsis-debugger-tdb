@@ -20,8 +20,8 @@ import { EvalContext } from './evaluator';
 import { createMockCm81MRegisterReader } from './mock/cm81m-registers';
 import { ScvdBase } from './model/scvd-base';
 import { ScvdComponentViewer } from './model/scvd-comonent-viewer';
+import { ScvdFormatSpecifier } from './model/scvd-format-specifier';
 import { ScvdDebugTarget } from './scvd-debug-target';
-import { printfHook } from './printf-hook';
 import { ScvdEvalInterface } from './scvd-eval-interface';
 
 export interface ExecutionContext {
@@ -38,6 +38,7 @@ export class ScvdEvalContext {
     private _memoryHost: CachedMemoryHost;
     private _registerHost: Cm81MRegisterCache;
     private _debugTarget: ScvdDebugTarget;
+    private _formatSpecifier: ScvdFormatSpecifier;
     private _model: ScvdComponentViewer;
 
     constructor(
@@ -48,7 +49,8 @@ export class ScvdEvalContext {
         this._memoryHost = new CachedMemoryHost({ endianness: 'little' });
         this._registerHost = new Cm81MRegisterCache(createMockCm81MRegisterReader());
         this._debugTarget = new ScvdDebugTarget();
-        this._evalHost = new ScvdEvalInterface(this._memoryHost, this._registerHost, this._debugTarget);
+        this._formatSpecifier = new ScvdFormatSpecifier();
+        this._evalHost = new ScvdEvalInterface(this._memoryHost, this._registerHost, this._debugTarget, this._formatSpecifier);
         const outItem = this.getOutItem();
         if(outItem === undefined) {
             throw new Error('SCVD EvalContext: No output item defined');
@@ -57,7 +59,6 @@ export class ScvdEvalContext {
         this._ctx = new EvalContext({
             data: this._evalHost,               // DataHost
             container: outItem,                 // ScvdBase root for symbol resolution
-            printf: printfHook,
         });
     }
 

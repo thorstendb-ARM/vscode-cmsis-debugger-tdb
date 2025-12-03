@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-import { EvalContext } from '../evaluator';
-
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
 
@@ -25,21 +23,18 @@ export class ScvdFormatSpecifier {
     ) {
     }
 
-    private format_d(value: number | string, _ctx: EvalContext): string {
+    public format_d(value: number | string): string {
         const n = Number(value);
         return Number.isFinite(n) ? n.toString(10) : `${value}`;
     }
 
-    private format_u(value: number | string, _ctx: EvalContext): string {
+    public format_u(value: number | string): string {
         const n = Number(value);
         if (!Number.isFinite(n)) return `${value}`;
         return (n >>> 0).toString(10);
     }
 
-    private format_t(
-        value: number | string | Uint8Array,
-        _ctx: EvalContext
-    ): string {
+    public format_t(value: number | string | Uint8Array): string {
         // Already a string: nothing to do
         if (typeof value === 'string') {
             return value;
@@ -76,21 +71,21 @@ export class ScvdFormatSpecifier {
         return String(value);
     }
 
-    private format_x(value: number | string, _ctx: EvalContext): string {
+    public format_x(value: number | string): string {
         const n = Number(value);
         if (!Number.isFinite(n)) return `${value}`;
         return '0x' + (n >>> 0).toString(16);
     }
 
-    private resolveSymbol(_addr: number, _ctx: EvalContext): string | undefined {
+    public resolveSymbol(_addr: number): string | undefined {
         // TODO: implement symbol resolution
         return `Symbol: 0x${_addr.toString(16)}`;
     }
 
-    private format_address_like(value: number | string, fallbackHex: boolean, ctx: EvalContext): string {
+    public format_address_like(value: number | string, fallbackHex: boolean): string {
         const n = Number(value);
         if (Number.isFinite(n)) {
-            const sym = this.resolveSymbol(n, ctx);
+            const sym = this.resolveSymbol(n);
             if (sym) return sym;
             if (fallbackHex) return '0x' + n.toString(16);
             return n.toString(10);
@@ -98,20 +93,20 @@ export class ScvdFormatSpecifier {
         return `${value}`;
     }
 
-    private format_C(value: number | string, ctx: EvalContext): string {
-        return this.format_address_like(value, true, ctx);
+    public format_C(value: number | string): string {
+        return this.format_address_like(value, true);
     }
 
-    private format_S(value: number | string, ctx: EvalContext): string {
-        return this.format_address_like(value, true, ctx);
+    public format_S(value: number | string): string {
+        return this.format_address_like(value, true);
     }
 
-    private format_E(value: number | string, ctx: EvalContext): string {
+    public format_E(value: number | string): string {
         // Placeholder: attempt symbolic enumerator resolution (not implemented)
-        return `SymbolicEnumeratorValue: ${this.format_d(value, ctx)}`;
+        return `SymbolicEnumeratorValue: ${this.format_d(value)}`;
     }
 
-    private format_I(value: number | string, _ctx: EvalContext): string {
+    public format_I(value: number | string): string {
         if (typeof value === 'string') return value;
         const n = Number(value);
         if (!Number.isFinite(n)) return `${value}`;
@@ -122,17 +117,14 @@ export class ScvdFormatSpecifier {
         return `${b0}.${b1}.${b2}.${b3}`;
     }
 
-    private format_J(value: number | string, ctx: EvalContext): string {
+    public format_J(value: number | string): string {
         // If already a string, assume formatted IPv6
         if (typeof value === 'string') return value;
         // Cannot reliably format numeric IPv6 (needs 128-bit); fallback to hex
-        return this.format_x(value, ctx);
+        return this.format_x(value);
     }
 
-    private format_N(
-        value: number | string | Uint8Array,
-        _ctx: EvalContext
-    ): string {
+    public format_N(value: number | string | Uint8Array): string {
         // Already a string: nothing to do
         if (typeof value === 'string') {
             return value;
@@ -169,7 +161,7 @@ export class ScvdFormatSpecifier {
         return String(value);
     }
 
-    private format_M(value: number | string, _ctx: EvalContext): string {
+    public format_M(value: number | string): string {
         if (typeof value === 'string') {
             const cleaned = value.replace(/[^0-9a-fA-F]/g, '').slice(0, 12).padStart(12, '0');
             return cleaned.match(/.{1,2}/g)?.join('-').toUpperCase() ?? value;
@@ -183,47 +175,163 @@ export class ScvdFormatSpecifier {
         return parts.join('-').toUpperCase();
     }
 
-    private format_T(value: number | string, ctx: EvalContext): string {
+    public format_T(value: number | string): string {
         if (typeof value === 'number') {
-            if (Number.isInteger(value)) return this.format_x(value, ctx);
+            if (Number.isInteger(value)) return this.format_x(value);
             return value.toString();
         }
         const n = Number(value);
         if (Number.isFinite(n)) {
-            if (Number.isInteger(n)) return this.format_x(n, ctx);
+            if (Number.isInteger(n)) return this.format_x(n);
             return n.toString();
         }
         return `${value}`;
     }
 
-    private format_U(value: number | string, _ctx: EvalContext): string {
+    public format_U(value: number | string): string {
         // Placeholder for USB descriptor formatting
         return `USB descriptor: ${value}`;
     }
 
-    private format_percent(): string {
+    public format_percent(): string {
         return '%';
     }
 
-    private readonly formatterMap: Map<string, (value: number | string, ctx: EvalContext) => string> = new Map([
-        ['d', (value, ctx) => this.format_d(value, ctx)],
-        ['u', (value, ctx) => this.format_u(value, ctx)],
-        ['t', (value, ctx) => this.format_t(value, ctx)],
-        ['x', (value, ctx) => this.format_x(value, ctx)],
-        ['C', (value, ctx) => this.format_C(value, ctx)],
-        ['E', (value, ctx) => this.format_E(value, ctx)],
-        ['I', (value, ctx) => this.format_I(value, ctx)],
-        ['J', (value, ctx) => this.format_J(value, ctx)],
-        ['N', (value, ctx) => this.format_N(value, ctx)],
-        ['M', (value, ctx) => this.format_M(value, ctx)],
-        ['S', (value, ctx) => this.format_S(value, ctx)],
-        ['T', (value, ctx) => this.format_T(value, ctx)],
-        ['U', (value, ctx) => this.format_U(value, ctx)],
-        ['%', () => this.format_percent()],
-    ]);
+    /**
+     * Pretty-prints a USB descriptor as text.
+     * - Accepts the raw descriptor bytes (starting at bLength, bDescriptorType).
+     * - Supports Device(1), Config(2), String(3), Interface(4), Endpoint(5),
+     *   Device Qualifier(6), BOS(0x0F). Unknown types are hex-dumped.
+     */
+    public printUsbDescriptor(value: Uint8Array): string {
+        if (!value || value.length < 2) return '(invalid: too short)';
+        const bLength = value[0] || value.length; // be forgiving if devices put 0
+        const bType = value[1];
+        const len = Math.min(bLength, value.length);
 
-    public formatValue(specifier: string, value: string, ctx: EvalContext): string | undefined {
-        const fn = this.formatterMap.get(specifier);
-        return fn ? fn(value, ctx) : undefined;
+        const u16 = (off: number) =>
+            off + 1 < len ? (value[off] | (value[off + 1] << 8)) : 0;
+
+        const hex = (n: number, w = 2) => '0x' + n.toString(16).toUpperCase().padStart(w, '0');
+        const hexdump = (arr: Uint8Array) =>
+            Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join(' ');
+
+        const typeName = (t: number) => ({
+            0x01: 'Device',
+            0x02: 'Configuration',
+            0x03: 'String',
+            0x04: 'Interface',
+            0x05: 'Endpoint',
+            0x06: 'Device Qualifier',
+            0x07: 'Other Speed Config',
+            0x08: 'Interface Power',
+            0x0F: 'BOS',
+        }[t] || `Type ${hex(t)}`);
+
+        // --- String Descriptor (Type 0x03) ---
+        // bLength, bDescriptorType, then UTF-16LE code units
+        if (bType === 0x03) {
+            if (len < 2) return 'USB String: (invalid)';
+            if (len === 2) return 'USB String: (empty)';
+            // indices 2..len-1 contain UTF-16LE units
+            const codeUnitCount = Math.max(0, (len - 2) >> 1);
+            const units = new Uint16Array(codeUnitCount);
+            for (let i = 0; i < codeUnitCount; i++) {
+                const lo = value[2 + (i << 1)] ?? 0;
+                const hi = value[3 + (i << 1)] ?? 0;
+                units[i] = lo | (hi << 8);
+            }
+            // Convert UTF-16 units to JS string safely (surrogates pass through)
+            let out = '';
+            for (let i = 0; i < units.length; i++) out += String.fromCharCode(units[i]);
+            return `USB String: "${out}"`;
+        }
+
+        // --- Device Descriptor (Type 0x01, 18 bytes) ---
+        if (bType === 0x01) {
+            return [
+                `USB Device (len=${len})`,
+                `  bcdUSB           ${hex(u16(2), 4)}`,
+                `  bDeviceClass     ${hex(value[4])}`,
+                `  bDeviceSubClass  ${hex(value[5])}`,
+                `  bDeviceProtocol  ${hex(value[6])}`,
+                `  bMaxPacketSize0  ${value[7]}`,
+                `  idVendor         ${hex(u16(8), 4)}`,
+                `  idProduct        ${hex(u16(10), 4)}`,
+                `  bcdDevice        ${hex(u16(12), 4)}`,
+                `  iManufacturer    ${value[14]}`,
+                `  iProduct         ${value[15]}`,
+                `  iSerialNumber    ${value[16]}`,
+                `  bNumConfigurations ${value[17]}`
+            ].join('\n');
+        }
+
+        // --- Configuration Descriptor (Type 0x02, 9 bytes) ---
+        if (bType === 0x02) {
+            return [
+                `USB Configuration (len=${len})`,
+                `  wTotalLength     ${u16(2)} bytes`,
+                `  bNumInterfaces   ${value[4]}`,
+                `  bConfigurationValue ${value[5]}`,
+                `  iConfiguration   ${value[6]}`,
+                `  bmAttributes     ${hex(value[7])}`,
+                `  bMaxPower        ${value[8] * 2} mA`
+            ].join('\n');
+        }
+
+        // --- Interface Descriptor (Type 0x04, 9 bytes) ---
+        if (bType === 0x04) {
+            return [
+                `USB Interface (len=${len})`,
+                `  bInterfaceNumber ${value[2]}`,
+                `  bAlternateSetting ${value[3]}`,
+                `  bNumEndpoints    ${value[4]}`,
+                `  bInterfaceClass  ${hex(value[5])}`,
+                `  bInterfaceSubCls ${hex(value[6])}`,
+                `  bInterfaceProto  ${hex(value[7])}`,
+                `  iInterface       ${value[8]}`
+            ].join('\n');
+        }
+
+        // --- Endpoint Descriptor (Type 0x05, 7 bytes) ---
+        if (bType === 0x05) {
+            const addr = value[2] ?? 0;
+            const epNum = addr & 0x0F;
+            const dirIn = (addr & 0x80) !== 0;
+            const attrs = value[3] ?? 0;
+            const xferType = ['Control', 'Isochronous', 'Bulk', 'Interrupt'][attrs & 0x3] || 'Unknown';
+            return [
+                `USB Endpoint (len=${len})`,
+                `  bEndpointAddress ${hex(addr)} (EP${epNum} ${dirIn ? 'IN' : 'OUT'})`,
+                `  bmAttributes     ${hex(attrs)} (${xferType})`,
+                `  wMaxPacketSize   ${u16(4)}`,
+                `  bInterval        ${value[6] ?? 0}`
+            ].join('\n');
+        }
+
+        // --- Device Qualifier (Type 0x06, 10 bytes) ---
+        if (bType === 0x06) {
+            return [
+                `USB Device Qualifier (len=${len})`,
+                `  bcdUSB           ${hex(u16(2), 4)}`,
+                `  bDeviceClass     ${hex(value[4])}`,
+                `  bDeviceSubClass  ${hex(value[5])}`,
+                `  bDeviceProtocol  ${hex(value[6])}`,
+                `  bMaxPacketSize0  ${value[7]}`,
+                `  bNumConfigurations ${value[8]}`
+            ].join('\n');
+        }
+
+        // --- BOS (Type 0x0F, 5 bytes) ---
+        if (bType === 0x0F) {
+            return [
+                `USB BOS (len=${len})`,
+                `  wTotalLength     ${u16(2)} bytes`,
+                `  bNumDeviceCaps   ${value[4] ?? 0}`
+            ].join('\n');
+        }
+
+        // Fallback: generic dump
+        return `${typeName(bType)} (len=${len}): ${hexdump(value.subarray(0, len))}`;
     }
 }

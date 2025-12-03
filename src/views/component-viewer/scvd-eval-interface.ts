@@ -9,20 +9,25 @@ import { ScvdBase } from './model/scvd-base';
 import { CachedMemoryHost } from './cache/cache';
 import { Cm81MRegisterCache } from './cache/register-cache';
 import { ScvdDebugTarget } from './scvd-debug-target';
+import { FormatSegment } from './parser';
+import { ScvdFormatSpecifier } from './model/scvd-format-specifier';
 
 export class ScvdEvalInterface implements DataHost {
     private _registerCache: Cm81MRegisterCache;
     private _memHost: CachedMemoryHost;
     private _debugTarget: ScvdDebugTarget;
+    private _formatSpecifier: ScvdFormatSpecifier;
 
     constructor(
         memHost: CachedMemoryHost,
         regHost: Cm81MRegisterCache,
-        debugTarget: ScvdDebugTarget
+        debugTarget: ScvdDebugTarget,
+        formatterSpecifier: ScvdFormatSpecifier
     ) {
         this._memHost = memHost;
         this._registerCache = regHost;
         this._debugTarget = debugTarget;
+        this._formatSpecifier = formatterSpecifier;
     }
 
     private get registerCache(): Cm81MRegisterCache {
@@ -35,6 +40,10 @@ export class ScvdEvalInterface implements DataHost {
 
     private get debugTarget(): ScvdDebugTarget {
         return this._debugTarget;
+    }
+
+    private get formatSpecifier(): ScvdFormatSpecifier {
+        return this._formatSpecifier;
     }
 
     // ---------------- DataHost Interface ----------------
@@ -180,5 +189,63 @@ export class ScvdEvalInterface implements DataHost {
             return addr;
         }
         return undefined;
+    }
+
+    formatPrintf(spec: FormatSegment['spec'], value: any, _container: RefContainer): string | undefined {
+
+        switch (spec) {
+            case 'd': {
+                return this.formatSpecifier.format_d(value);
+            }
+            case 'u': {
+                return this.formatSpecifier.format_u(value);
+            }
+            case 't': {
+                return this.formatSpecifier.format_t(value);
+            }
+            case 'x': {
+                return this.formatSpecifier.format_x(value);
+            }
+            case 'C': {
+                return this.formatSpecifier.format_C(value);
+            }
+            case 'E': {
+                return this.formatSpecifier.format_E(value);
+            }
+            case 'I': {
+                return this.formatSpecifier.format_I(value);
+            }
+            case 'J': {
+                return this.formatSpecifier.format_J(value);
+            }
+            case 'N': {
+                if(typeof value === 'number' && Number.isInteger(value)) {
+                    const readBytes = 16;   // TODO: determine size from type?
+                    const data = this.debugTarget.readMemory(value, readBytes);
+                    if(data !== undefined) {
+                        return this.formatSpecifier.format_N(data);
+                    }
+                }
+                return 'invalid address';
+            }
+            case 'M': {
+                return this.formatSpecifier.format_M(value);
+            }
+            case 'S': {
+                return this.formatSpecifier.format_S(value);
+            }
+            case 'T': {
+                return this.formatSpecifier.format_T(value);
+            }
+            case 'U': {
+                return this.formatSpecifier.format_U(value);
+            }
+            case '%': {
+                return this.formatSpecifier.format_percent();
+            }
+            default: {
+                return 'unknown format specifier';
+            }
+        }
     }
 }

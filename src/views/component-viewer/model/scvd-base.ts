@@ -355,6 +355,11 @@ export abstract class ScvdBase implements ScvdGuiInterface {
         return undefined;
     }
 
+    // base implementation assumes not a pointer ref
+    public isPointerRef(): boolean {
+        return false;
+    }
+
     // ------------  GUI Interface Begin ------------
     public getGuiEntry(): { name: string | undefined, value: string | undefined } {
         return { name: this.getGuiName(), value: this.getGuiValue() };

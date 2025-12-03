@@ -22,7 +22,7 @@
 
     <!-- OS Runtime Information structure -->
     <typedef name="osRtxInfo_t" info="OS Runtime Information" size="164">
-      <member name="os_id"                      type="uint32_t"             offset="0" info="OS Identification (type is *uint8_t)"/>
+      <member name="os_id"                      type="*uint8_t"             offset="0" info="OS Identification (type is *uint8_t)"/>
       <member name="version"                    type="uint32_t"             offset="4" info="OS Version"/>
       <member name="kernel_state"               type="uint8_t"              offset="8" info="Kernel state">
         <enum name="osKernelInactive"  value="0"  info="Inactive"/>
@@ -103,14 +103,12 @@
       <var name="V_Major" type="uint32_t" value="0"/>
       <var name="V_Minor" type="uint32_t" value="0"/>
       <var name="V_Patch" type="uint32_t" value="0"/>
-      <var name="osId" type="uint32_t" value="0"/>
       <read name="os_Info"   type="osRtxInfo_t"   symbol="osRtxInfo"/>
       <read name="os_Config" type="osRtxConfig_t" symbol="osRtxConfig" const="1"/>
       <calc cond="RTX_En != 0">
         V_Major =  os_Info.version / 10000000;
         V_Minor = (os_Info.version / 10000) % 1000;
         V_Patch =  os_Info.version % 10000;
-        osId = os_Info.os_id;
       </calc>
 
       <!-- Read the linked list starting with ValueA: -->
@@ -132,14 +130,19 @@
       <readlist name="MyListE" type="MyList" offset="pArray[1]"  />
       <readlist name="MyListE" type="MyList" offset="pArray[2]"  /> -->
 
-
+      <read name="string_val"  type="int8_t"   symbol="string"  size="10"   />
+      <read name="wstring_val" type="int16_t"  symbol="wString" size="15"   />
+      <var name="i_value"     type="uint8_t"  symbol="iValue" value="1" />
   
       <out name="MyTest">
-          <item property="System" value="">
+          <!-- <item property="System" value="">
             <item property="Kernel ID"    value="RTX V%d[V_Major].%d[V_Minor].%d[V_Patch]" cond="RTX_En != 0"/>
-            <item property="OS ID"        value="%x[osId]"/>
-            <item property="OS ID Text"  value="%t[OS_ID_Text]"/>
-            <print property="OS ID Text"  value="%t[os_Info.os_id]"/>
+          </item> -->
+          
+          <item property="USB Descriptors">
+            <item property="string value %%t"     value="%t[string_val]" /> 
+            <item property="status %%t"     value="Status=%t[i_value==0 ? &quot;Free&quot; : &quot;Busy&quot;]" /> 
+            <item property="wString value %%U"    value="%U[wstring_val]" />
           </item>
 
           <!-- <item property="Stack">
@@ -151,15 +154,15 @@
           </item> -->
 
           <item property="Lists contents">
-            <!-- <item property="MyListA ValueA nextL" value="%x[MyListA[0].nextL]"/> -->
+            <item property="MyListA ValueA nextL" value="%x[MyListA[0].nextL]"/>
             <item property="MyListA ValueA valueL" value="%x[MyListA[0].valueL]"/>
-            <!-- <item property="MyListA ValueA nameL" value="%x[MyListA[0].nameL]"/>
+            <item property="MyListA ValueA nameL" value="%N[MyListA[0].nameL]"/>
             <item property="MyListA ValueA"       value="%x[MyListA[0].nextL], %x[MyListA[0].valuerL], %x[MyListA[0].nameL]"/>
             <item property="MyListB ListStart"    value="%x[MyListB[0]]"/>
             <item property="MyListC ValueA, ValueB, ValueArray"    value="%x[MyListC[0]], %x[MyListC[1]], %x[MyListC[2]], %x[MyListC[3]], %x[MyListC[4]]"/>
             <item property="MyListD pArray"       value="%x[MyListD[0]], %x[MyListD[1]], %x[MyListD[2]], %x[MyListD[3]], %x[MyListD[4]]"/>
             <item property="MyListE pArray"       value="%x[MyListE[0]]"/>
-            <item property="pArray"               value="%x[pArray[0]], %x[pArray[1]], %x[pArray[2]], %x[pArray[3]], %x[pArray[4]]"/> -->
+            <item property="pArray"               value="%x[pArray[0]], %x[pArray[1]], %x[pArray[2]], %x[pArray[3]], %x[pArray[4]]"/>
           </item>
 
           <!-- <item property="Lists ._addr">
