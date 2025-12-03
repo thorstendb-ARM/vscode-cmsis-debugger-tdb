@@ -55,11 +55,11 @@ export class ComponentViewerTreeDataProvider implements vscode.TreeDataProvider<
     }
 
     public getTreeItem(element: ScvdGuiInterface): vscode.TreeItem {
-        const treeItemLabel = element.getGuiName() ?? 'UNKNOWN';
-        const treeItem = new vscode.TreeItem(treeItemLabel);
-        treeItem.collapsibleState = element.getGuiChildren()
-            ? vscode.TreeItemCollapsibleState.Collapsed
-            : vscode.TreeItemCollapsibleState.None;
+       const treeItemLabel = element.getGuiName() ?? 'UNKNOWN';
+       const treeItem = new vscode.TreeItem(treeItemLabel);
+       treeItem.collapsibleState = element.hasGuiChildren()
+           ? vscode.TreeItemCollapsibleState.Collapsed
+           : vscode.TreeItemCollapsibleState.None;
         // Needs fixing, getGuiValue() for ScvdBase returns 0 when undefined
         treeItem.description = element.getGuiValue() ?? '';
         treeItem.tooltip = element.getGuiLineInfo() ?? '';
@@ -98,12 +98,17 @@ export class ComponentViewerTreeDataProvider implements vscode.TreeDataProvider<
         this._onDidChangeTreeData.fire();
     }
 
-    public setModel(scvdModel: ScvdComponentViewer | undefined) {
+    public addModel(scvdModel: ScvdComponentViewer | undefined) {
         if(scvdModel !== undefined) {
             this._scvdModel.scvdModels.push(scvdModel);
         }
     }
 
+    public showModelData() {
+        this.addRootObject();
+        this.refresh();
+    }
+    
     private addRootObject(): void {
         if(this._scvdModel?.scvdModels.length === 0) {
             return;

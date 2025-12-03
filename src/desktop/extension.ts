@@ -40,7 +40,7 @@ export const activate = async (context: vscode.ExtensionContext): Promise<void> 
     const cpuStatesStatusBarItem = new CpuStatesStatusBarItem();
     // Register the Tree View under the id from package.json
     liveWatchTreeDataProvider = new LiveWatchTreeDataProvider(context);
-    const componentViewer = new ComponentViewer();
+    const componentViewer = new ComponentViewer(context);
 
     addToolsToPath(context, BUILTIN_TOOLS_PATHS);
     // Activate components
@@ -53,7 +53,7 @@ export const activate = async (context: vscode.ExtensionContext): Promise<void> 
     // Live Watch view
     liveWatchTreeDataProvider.activate(gdbtargetDebugTracker);
     // Component Viewer: SCVD Evaluator
-    await componentViewer.activate(context);
+    await componentViewer.activate(gdbtargetDebugTracker);
 
     logger.debug('Extension Pack activated');
 };
