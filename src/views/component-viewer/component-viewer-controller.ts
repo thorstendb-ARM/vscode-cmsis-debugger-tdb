@@ -10,13 +10,13 @@ import { SidebarDebugView } from './sidebar-debug-view';
 
 const scvdMockTestFiles: Map<string, boolean> = new Map<string, boolean>([
     ['test-data/MyTest.scvd',           true],
-    ['test-data/RTX5.scvd',             false],
-    ['test-data/BaseExample.scvd',      false],
-    ['test-data/Network.scvd',          false],
-    ['test-data/USB.scvd',              false],
-    ['test-data/FileSystem.scvd',       false],
-    ['test-data/EventRecorder.scvd',    false],
-    ['test-data/GetRegVal_Test.scvd',   false],
+    ['test-data/RTX5.scvd',             true],
+    ['test-data/BaseExample.scvd',      true],
+    ['test-data/Network.scvd',          true],
+    ['test-data/USB.scvd',              true],
+    ['test-data/FileSystem.scvd',       true],
+    ['test-data/EventRecorder.scvd',    true],
+    ['test-data/GetRegVal_Test.scvd',   true],
 ]);
 
 const scvdMockFiles: string[] = Array.from(scvdMockTestFiles.entries())
@@ -48,17 +48,25 @@ export class ComponentViewerController {
         this._context.subscriptions.push(
             providerDisposable, // Shall be removed later
             treeProviderDisposable);
-        // if we are using mocks, no need to subscribe to debug tracker events
-        if (this.useMocks) {
-            await this.useMocksInstances(this._context);
-            await this.componentViewerTreeDataProvider.activate();
-            return;
-        }
+        // Subscribe to vscode event for changes in mocks configuration in the settings.json
+        vscode.workspace.onDidChangeConfiguration(async (event) => {
+            if (event.affectsConfiguration('vscode-cmsis-debugger.useMocks')) {
+                this.useMocks = vscode.workspace.getConfiguration('vscode-cmsis-debugger').get('useMocks');
+                if (this.useMocks) {
+                    await this.useMocksInstances(this._context);
+                    await this.componentViewerTreeDataProvider?.activate();
+                }
+                else {
+                    await this.componentViewerTreeDataProvider?.deleteModels();
+                }
+            }
+        });
         // Subscribe to debug tracker events to update active session
         this.subscribetoDebugTrackerEvents(this._context, tracker);
     }
 
     protected async buildMockInstancesArray(context: vscode.ExtensionContext): Promise<void> {
+        try {
         const mockedInstances: ComponentViewerInstance[] = [];
         for (const scvdFile of scvdMockFiles) {
             const instance = new ComponentViewerInstance();
@@ -70,6 +78,9 @@ export class ComponentViewerController {
         if(sidebarModel !== undefined) {
             this.treeDataProvider?.setModel(sidebarModel); // Shall be removed later
         }
+    } catch (error) {
+        console.error('Error building mock instances array:', error);
+    }   
     }
 
     protected async readScvdFiles(session?: GDBTargetDebugSession): Promise<void> {
@@ -152,6 +163,16 @@ export class ComponentViewerController {
     }
 
     private async handleOnConnected(session: GDBTargetDebugSession): Promise<void> {
+        // If mocks are being used, erase them and start reading SCVD files from cbuild-run
+        if( this.instances.length > 0 && this.useMocks ) {
+            this.instances = [];
+            await this.componentViewerTreeDataProvider?.deleteModels();
+        }
+        // if new session is not the current active session, erase old instances and read the new ones
+        if (this.activeSession?.session.id !== session.session.id) {
+            this.instances = [];
+            await this.componentViewerTreeDataProvider?.deleteModels();
+        }
         // Load SCVD files from cbuild-run
         this.loadCbuildRunInstances(session);
         // Update debug session
