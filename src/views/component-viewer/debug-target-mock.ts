@@ -26,6 +26,10 @@ export const ADDR = {
     RTOS: {
         OsRtxInfo:   0x20003000,
         OsRtxConfig: 0x20004000,
+
+        Str: {
+            KernelId: 0x200060A0,             // mock location for "RTX V5.5.4"
+        },
     },
     MyList: {
         // Globals
@@ -63,12 +67,16 @@ export const MOCK = {
     },
 
     RTOS: {
+        // From CMSIS-RTX rtx_os.h:
+        //   #define osRtxKernelId      "RTX V5.5.4"
+        //   #define osRtxVersionKernel 50050004
         OsRtxInfo: {
-            osId: 0x12345678,
-            version: { major: 5, minor: 1, patch: 3 } as const,
+            kernelId:       'RTX V5.5.4',
+            versionKernel:  50050004,
+            osIdPtr:        ADDR.RTOS.Str.KernelId,   // os_id is a pointer to the string
         },
         OsRtxConfig: {
-            flags: 0x0000000F,
+            flags:    0x0000000F,
             tickFreq: 1000,
         },
     },
@@ -76,27 +84,27 @@ export const MOCK = {
     MyList: {
         structSize: 12,
         fieldOffsets: {
-            next: 0,
+            next:  0,
             value: 4,
-            name: 8,
+            name:  8,
         } as const,
 
         // Node layout used for ValueA/B/C globals
         Nodes: {
             ValueC: {
-                next: 0,
+                next:  0,
                 value: 0xcccccccc,
-                name: ADDR.MyList.Str.ListValueC,
+                name:  ADDR.MyList.Str.ListValueC,
             },
             ValueB: {
-                next: ADDR.MyList.ValueC,
+                next:  ADDR.MyList.ValueC,
                 value: 0xbbbbbbbb,
-                name: ADDR.MyList.Str.ListValueB,
+                name:  ADDR.MyList.Str.ListValueB,
             },
             ValueA: {
-                next: ADDR.MyList.ValueB,
+                next:  ADDR.MyList.ValueB,
                 value: 0xaaaaaaaa,
-                name: ADDR.MyList.Str.ListValueA,
+                name:  ADDR.MyList.Str.ListValueA,
             },
         },
 
@@ -137,14 +145,18 @@ const STACK_BYTES  = MOCK.Stack.TStack.totalBytes;
 const STACK_WORDS  = STACK_BYTES / MOCK.Stack.wordSizeBytes;
 const PARRAY_BYTES = MOCK.MyList.pArray.length * 4;
 
-/** Map string addresses to their contents, driven entirely by ADDR + MOCK.MyList.Strings. */
+/** Map string addresses to their contents, driven entirely by ADDR + MOCK. */
 const STRING_BY_ADDR: Record<number, string> = {
+    // MyList strings
     [ADDR.MyList.Str.ListValueC]: MOCK.MyList.Strings.ListValueC,
     [ADDR.MyList.Str.ListValueB]: MOCK.MyList.Strings.ListValueB,
     [ADDR.MyList.Str.ListValueA]: MOCK.MyList.Strings.ListValueA,
     [ADDR.MyList.Str.V0]:         MOCK.MyList.Strings.V0,
     [ADDR.MyList.Str.V1]:         MOCK.MyList.Strings.V1,
     [ADDR.MyList.Str.V2]:         MOCK.MyList.Strings.V2,
+
+    // RTOS kernel ID string
+    [ADDR.RTOS.Str.KernelId]:     MOCK.RTOS.OsRtxInfo.kernelId,
 };
 
 export class DebugTargetMock {
@@ -191,7 +203,7 @@ export class DebugTargetMock {
             return this.getMockPArraySlice(size, offset);
         }
 
-        // --- MyList fixture: strings ---------------------------------------------
+        // --- General string region (MyList + RTOS KernelId) ----------------------
         const str = STRING_BY_ADDR[startAddress];
         if (str !== undefined) {
             return this.makeCString(str, size);
@@ -224,7 +236,11 @@ export class DebugTargetMock {
                 member: [],
             };
             for (let i = 0; i < STACK_WORDS; i++) {
-                s.member?.push(this.mockMemberInfo(`[${i}]`, MOCK.Stack.wordSizeBytes, i * MOCK.Stack.wordSizeBytes));
+                s.member?.push(this.mockMemberInfo(
+                    `[${i}]`,
+                    MOCK.Stack.wordSizeBytes,
+                    i * MOCK.Stack.wordSizeBytes,
+                ));
             }
             return s;
         }
@@ -234,14 +250,14 @@ export class DebugTargetMock {
             return {
                 name: symbol,
                 address: ADDR.RTOS.OsRtxInfo,
-                size: 4 * 1,
+                size: 4 * 2, // os_id pointer + version
             };
         }
         if (symbol === 'osRtxConfig') {
             return {
                 name: symbol,
                 address: ADDR.RTOS.OsRtxConfig,
-                size: 4 * 1,
+                size: 4 * 2,
             };
         }
 
@@ -294,23 +310,20 @@ export class DebugTargetMock {
     // RTOS helpers
     // ============================================================================
 
-    public mockEncodeVersion(major: number, minor: number, patch: number): number {
-        const version = major * 10000000 + minor * 10000 + patch;
-        return version >>> 0;
-    }
-
     public getMockOsRtxInfoData(size: number): Uint8Array {
         const data = new Uint8Array(size);
         data.fill(0);
 
-        const osId = MOCK.RTOS.OsRtxInfo.osId;
-        const v    = MOCK.RTOS.OsRtxInfo.version;
-        const ver  = this.mockEncodeVersion(v.major, v.minor, v.patch);
-
-        if (size >= 8) {
-            this.writeU32LE(data, 0, osId);
-            this.writeU32LE(data, 4, ver);
+        // os_id: pointer to kernel ID string
+        if (size >= 4) {
+            this.writeU32LE(data, 0, MOCK.RTOS.OsRtxInfo.osIdPtr >>> 0);
         }
+
+        // version: osRtxVersionKernel (50050004)
+        if (size >= 8) {
+            this.writeU32LE(data, 4, MOCK.RTOS.OsRtxInfo.versionKernel >>> 0);
+        }
+
         return data;
     }
 
@@ -318,11 +331,13 @@ export class DebugTargetMock {
         const data = new Uint8Array(size);
         data.fill(0);
 
-        const flags     = MOCK.RTOS.OsRtxConfig.flags;
-        const tickFreq  = MOCK.RTOS.OsRtxConfig.tickFreq;
+        const flags    = MOCK.RTOS.OsRtxConfig.flags;
+        const tickFreq = MOCK.RTOS.OsRtxConfig.tickFreq;
 
-        if (size >= 8) {
+        if (size >= 4) {
             this.writeU32LE(data, 0, flags);
+        }
+        if (size >= 8) {
             this.writeU32LE(data, 4, tickFreq);
         }
         return data;
@@ -449,9 +464,9 @@ export class DebugTargetMock {
     private makeMyListStruct(size: number, nextPtr: number, value: number, namePtr: number): Uint8Array {
         const out = new Uint8Array(size);
         const off = MOCK.MyList.fieldOffsets;
-        if (size >= off.next + 4)  this.writeU32LE(out, off.next,  nextPtr >>> 0);
+        if (size >= off.next  + 4) this.writeU32LE(out, off.next,  nextPtr >>> 0);
         if (size >= off.value + 4) this.writeU32LE(out, off.value, value >>> 0);
-        if (size >= off.name + 4)  this.writeU32LE(out, off.name,  namePtr >>> 0);
+        if (size >= off.name  + 4) this.writeU32LE(out, off.name,  namePtr >>> 0);
         return out;
     }
 }

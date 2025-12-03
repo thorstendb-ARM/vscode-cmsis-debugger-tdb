@@ -100,16 +100,18 @@
         StackUsage = __CalcMemUsed (StackStart, StackSize, 0x8A8A8A8A, 0xE25A2EA5);
       </calc> -->
 
-      <!-- <var name="V_Major" type="uint32_t" value="0"/>
+      <var name="V_Major" type="uint32_t" value="0"/>
       <var name="V_Minor" type="uint32_t" value="0"/>
       <var name="V_Patch" type="uint32_t" value="0"/>
+      <var name="osId" type="uint32_t" value="0"/>
       <read name="os_Info"   type="osRtxInfo_t"   symbol="osRtxInfo"/>
       <read name="os_Config" type="osRtxConfig_t" symbol="osRtxConfig" const="1"/>
       <calc cond="RTX_En != 0">
         V_Major =  os_Info.version / 10000000;
         V_Minor = (os_Info.version / 10000) % 1000;
         V_Patch =  os_Info.version % 10000;
-      </calc> -->
+        osId = os_Info.os_id;
+      </calc>
 
       <!-- Read the linked list starting with ValueA: -->
       <readlist name="MyListA" type="MyList" symbol="ValueA" next="nextL" />
@@ -133,9 +135,10 @@
 
   
       <out name="MyTest">
-          <!-- <item property="System" value="">
+          <item property="System" value="">
             <item property="Kernel ID"    value="RTX V%d[V_Major].%d[V_Minor].%d[V_Patch]" cond="RTX_En != 0"/>
-          </item> -->
+            <item property="OS ID"        value="%x[osId]"/>
+          </item>
 
           <!-- <item property="Stack">
             <item property="StackStart"    value="%x[StackStart]"/>
