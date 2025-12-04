@@ -15,6 +15,8 @@
  */
 
 import { DebugTargetMock } from './debug-target-mock';
+import { ComponentViewerTargetAccess } from './component-viewer-target-access';
+import { GDBTargetDebugSession } from '../../debug-session/gdbtarget-debug-session';
 
 
 export interface MemberInfo {
@@ -26,24 +28,39 @@ export interface MemberInfo {
 export interface SymbolInfo {
     name: string;
     address: number;
-    size: number;
+    size?: number;
     member?: MemberInfo[];
 }
 
 export class ScvdDebugTarget {
     private mock = new DebugTargetMock();
+    private activeSession: GDBTargetDebugSession;
+    private targetAccess: ComponentViewerTargetAccess;
 
     constructor(
+        gdbTargetDebugSession: GDBTargetDebugSession
     ) {
+        this.activeSession = gdbTargetDebugSession;
+        this.targetAccess = new ComponentViewerTargetAccess(this.activeSession);
     }
 
     // -------------  Interface to debugger  -----------------
-    public getSymbolInfo(symbol: string): SymbolInfo | undefined {
+    public async getSymbolInfo(symbol: string): Promise<SymbolInfo | undefined> {
         if(symbol === undefined) {
             return undefined;
         }
-
-        return this.mock.getMockSymbolInfo(symbol);
+        // if the session is a mock session, return mock data. if it's not a mock session, use the target access to get real data
+        if(this.activeSession.session.name.startsWith('mock-session-')) {
+            return this.mock.getMockSymbolInfo(symbol);
+        } else {
+            const symbolName = symbol;
+            const symbolAddressStr = await this.targetAccess.evaluateSymbolAddress(`&${symbol}`);
+            const symbolInfo : SymbolInfo = {
+                name: symbolName,
+                address: parseInt(symbolAddressStr as unknown as string, 16)
+            };
+            return symbolInfo;
+        }
     }
 
     public getNumArrayElements(symbol: string): number | undefined {
@@ -58,17 +75,30 @@ export class ScvdDebugTarget {
         return undefined;
     }
 
-    public findSymbolAddress(symbol: string): number | undefined {
-        const symbolInfo = this.getSymbolInfo(symbol);
+    public async findSymbolAddress(symbol: string): Promise<number | undefined> {
+        const symbolInfo = await this.getSymbolInfo(symbol);
         if(symbolInfo === undefined) {
             return undefined;
         }
         return symbolInfo.address;
     }
 
-    public readMemory(address: number, size: number): Uint8Array | undefined {
-        // For testing, return mock data
-        return this.mock.getMockMemoryData(address, size);
+    public async readMemory(address: number, size: number): Promise<Uint8Array | undefined> {
+        // If the session is a mock session, return mock data. If it's not a mock session, use the target access to get real data
+        if(this.activeSession.session.name.startsWith('mock-session-')) {
+            return this.mock.getMockMemoryData(address, size);
+        } else {
+            const dataAsString = await this.targetAccess.evaluateMemory(address.toString(), size, 0);
+            if(typeof dataAsString !== 'string') {
+                return undefined;
+            }
+            // Convert String data to Uint8Array
+            const byteArray: Uint8Array = new Uint8Array(size);
+            for(let i = 0; i < size; i++) {
+                byteArray[i] = dataAsString.charCodeAt(i);
+            }
+            return byteArray;
+        }
     }
 
     public readUint8ArrayStrFromPointer(address: number, bytesPerChar: number, maxLength: number): Uint8Array | undefined {
