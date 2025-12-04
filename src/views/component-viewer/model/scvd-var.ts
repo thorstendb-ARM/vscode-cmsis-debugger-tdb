@@ -112,6 +112,11 @@ export class ScvdVar extends ScvdBase {
         return typeSize;
     }
 
+    public getElementReadSize(): number | undefined {
+        const typeSize = this.type?.getElementReadSize();
+        return typeSize;
+    }
+
     get offset(): ScvdExpression | undefined {
         return this._offset;
     }

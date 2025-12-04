@@ -150,6 +150,11 @@ export class ScvdReadList extends ScvdRead {
         return this.getElementStride();   // TODO!
     }
 
+    public getElementReadSize(): number | undefined {
+        const typeSize = this.type?.getElementReadSize();
+        return typeSize;
+    }
+
     public getElementStride(): number | undefined {
         const typeSize = this.type?.getSize();
         if(typeSize !== undefined) {

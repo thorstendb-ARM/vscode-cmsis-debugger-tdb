@@ -189,6 +189,12 @@ export class DebugTargetMock {
 
     constructor() {}
 
+    public getMockStringData(address: number, bytesPerChar: number, maxLength: number): Uint8Array | undefined {
+        const expr = `(${bytesPerChar ? 'wchar_t' : 'char'}*)${address.toString(16)}`;
+        console.log(`Mock: read string from ${expr} (maxLength=${maxLength})`);
+        return this.getMockMemoryData(address, maxLength);
+    }
+
     // ============================================================================
     // Memory side: "what bytes live at each address?"
     // ============================================================================

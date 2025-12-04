@@ -71,6 +71,10 @@ export class ScvdDebugTarget {
         return this.mock.getMockMemoryData(address, size);
     }
 
+    public readUint8ArrayStrFromPointer(address: number, bytesPerChar: number, maxLength: number): Uint8Array | undefined {
+        return this.mock.getMockStringData(address, bytesPerChar, maxLength);
+    }
+
 
 
     // -------------  Utility functions  -----------------

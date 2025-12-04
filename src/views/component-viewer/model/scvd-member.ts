@@ -94,6 +94,12 @@ export class ScvdMember extends ScvdBase {
         return typeSize;
     }
 
+    public getElementReadSize(): number | undefined {
+        const typeSize = this.type?.getElementReadSize();
+        return typeSize;
+    }
+
+
     public addEnum(): ScvdEnum {
         const lastEnum = this._enum[this._enum.length - 1];
         const enumItem = new ScvdEnum(this, lastEnum);

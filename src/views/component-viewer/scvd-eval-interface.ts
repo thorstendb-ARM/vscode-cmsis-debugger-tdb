@@ -220,11 +220,13 @@ export class ScvdEvalInterface implements DataHost {
             }
             case 'N': {
                 if(typeof value === 'number' && Number.isInteger(value)) {
-                    const readBytes = 16;   // TODO: determine size from type?
-                    const data = this.debugTarget.readMemory(value, readBytes);
+                    const bytesPerChar = 1;
+                    const data = this.debugTarget.readUint8ArrayStrFromPointer(value, bytesPerChar, 260-4);
                     if(data !== undefined) {
                         return this.formatSpecifier.format_N(data);
                     }
+                } else if(value instanceof Uint8Array) {
+                    return this.formatSpecifier.format_N(value);
                 }
                 return 'invalid address';
             }
@@ -238,7 +240,16 @@ export class ScvdEvalInterface implements DataHost {
                 return this.formatSpecifier.format_T(value);
             }
             case 'U': {
-                return this.formatSpecifier.format_U(value);
+                if(typeof value === 'number' && Number.isInteger(value)) {
+                    const bytesPerChar = 2;
+                    const data = this.debugTarget.readUint8ArrayStrFromPointer(value, bytesPerChar, 260-4);
+                    if(data !== undefined) {
+                        return this.formatSpecifier.format_U(data);
+                    }
+                } else if(value instanceof Uint8Array) {
+                    return this.formatSpecifier.format_U(value);
+                }
+                return 'invalid address';
             }
             case '%': {
                 return this.formatSpecifier.format_percent();

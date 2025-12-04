@@ -123,6 +123,11 @@ export class ScvdRead extends ScvdBase {
         return size ?? 1;   // Is an Expressions representing the array size or the number of values to read from target. The maximum array size is limited to 512. Default value is 1.
     }
 
+    public getElementReadSize(): number | undefined {
+        const typeSize = this.type?.getElementReadSize();
+        return typeSize;
+    }
+
     get minMaxSize(): { min: number; max: number } {
         const { min, max } = this._size?.getMinMax() ?? {};
         return { min: min ?? ScvdRead.ARRAY_SIZE_MIN, max: max ?? ScvdRead.ARRAY_SIZE_MAX };
@@ -149,7 +154,7 @@ export class ScvdRead extends ScvdBase {
     }
 
     public getMember(property: string): ScvdBase | undefined {
-        return this._type?.getMember(property);
+        return this.type?.getMember(property);
     }
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {

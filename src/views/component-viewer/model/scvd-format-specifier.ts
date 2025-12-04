@@ -18,9 +18,37 @@
 
 
 export class ScvdFormatSpecifier {
+    private utf16leDecoder: TextDecoder;
 
     constructor(
     ) {
+        this.utf16leDecoder = new TextDecoder('utf-16le');
+    }
+
+    /**
+ * Decode a USB string descriptor (wchar_t-based, UTF-16LE) into a JS string.
+ *
+ * @param desc Bytes of the USB string descriptor (bLength, bDescriptorType, UTF-16LE data...)
+ */
+    private decodeUsbStringDescriptor(desc: Uint8Array): string {
+        if (desc.length < 2) return '';
+
+        const totalLength = desc[0];          // bLength (total bytes including header)
+        const type = desc[1];                 // bDescriptorType (should be 0x03 for string)
+
+        if (type !== 0x03) {
+            console.error(`Not a string descriptor (bDescriptorType=${type})`);
+            return '';
+        }
+
+        // Clamp to the actual buffer length just in case
+        const len = Math.min(totalLength, desc.length);
+
+        // UTF-16LE wchar_t data starts at offset 2
+        const stringBytes = desc.subarray(2, len);
+
+        // Decode UTF-16LE bytes into JS string
+        return this.utf16leDecoder.decode(stringBytes);
     }
 
     public format_d(value: number | string): string {
@@ -124,42 +152,17 @@ export class ScvdFormatSpecifier {
         return this.format_x(value);
     }
 
-    public format_N(value: number | string | Uint8Array): string {
-        // Already a string: nothing to do
-        if (typeof value === 'string') {
-            return value;
-        }
-
-        // Number: whatever your existing formatting rule is
-        if (typeof value === 'number') {
-            return value.toString();
-        }
-
-        // C string: null-terminated Uint8Array
-        if (value instanceof Uint8Array) {
-            // Find first 0 byte (C '\0')
-            let end = value.indexOf(0);
-            if (end === -1) {
-                end = value.length;
-            }
-
-            // Prefer UTF-8 decode (typical for C strings nowadays)
-            if (typeof TextDecoder !== 'undefined') {
-                const dec = new TextDecoder('utf-8', { fatal: false });
-                return dec.decode(value.subarray(0, end));
-            }
-
-            // Fallback: simple byte→char (ASCII / Latin-1 style)
-            let s = '';
-            for (let i = 0; i < end; i++) {
-                s += String.fromCharCode(value[i]);
-            }
-            return s;
-        }
-
-        // Fallback in case something weird sneaks in
-        return String(value);
+    // ASCII string
+    public format_N(value: Uint8Array): string {
+        return this.arrayToString(value, false);
     }
+
+    // Unicode string
+    public format_U(value: Uint8Array): string {
+        this.decodeUsbStringDescriptor(value);
+        return this.arrayToString(value, true);
+    }
+
 
     public format_M(value: number | string): string {
         if (typeof value === 'string') {
@@ -188,14 +191,38 @@ export class ScvdFormatSpecifier {
         return `${value}`;
     }
 
-    public format_U(value: number | string): string {
-        // Placeholder for USB descriptor formatting
-        return `USB descriptor: ${value}`;
-    }
-
     public format_percent(): string {
         return '%';
     }
+
+    public arrayToString(value: Uint8Array, isUnicode: boolean): string {
+        // C string: null-terminated Uint8Array
+
+
+
+        if (value instanceof Uint8Array) {
+            // Prefer UTF-8 decode (typical for C strings nowadays)
+            if (isUnicode && typeof TextDecoder !== 'undefined') {
+                const dec = new TextDecoder('utf-8', { fatal: false });
+                return dec.decode(value);
+            }
+
+            // Fallback: simple byte→char (ASCII / Latin-1 style)
+            let end = value.indexOf(0);
+            if (end === -1) {
+                end = value.length;
+            }
+            let s = '';
+            for (let i = 0; i < end; i++) {
+                s += String.fromCharCode(value[i]);
+            }
+            return s;
+        }
+
+        // Fallback in case something weird sneaks in
+        return String(value);
+    }
+
 
     /**
      * Pretty-prints a USB descriptor as text.
