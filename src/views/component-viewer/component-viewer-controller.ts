@@ -23,13 +23,14 @@ const scvdMockFiles: string[] = Array.from(scvdMockTestFiles.entries())
     .filter(([_, include]) => include)
     .map(([filePath]) => filePath);
 
-
+//const mocksFlag = false;
 export class ComponentViewerController {
     private activeSession: GDBTargetDebugSession | undefined;
     private instances: ComponentViewerInstance[] = [];
     private componentViewerTreeDataProvider: ComponentViewerTreeDataProvider | undefined;
     private treeDataProvider: SidebarDebugView | undefined;
     private _context: vscode.ExtensionContext;
+    private mockFlag: boolean = true;
     // Check if mocks shall be used from configuration
     private useMocks = vscode.workspace.getConfiguration('vscode-cmsis-debugger').get('useMocks');
 
@@ -50,8 +51,16 @@ export class ComponentViewerController {
             treeProviderDisposable);
         // Subscribe to vscode event for changes in mocks configuration in the settings.json
         vscode.workspace.onDidChangeConfiguration(async (event) => {
+            // Do an initial setup of mocks if useMocks is true and no instances are loaded yet
+            this.useMocks = vscode.workspace.getConfiguration('vscode-cmsis-debugger').get('useMocks');
+            if (this.instances.length === 0 && this.useMocks && this.mockFlag) {
+                this.mockFlag = false; // to avoid multiple initializations
+                await this.useMocksInstances(this._context);
+                await this.componentViewerTreeDataProvider?.activate();
+                return;
+            }
+            // if there are instances already loaded, check if the configuration changed
             if (event.affectsConfiguration('vscode-cmsis-debugger.useMocks')) {
-                this.useMocks = vscode.workspace.getConfiguration('vscode-cmsis-debugger').get('useMocks');
                 if (this.useMocks) {
                     await this.useMocksInstances(this._context);
                     await this.componentViewerTreeDataProvider?.activate();
@@ -66,11 +75,16 @@ export class ComponentViewerController {
     }
 
     protected async buildMockInstancesArray(context: vscode.ExtensionContext): Promise<void> {
-        try {
+
         const mockedInstances: ComponentViewerInstance[] = [];
         for (const scvdFile of scvdMockFiles) {
             const instance = new ComponentViewerInstance();
+            try {
             await instance.readModel(URI.file(path.join(context.extensionPath, scvdFile)));
+            } catch (error) {
+                console.log(`Error reading mock SCVD file ${scvdFile}:`, error);
+                continue;
+            }
             mockedInstances.push(instance);
         }
         this.instances = mockedInstances;
@@ -78,9 +92,6 @@ export class ComponentViewerController {
         if(sidebarModel !== undefined) {
             this.treeDataProvider?.setModel(sidebarModel); // Shall be removed later
         }
-    } catch (error) {
-        console.error('Error building mock instances array:', error);
-    }   
     }
 
     protected async readScvdFiles(session?: GDBTargetDebugSession): Promise<void> {
