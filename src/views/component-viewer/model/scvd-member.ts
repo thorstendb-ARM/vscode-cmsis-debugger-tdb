@@ -85,20 +85,26 @@ export class ScvdMember extends ScvdBase {
         }
     }
 
-    public getSize(): number | undefined {
-        const size = this._size;
-        if( size !== undefined) {
-            return size;
+    public getTypeSize(): number | undefined {
+        return this._type?.getTypeSize();
+    }
+
+    public getVirtualSize(): number | undefined {
+        return this.getTargetSize();
+    }
+
+    public getIsPointer(): boolean {
+        return this.type?.getIsPointer() ?? false;
+    }
+
+    // if size is set, this is the size in byte to be read from target
+    public getTargetSize(): number | undefined {
+        const isPointer = this.getIsPointer();
+        if(isPointer) {
+            return 4;   // pointer size
         }
-        const typeSize = this._type?.size;
-        return typeSize;
+        return this.size ?? this.getTypeSize();
     }
-
-    public getElementReadSize(): number | undefined {
-        const typeSize = this.type?.getElementReadSize();
-        return typeSize;
-    }
-
 
     public addEnum(): ScvdEnum {
         const lastEnum = this._enum[this._enum.length - 1];

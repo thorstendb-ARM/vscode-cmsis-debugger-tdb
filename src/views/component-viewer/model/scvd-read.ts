@@ -27,11 +27,11 @@ import { getStringFromJson } from './scvd-utils';
 
 export class ScvdRead extends ScvdBase {
     private _type: ScvdDataType | undefined;
+    private _size: ScvdExpression | undefined;
     private _symbol: ScvdSymbol | undefined;
     private _offset: ScvdExpression | undefined;
     private _const: boolean = false; // Variables with attribute const set to "1" are constants that are read only once after debugger start. Default value is 0.
     private _cond: ScvdCondition | undefined;
-    private _size: ScvdExpression | undefined;
     private _endian: ScvdEndian | undefined;
     static readonly ARRAY_SIZE_MIN = 1;
     static readonly ARRAY_SIZE_MAX = 512;
@@ -118,23 +118,24 @@ export class ScvdRead extends ScvdBase {
         return this._size;
     }
 
-    public getSize(): number | undefined {
-        const size = this._size?.getValue() ?? 1;
-        const typeSize = this.type?.getElementReadSize();
-        if (size !== undefined && typeSize !== undefined) {
+    // size: Is an Expressions representing the array size or the number of values to read from target.
+    // The maximum array size is limited to 512. Default value is 1.
+    public getTargetSize(): number | undefined {
+        let size = this.size?.getValue() ?? 1;
+        if(size > ScvdRead.ARRAY_SIZE_MAX) {
+            console.error(`${this.getExplorerDisplayName()}: size ${size} exceeds maximum array size ${ScvdRead.ARRAY_SIZE_MAX}, using maximum size`);
+            size = ScvdRead.ARRAY_SIZE_MAX;
+        } else if(size < ScvdRead.ARRAY_SIZE_MIN) {
+            console.error(`${this.getExplorerDisplayName()}: size ${size} below minimum array size ${ScvdRead.ARRAY_SIZE_MIN}, using minimum size`);
+            size = ScvdRead.ARRAY_SIZE_MIN;
+        }
+
+        const typeSize = this.type?.getTypeSize();
+        if(typeSize !== undefined) {
             return typeSize * size;
         }
-        return size;   // Is an Expressions representing the array size or the number of values to read from target. The maximum array size is limited to 512. Default value is 1.
-    }
-
-    public getElementReadSize(): number | undefined {
-        const typeSize = this.type?.getElementReadSize();
-        return typeSize;
-    }
-
-    get minMaxSize(): { min: number; max: number } {
-        const { min, max } = this._size?.getMinMax() ?? {};
-        return { min: min ?? ScvdRead.ARRAY_SIZE_MIN, max: max ?? ScvdRead.ARRAY_SIZE_MAX };
+        console.error(`${this.getExplorerDisplayName()}: could not determine target size, assuming 1 byte`);
+        return size;
     }
 
     set size(value: string | undefined) {

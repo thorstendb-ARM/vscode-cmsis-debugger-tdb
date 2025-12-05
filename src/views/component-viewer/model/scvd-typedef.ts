@@ -75,13 +75,25 @@ export class ScvdTypedefs extends ScvdBase {
     }
 }
 
-// Typedefs
+/*
+import:
+    Name of a symbol in the user application which is loaded into the debugger.
+    The underlaying data type of this symbol is used to:
+
+    recalculate the value of the attribute size of this typedef element.
+    for member elements with no explicit attribute offset, the offset value of
+    matching member is set. If the member is not part of the symbol in the user
+    application the attribute offset value is set to -1.
+    __Offset_of can be used to check this value.
+*/
+
 export class ScvdTypedef extends ScvdBase {
-    private _size: ScvdExpression | undefined;
+    private _size: ScvdExpression | undefined;  // size is optional and recalculated if import is set
     private _import: ScvdSymbol | undefined;
     private _member: ScvdMember[] = [];     // target system variable
     private _var: ScvdVar[] = [];       // local SCVD variable
-    private _fullSize: number | undefined;
+    private _virtualSize: number | undefined;
+    private _targetSize: number | undefined;
 
     constructor(
         parent: ScvdBase | undefined,
@@ -115,16 +127,34 @@ export class ScvdTypedef extends ScvdBase {
         return super.readXml(xml);
     }
 
-    public getSize(): number | undefined {
-        const fullSize = this._fullSize;    // calculated size including vars
-        if(fullSize !== undefined) {
-            return fullSize;
-        }
-        return this._size?.getValue();
+    public getTypeSize(): number | undefined {
+        return this.getTargetSize();
     }
 
-    public getElementReadSize(): number | undefined {
-        return this._size?.getValue();
+    // 1. Get the virtual size including vars
+    // 2. If not set, return the size expression value
+    public getVirtualSize(): number | undefined {
+        const virtualSize = this.virtualSize;    // calculated size including vars
+        if(virtualSize !== undefined) {
+            return virtualSize;
+        }
+        return this.getTypeSize();
+    }
+
+    public getIsPointer(): boolean {
+        return false;
+    }
+
+    public getTargetSize(): number | undefined {
+        return this.targetSize;
+    }
+
+
+    private get targetSize(): number | undefined {
+        return this._targetSize;
+    }
+    private set targetSize(value: number | undefined) {
+        this._targetSize = value;
     }
 
     get size(): ScvdExpression | undefined {
@@ -136,11 +166,11 @@ export class ScvdTypedef extends ScvdBase {
         }
     }
 
-    get fullSize(): number | undefined {
-        return this._fullSize;
+    get virtualSize(): number | undefined {
+        return this._virtualSize;
     }
-    set fullSize(value: number | undefined) {
-        this._fullSize = value;
+    set virtualSize(value: number | undefined) {
+        this._virtualSize = value;
     }
 
     set import(value: string | undefined) {
@@ -217,40 +247,34 @@ export class ScvdTypedef extends ScvdBase {
                 member.offset?.configure();
             }
 
-            const memberSize = member.getSize();
+            const memberSize = member.getTypeSize();
             if(memberSize !== undefined) {   // TODO: on error?!
                 currentNextOffset += memberSize;
             }
         });
 
-        const typedefSize = this.size?.getValue();
-        if(typedefSize !== undefined) {
-            if(currentNextOffset > typedefSize) {
-                if(this.size !== undefined) {
-                    this.size.setValue(currentNextOffset);
-                } else {
-                    this.size = currentNextOffset.toString();
-                    this.size?.configure();
-                }
-            }
-            if(typedefSize > currentNextOffset) {   // adjust to typedef size if padding is included
-                currentNextOffset = typedefSize;
+        const size = this.size?.getValue();
+        if(size !== undefined) {    // if size is defined, use it
+            this.targetSize = size;
+
+            if(currentNextOffset > size) {
+                console.error(`ScvdTypedef.calculateOffsets: typedef size (${size}) smaller than members size (${currentNextOffset}) for ${this.getExplorerDisplayName()}`);
+            } else if(currentNextOffset < size) {   // adjust to typedef size if padding is included
+                currentNextOffset = size;
             }
         } else {
-            this.size = currentNextOffset.toString();   // set typedef size if not set
-            this.size?.configure();
+            this.targetSize = currentNextOffset;
         }
 
-
-        currentNextOffset = this.alignToDword(currentNextOffset + 8);   // make sure no overlaps happen when reading target memory
+        currentNextOffset = this.alignToDword(currentNextOffset + 4);   // make sure no overlaps happen when reading target memory
 
         this.var.forEach( (varItem: ScvdVar) => {
-            const varSize = varItem.getSize() ?? 4; // default size 4 bytes
+            const varSize = varItem.getTargetSize() ?? 4; // default size 4 bytes
             varItem.offset = currentNextOffset.toString();  // set current offset
             varItem.offset?.configure();
             currentNextOffset += varSize;
         });
-        this._fullSize = currentNextOffset;
+        this.virtualSize = currentNextOffset;
     }
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {

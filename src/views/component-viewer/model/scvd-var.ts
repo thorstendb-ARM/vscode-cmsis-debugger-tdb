@@ -102,19 +102,25 @@ export class ScvdVar extends ScvdBase {
         }
     }
 
-    public getSize(): number | undefined {
-        const typeSize = this._type?.getSize();
-        const size = this._size;
-        if (size !== undefined && typeSize !== undefined) {
-            return typeSize * size;
-        }
-
-        return typeSize;
+    public getTypeSize(): number | undefined {
+        return this.type?.getTypeSize();
     }
 
-    public getElementReadSize(): number | undefined {
-        const typeSize = this.type?.getElementReadSize();
-        return typeSize;
+    public getVirtualSize(): number | undefined {
+        return this.getTargetSize();
+    }
+
+    public getTargetSize(): number | undefined {
+        const typeSize = this.getTypeSize();
+        const elements = this.size ?? 1;
+        if( typeSize !== undefined) {
+            return typeSize * elements;
+        }
+        return elements;
+    }
+
+    public getIsPointer(): boolean {
+        return this.type?.getIsPointer() ?? false;
     }
 
     get offset(): ScvdExpression | undefined {
@@ -156,10 +162,6 @@ export class ScvdVar extends ScvdBase {
             return typeObj;
         }
         return undefined;
-    }
-
-    public getElementStride(): number {
-        return this._type?.getSize() ?? 0;
     }
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {

@@ -46,7 +46,7 @@ export abstract class ScvdBase implements ScvdGuiInterface {
 
     private _isModified: boolean = false;
     private _valid: boolean = false;
-    private _mustRead: boolean = true;
+    private _mustRead: boolean = true;  // linked to const (read once)
 
     static _executionContext: ExecutionContext | undefined;
     private _symbolsCache: Map<string, ScvdBase> | undefined;
@@ -333,35 +333,21 @@ export abstract class ScvdBase implements ScvdGuiInterface {
         return undefined;
     }
 
-    // element size in bytes, size of array type, to skip one instance to the next. Can be sizeof, or gaps
-    // byte distance between adjacent elements in your model’s actual layout (not necessarily sizeof if there are hardware gaps).
-    public getElementStride(): number | undefined {
-        console.error(`GetElementStride not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
-        return undefined;
-    }
-
-    public getSize(): number | undefined {
-        console.error(`GetSize not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
-        return undefined;
-    }
-    getTargetSize(): number | undefined {
+    public getTargetSize(): number | undefined {
         console.error(`GetTargetSize not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
         return undefined;
     }
-
-    getTypeSize(): number | undefined {
+    public getTypeSize(): number | undefined {
         console.error(`GetTypeSize not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
         return undefined;
     }
-
-    getVirtualSize(): number | undefined {
+    public getVirtualSize(): number | undefined {
         console.error(`GetVirtualSize not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
         return undefined;
     }
-
-    public getElementReadSize(): number | undefined {
-        console.error(`GetElementReadSize not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
-        return undefined;
+    public getIsPointer(): boolean {
+        console.error(`GetIsPointer not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
+        return false;
     }
 
     // member’s byte offset

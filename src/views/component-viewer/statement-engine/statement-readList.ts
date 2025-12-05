@@ -15,6 +15,7 @@
  */
 
 import { ScvdBase } from '../model/scvd-base';
+import { ScvdExpression } from '../model/scvd-expression';
 import { ScvdReadList } from '../model/scvd-readlist';
 import { ExecutionContext } from '../scvd-eval-context';
 import { StatementBase } from './statement-base';
@@ -51,24 +52,17 @@ export class StatementReadList extends StatementBase {
             executionContext.memoryHost.clearVariable(itemName);
         }
 
-        // ---- fetch type info ----
-        const typeItem = scvdReadList.type;
-        if(typeItem === undefined) {
-            console.error(`${this.line} Executing "read": ${scvdReadList.name}, no type defined`);
-            return;
-        }
-
         // ---- fetch type size ----
-        const typeSize = typeItem.getElementReadSize(); // use size specified in SCVD
-        if(typeSize === undefined) {
-            console.error(`${this.line} Executing "read": ${scvdReadList.name}, type: ${typeItem.getExplorerDisplayName()}, could not determine type size`);
+        const targetSize = scvdReadList.getTargetSize();
+        if(targetSize === undefined) {
+            console.error(`${this.line} Executing "read": ${scvdReadList.name}, type: ${scvdReadList.getExplorerDisplayName()}, could not determine target size`);
             return;
         }
-        const includingVarSize = typeItem.getSize() ?? typeSize;    // if type has <var> members, include their size in the variable allocation
+        const virtualSize = scvdReadList.getVirtualSize() ?? targetSize;    // if type has <var> members, include their size in the variable allocation
 
         // ---- calculate read size ----
-        const based = scvdReadList.getBased();  // When based="1" the attribute symbol and attribute offset specifies a pointer (or pointer array). Default value is 0.
-        const readBytes = (based === true)? 4 : typeSize;
+        const based = scvdReadList.getIsPointer();  // When based="1" the attribute symbol and attribute offset specifies a pointer (or pointer array). Default value is 0.
+        const readBytes = (based === true)? 4 : targetSize;
 
         // ---- calculate base address from symbol and/or offset ----
         let baseAddress: number | undefined = undefined;
@@ -99,21 +93,28 @@ export class StatementReadList extends StatementBase {
         }
 
         // ---- prepare for linked list read if next member is defined ----
-        let nextListOffset: number | undefined = undefined;
-        let nextMemberSize: number | undefined = undefined;
+        let nextOffset: number | undefined = undefined;
+        let nextTargetSize: number | undefined = undefined;
 
         const next = scvdReadList.getNext();    // Name of a member element in the list that is used as next pointer. This is used to read a linked list. <readlist> stops reading on a NULL pointer.
         if(next !== undefined) {
+        // ---- fetch type info ----
+            const typeItem = scvdReadList.type;
+            if(typeItem === undefined) {
+                console.error(`${this.line} Executing "read": ${scvdReadList.name}, no type defined`);
+                return;
+            }
+
             const nextMember = typeItem.getMember(next);
             if(nextMember !== undefined) {
-                nextMemberSize = nextMember.getSize();
-                nextListOffset = nextMember.getMemberOffset();
-                if(nextMemberSize === undefined || nextListOffset === undefined) {
+                nextTargetSize = nextMember.getTargetSize();
+                nextOffset = nextMember.getMemberOffset();
+                if(nextTargetSize === undefined || nextOffset === undefined) {
                     console.error(`${this.line}: Executing "read": ${scvdReadList.name}, symbol: ${symbol?.name}, could not determine size/offset of next member: ${next} in type: ${typeItem.getExplorerDisplayName()}`);
                     return;
                 }
-                if(nextMemberSize > 4) {
-                    console.error(`${this.line}: Executing "read": ${scvdReadList.name}, symbol: ${symbol?.name}, next member: ${next} size is larger than 4 bytes (${nextMemberSize} bytes)`);
+                if(nextTargetSize > 4) {
+                    console.error(`${this.line}: Executing "read": ${scvdReadList.name}, symbol: ${symbol?.name}, next member: ${next} size is larger than 4 bytes (${nextTargetSize} bytes)`);
                     return;
                 }
             }
@@ -126,7 +127,7 @@ export class StatementReadList extends StatementBase {
         let nextPtrAddr: number | undefined = baseAddress;
 
         let readIdx = 0;
-        while(nextPtrAddr !== undefined && readIdx < count) {
+        while(nextPtrAddr !== undefined) {
             const itemAddress = nextPtrAddr;
             const readData = executionContext.debugTarget.readMemory(itemAddress, readBytes);
             if(readData === undefined) {
@@ -134,18 +135,41 @@ export class StatementReadList extends StatementBase {
                 return;
             }
 
-            executionContext.memoryHost.setVariable(itemName, readBytes, readData, itemAddress, includingVarSize);
-            readIdx ++;
+            executionContext.memoryHost.setVariable(itemName, readBytes, readData, itemAddress, virtualSize);
 
             // calculate next address
             if(next) {
-                if(nextMemberSize === undefined || nextListOffset === undefined) {
+                if(nextTargetSize === undefined || nextOffset === undefined) {
                     return;
                 }
-                const nextU8Arr = executionContext.debugTarget.readMemory(nextPtrAddr + nextListOffset, nextMemberSize);
-                nextPtrAddr = (nextU8Arr && executionContext.debugTarget.convertMemoryToNumber(nextU8Arr)) || undefined;
+                //const nextU8Arr = executionContext.debugTarget.readMemory(nextPtrAddr + nextOffset, nextTargetSize);
+                const exprStr = `${itemName}[${readIdx}].${next}`;
+                const expr = new ScvdExpression(undefined, exprStr, '');
+                expr.configure();
+                expr.setExecutionContext(executionContext);
+                expr.evaluate();
+                const result = expr.result;
+                if(result === undefined) {
+                    console.error(`${this.line}: Executing "read": ${scvdReadList.name}, symbol: ${symbol?.name}, could not evaluate next pointer expression: ${exprStr}`);
+                    return;
+                }
+                if (typeof result !== 'number') {
+                    console.error(`${this.line}: Executing "read": ${scvdReadList.name}, symbol: ${symbol?.name}, next pointer expression: ${exprStr} did not evaluate to a number`);
+                    return;
+                }
+                nextPtrAddr = result;
             } else {
-                nextPtrAddr = baseAddress + (based ? (readIdx * 4) : (readIdx * typeSize));
+                nextPtrAddr = baseAddress + (based ? (readIdx * 4) : (readIdx * targetSize));
+            }
+
+            if(nextPtrAddr === 0) {
+                break;  // NULL pointer, end of linked list
+            }
+            readIdx ++;
+
+            // check count
+            if(count !== undefined && readIdx >= count) {
+                break;
             }
         }
 

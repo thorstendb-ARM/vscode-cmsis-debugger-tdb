@@ -102,6 +102,22 @@ export class ScvdReadList extends ScvdRead {
         return this._nextObj;
     }
 
+    public getTargetSize(): number | undefined {
+        return this.type?.getTypeSize();
+    }
+
+    public getVirtualSize(): number | undefined {
+        return this.type?.getVirtualSize();
+    }
+
+    // A readlist is considered a pointer if based="1"
+    // TODO: Check for: if the type is a pointer
+    public getIsPointer(): boolean {
+        const based = this.based ? true : false;
+        const typeIsPointer = this.type?.getIsPointer();
+        return based || (typeIsPointer ?? false);
+    }
+
     public resolveAndLink(resolveFunc: ResolveSymbolCb): boolean {
         if (this._next !== undefined) {
             const resolvedTypedef = resolveFunc(this._next, ResolveType.localType);
@@ -128,11 +144,8 @@ export class ScvdReadList extends ScvdRead {
         return true;
     }
 
-    public getCount(): number {
-        if(this._count !== undefined) {
-            return this._count.getValue() ?? 1;
-        }
-        return 1;
+    public getCount(): number | undefined {
+        return this._count?.getValue();
     }
 
     public getNext(): string | undefined {
@@ -141,26 +154,6 @@ export class ScvdReadList extends ScvdRead {
 
     public getInit(): number {
         return this._init;
-    }
-    public getBased(): boolean {
-        return this._based === 1;
-    }
-
-    public getSize(): number | undefined {
-        const based = this.getBased();
-        if(based) {
-            const ptrSize = 4; // pointer size is 4 bytes
-            return ptrSize;
-        }
-        return super.getSize();
-    }
-
-    public getElementStride(): number | undefined {
-        const typeSize = this.type?.getSize();
-        if(typeSize !== undefined) {
-            return typeSize;
-        }
-        return undefined;
     }
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {

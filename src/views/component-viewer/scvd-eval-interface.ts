@@ -61,7 +61,7 @@ export class ScvdEvalInterface implements DataHost {
     // Returns the byte width of a ref (scalars, structs, arrays – host-defined).
     // getTargetSize, getTypeSize, getVirtualSize
     getByteWidth(ref: ScvdBase): number | undefined {
-        const size = ref.getSize();
+        const size = ref.getTargetSize();
         if (size !== undefined) {
             return size;
         }
@@ -73,11 +73,11 @@ export class ScvdEvalInterface implements DataHost {
        Stride only answers: “how far do I move to get from element i to i+1?”
     */
     getElementStride(ref: ScvdBase): number {
-        const stride = ref.getElementStride() ?? 0;
-        if (stride !== 0) {
+        const stride = ref.getVirtualSize();
+        if (stride !== undefined) {
             return stride;
         }
-        const size = ref.getSize();
+        const size = ref.getTargetSize();
         if (size !== undefined) {
             return size;
         }

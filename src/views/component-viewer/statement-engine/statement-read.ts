@@ -44,21 +44,15 @@ export class StatementRead extends StatementBase {
             return;
         }
 
-        const type = scvdRead.type;
-        if(type === undefined) {
-            console.error(`${this.line} Executing "read": ${scvdRead.name}, no type defined`);
+        const targetSize = scvdRead.getTargetSize(); // use size specified in SCVD
+        if(targetSize === undefined) {
+            console.error(`${this.line} Executing "read": ${scvdRead.name}, type: ${scvdRead.getExplorerDisplayName()}, could not determine target size`);
             return;
         }
-
-        const elementReadSize = type.getElementReadSize(); // use size specified in SCVD
-        if(elementReadSize === undefined) {
-            console.error(`${this.line} Executing "read": ${scvdRead.name}, type: ${type.getExplorerDisplayName()}, could not determine type size`);
-            return;
-        }
-        const fullVirtualSize = type.getSize() ?? elementReadSize;
+        const virtualSize = scvdRead.getVirtualSize() ?? targetSize;
         const numOfElements = (scvdRead.size?.getValue() ?? 1);
-        const readBytes = numOfElements * elementReadSize; // Is an Expressions representing the array size or the number of values to read from target. The maximum array size is limited to 512. Default value is 1.
-        const fullVirtualStrideSize = fullVirtualSize * numOfElements;
+        const readBytes = numOfElements * targetSize; // Is an Expressions representing the array size or the number of values to read from target. The maximum array size is limited to 512. Default value is 1.
+        const fullVirtualStrideSize = virtualSize * numOfElements;
         let baseAddress: number | undefined = undefined;
 
         // Check if symbol address is defined

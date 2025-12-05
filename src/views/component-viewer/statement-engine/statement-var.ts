@@ -32,10 +32,10 @@ export class StatementVar extends StatementBase {
         const varItem = this.scvdItem.castToDerived(ScvdVar);
         if(varItem !== undefined) {
             const name = varItem.name;
-            const size = varItem.getSize();
+            const targetSize = varItem.getTargetSize();
             const value = varItem.getValue();
-            if(name !== undefined && size !== undefined && value !== undefined) {
-                executionContext.memoryHost.setVariable(name, size, value, 0);
+            if(name !== undefined && targetSize !== undefined && value !== undefined) {
+                executionContext.memoryHost.setVariable(name, targetSize, value, 0);
                 console.log(`${this.line} Variable "${name}" created with value: ${value}`);
             }
         }

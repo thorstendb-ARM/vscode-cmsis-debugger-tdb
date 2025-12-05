@@ -68,17 +68,17 @@ export class ScvdDataType extends ScvdBase {
         return this._type?.getMember(property);
     }
 
-    public getSize(): number | undefined {
-        const size = this._type?.size;
+    public getTypeSize(): number | undefined {
+        const size = this._type?.getTypeSize();
         return size;
     }
 
-    public get size(): number | undefined {
-        return this._type?.size;
+    public getIsPointer(): boolean {
+        return this._type?.getIsPointer() ?? false;
     }
 
-    public getElementReadSize(): number | undefined {
-        return this._type?.getElementReadSize();
+    public getVirtualSize(): number | undefined {
+        return this._type?.getVirtualSize();
     }
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
@@ -86,7 +86,7 @@ export class ScvdDataType extends ScvdBase {
 
         if (this._type !== undefined) {
             info.push({ name: 'Type', value: this._type.getExplorerDisplayName() });
-            info.push({ name: 'Size', value: this.getSize()?.toString() ?? '' });
+            info.push({ name: 'Size', value: this.getTypeSize()?.toString() ?? '' });
         } else {
             info.push({ name: 'Type', value: 'undefined' });
         }
@@ -125,24 +125,6 @@ export class ScvdScalarDataType extends ScvdBase {
         }
     }
 
-    public get size(): number | undefined {
-        if(this.isPointer) {
-            return 4;   // pointer size 4 bytes
-        }
-        const info = this._type && ScvdScalarDataTypeMap[this._type];
-        const value = info ? info[0]: undefined;
-        return value ? value / 8 : undefined;
-    }
-
-    public getElementReadSize(): number | undefined {
-        return this.size;
-    }
-
-
-    public get type(): string | undefined {
-        return this._type;
-    }
-
     public get isPointer(): boolean {
         return this._isPointer;
     }
@@ -150,11 +132,31 @@ export class ScvdScalarDataType extends ScvdBase {
         this._isPointer = value;
     }
 
+
+    public getTypeSize(): number | undefined {
+        const info = this.type && ScvdScalarDataTypeMap[this.type];
+        const value = info ? info[0]: undefined;
+        return value ? value / 8 : undefined;
+    }
+
+    public getIsPointer(): boolean {
+        return this.isPointer;
+    }
+
+    public getVirtualSize(): number | undefined {
+        return this.getTypeSize();
+    }
+
+    public get type(): string | undefined {
+        return this._type;
+    }
+
+
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
         if (this._type !== undefined) {
             info.push({ name: 'Type', value: this._type });
-            info.push({ name: 'Size', value: this.size?.toString() ?? '' });
+            info.push({ name: 'Size', value: this.getTypeSize()?.toString() ?? '' });
         }
         info.push(...itemInfo);
         return super.getExplorerInfo(info);
@@ -186,33 +188,27 @@ export class ScvdComplexDataType extends ScvdBase{
         return this._typeName;
     }
 
-    public get size(): number | undefined {
-        if(this.isPointer) {
-            return 4;   // pointer size 4 bytes
-        }
-        const sizeInBytes = this._type?.getSize();
+    public get isPointer(): boolean {
+        return this._isPointer;
+    }
+    private set isPointer(value: boolean) {
+        this._isPointer = value;
+    }
+
+    public getTypeSize(): number | undefined {
+        const sizeInBytes = this._type?.getTypeSize();
         if (sizeInBytes !== undefined) {
             return sizeInBytes;
         }
         return undefined;
     }
 
-    public getElementReadSize(): number | undefined {
-        if(this.isPointer) {
-            return 4;   // pointer size 4 bytes
-        }
-        const strideSize = this._type?.getElementReadSize();
-        if (strideSize !== undefined) {
-            return strideSize;
-        }
-        return undefined;
+    public getIsPointer(): boolean {
+        return this.isPointer;
     }
 
-    public get isPointer(): boolean {
-        return this._isPointer;
-    }
-    private set isPointer(value: boolean) {
-        this._isPointer = value;
+    public getVirtualSize(): number | undefined {
+        return this._type?.getVirtualSize();
     }
 
     public resolveAndLink(resolveFunc: ResolveSymbolCb): boolean {
