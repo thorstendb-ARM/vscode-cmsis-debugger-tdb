@@ -99,10 +99,12 @@ export class StatementList extends StatementBase {
 
             if(whileExpr !== undefined) {
                 const whileValue = whileExpr.getValue();
-                if(whileValue === undefined || whileValue === 0) {
+                if(whileValue !== undefined) {
+                    loopValue = whileValue;
+                }
+                if(loopValue === 0 || whileValue === undefined) {   // break on read error too
                     break;
                 }
-                loopValue = whileValue;
             }
             if(limitExpr !== undefined) {
                 if(loopValue >= limitValue) {

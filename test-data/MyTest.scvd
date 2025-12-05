@@ -157,6 +157,7 @@
           <item property="List value after execution">
             <item property="List Val1"    value="%t[listVal1]"/>
             <item property="List Val2"    value="%t[listVal2]"/>
+            <item property="i"            value="%t[i]"/>
           </item>
 
           <item property="USB Descriptors">
