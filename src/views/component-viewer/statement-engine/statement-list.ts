@@ -15,6 +15,8 @@
  */
 
 import { ScvdBase } from '../model/scvd-base';
+import { ScvdList } from '../model/scvd-list';
+import { ExecutionContext } from '../scvd-eval-context';
 import { StatementBase } from './statement-base';
 
 
@@ -24,4 +26,65 @@ export class StatementList extends StatementBase {
         super(item, parent);
     }
 
+    public executeStatement(executionContext: ExecutionContext): void {
+        const conditionResult = this.scvdItem.getConditionResult();
+        if (conditionResult === false) {
+            console.log(`  Skipping ${this.scvdItem.getExplorerDisplayName()} for condition result: ${conditionResult}`);
+            return;
+        }
+
+        this.onExecute(executionContext);
+        /*for (const child of this.children) {  // executed in list
+            child.executeStatement(executionContext);
+        }*/
+    }
+
+    protected onExecute(executionContext: ExecutionContext): void {
+        const scvdList = this.scvdItem.castToDerived(ScvdList);
+        if (scvdList === undefined) {
+            return;
+        }
+
+        const name = scvdList.name;
+        if(name === undefined) {
+            console.error(`${this.line}: Executing "list": no name defined`);
+            return;
+        }
+
+        const startExpr = scvdList.start;
+        if(startExpr === undefined) {
+            console.error(`${this.line}: Executing "list": ${scvdList.name}, no start expression defined`);
+            return;
+        }
+        const startValue = startExpr.getValue();
+        if (startValue === undefined) {
+            console.error(`${this.line}: Executing "list": ${scvdList.name}, could not evaluate start expression`);
+            return;
+        }
+
+        const modelBase = executionContext.evalContext.container.base;
+        if(modelBase === undefined) {
+            console.error(`${this.line}: Executing "list": ${scvdList.name}, no base container defined`);
+            return;
+        }
+
+        const varItem = modelBase.getSymbol(name);
+        if(varItem === undefined) {
+            console.error(`${this.line}: Executing "list": ${scvdList.name}, could not find variable in base container: ${modelBase.name}`);
+            return;
+        }
+        const varTargetSize = varItem.getTargetSize();
+        if(varTargetSize === undefined) {
+            console.error(`${this.line}: Executing "list": ${scvdList.name}, variable: ${varItem.name}, could not determine target size`);
+            return;
+        }
+
+        //const limitExpr = scvdList.limit;
+        //const whileExpr = scvdList.while;
+
+        // initialize loop variable
+        executionContext.memoryHost.writeNumber(name, 0, startValue, varTargetSize);
+
+        console.log(`${this.line}: Executing list: ${scvdList.name}`);
+    }
 }

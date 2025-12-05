@@ -86,7 +86,7 @@ export class StatementBase {
         }
 
         this.onExecute(executionContext);
-        for (const child of this._children) {
+        for (const child of this.children) {
             child.executeStatement(executionContext);
         }
     }

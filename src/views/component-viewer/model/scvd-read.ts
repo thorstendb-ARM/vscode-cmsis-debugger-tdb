@@ -118,25 +118,18 @@ export class ScvdRead extends ScvdBase {
         return this._size;
     }
 
-    // size: Is an Expressions representing the array size or the number of values to read from target.
-    // The maximum array size is limited to 512. Default value is 1.
     public getTargetSize(): number | undefined {
-        let size = this.size?.getValue() ?? 1;
-        if(size > ScvdRead.ARRAY_SIZE_MAX) {
-            console.error(`${this.getExplorerDisplayName()}: size ${size} exceeds maximum array size ${ScvdRead.ARRAY_SIZE_MAX}, using maximum size`);
-            size = ScvdRead.ARRAY_SIZE_MAX;
-        } else if(size < ScvdRead.ARRAY_SIZE_MIN) {
-            console.error(`${this.getExplorerDisplayName()}: size ${size} below minimum array size ${ScvdRead.ARRAY_SIZE_MIN}, using minimum size`);
-            size = ScvdRead.ARRAY_SIZE_MIN;
-        }
-
-        const typeSize = this.type?.getTypeSize();
-        if(typeSize !== undefined) {
-            return typeSize * size;
-        }
-        console.error(`${this.getExplorerDisplayName()}: could not determine target size, assuming 1 byte`);
-        return size;
+        return this.type?.getTypeSize();
     }
+
+    public getVirtualSize(): number | undefined {
+        return this.type?.getVirtualSize();
+    }
+
+    public getIsPointer(): boolean {
+        return this.type?.getIsPointer() ?? false;
+    }
+
 
     set size(value: string | undefined) {
         if(value !== undefined) {

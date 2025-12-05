@@ -50,7 +50,7 @@ export class StatementRead extends StatementBase {
             return;
         }
         const virtualSize = scvdRead.getVirtualSize() ?? targetSize;
-        const numOfElements = (scvdRead.size?.getValue() ?? 1);
+        const numOfElements = scvdRead.size?.getValue() ?? 1;
         const readBytes = numOfElements * targetSize; // Is an Expressions representing the array size or the number of values to read from target. The maximum array size is limited to 512. Default value is 1.
         const fullVirtualStrideSize = virtualSize * numOfElements;
         let baseAddress: number | undefined = undefined;
@@ -86,7 +86,7 @@ export class StatementRead extends StatementBase {
         }
 
         // Write to local variable cache
-        executionContext.memoryHost.setVariable(name, readBytes, readData, baseAddress, fullVirtualStrideSize);
+        executionContext.memoryHost.setVariable(name, readBytes, readData, -1, baseAddress, fullVirtualStrideSize);
 
         if(scvdRead.const === true) {   // Mark variable as already initialized
             scvdRead.mustRead = false;

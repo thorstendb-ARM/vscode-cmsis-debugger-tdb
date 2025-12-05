@@ -35,7 +35,7 @@ export class StatementVar extends StatementBase {
             const targetSize = varItem.getTargetSize();
             const value = varItem.getValue();
             if(name !== undefined && targetSize !== undefined && value !== undefined) {
-                executionContext.memoryHost.setVariable(name, targetSize, value, 0);
+                executionContext.memoryHost.setVariable(name, targetSize, value, -1, 0);
                 console.log(`${this.line} Variable "${name}" created with value: ${value}`);
             }
         }

@@ -60,15 +60,33 @@
       <var name="j" type="uint32_t" value="0"/>
       <var name="k" type="uint32_t" value="0"/>
       <var name="l" type="uint32_t" value="0"/>
+      <var name="listVal1" type="uint32_t" value="0"/>
+      <var name="listVal2" type="uint32_t" value="0"/>
       <var name="memberTest" type="memberTest_t" value="0x00000000"/>
       
       <calc>
         R0  = __GetRegVal ("R0");
         i = 0;
         j = 1;
-        k = 2;
-        l = 0;
+        k = 10;
+        l = 20;
       </calc>
+
+      <list name="i" start="j" limit="k" >
+        <calc>
+          listVal1 = listVal1 + i;
+        </calc>
+      </list>
+
+      <calc>
+        i = 99;
+      </calc>
+
+      <list cond="RTX_En" name="i" start="j" while="l">       
+        <calc>
+          listVal2 = listVal2 + i;
+        </calc>
+      </list>
 
       <calc>
         memberTest.m_var1 = 0x11111111;
@@ -134,7 +152,12 @@
             <item property="RTX enable"   value="%t[RTX_En ? &quot;Enabled&quot; : &quot;Disabled&quot;]" /> 
             <item property="Kernel ID"    value="RTX V%d[V_Major].%d[V_Minor].%d[V_Patch]" cond="RTX_En != 0"/>
           </item>
-          
+
+          <item property="List value after execution">
+            <item property="List Val1"    value="%t[listVal1]"/>
+            <item property="List Val2"    value="%t[listVal2]"/>
+          </item>
+
           <item property="USB Descriptors">
             <item property="string value %%t"     value="%t[string_val]" /> 
             <item property="status %%t"     value="Status=%t[i_value==0 ? &quot;Free&quot; : &quot;Busy&quot;]" /> 

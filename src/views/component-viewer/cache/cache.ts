@@ -87,7 +87,10 @@ export class MemoryContainer {
 
     read(off: number, size: number): Uint8Array {
         this.ensure(off, size);
-        if (!this.buf) throw new Error('window not initialized');
+        if (!this.buf) {
+            console.error('window not initialized');
+            return new Uint8Array(size);
+        }
         const rel = off - this.winStart;
         return this.buf.subarray(rel, rel + size);
     }
@@ -96,7 +99,10 @@ export class MemoryContainer {
     write(off: number, data: Uint8Array, actualSize?: number): void {
         const total = actualSize !== undefined ? Math.max(actualSize, data.length) : data.length;
         this.ensure(off, total);
-        if (!this.buf) throw new Error('window not initialized');
+        if (!this.buf) {
+            console.error('window not initialized');
+            return;
+        }
         const rel = off - this.winStart;
 
         // write the payload
@@ -152,13 +158,15 @@ export class CachedMemoryHost {
     private toAddrNumber(x: number | bigint): number {
         if (typeof x === 'number') {
             if (!Number.isFinite(x) || x < 0 || !Number.isSafeInteger(x)) {
-                throw new Error(`invalid target base address (number): ${x}`);
+                console.error(`invalid target base address (number): ${x}`);
+                return 0;
             }
             return x;
         }
         const n = Number(x);
         if (n < 0 || !Number.isSafeInteger(n)) {
-            throw new Error(`invalid target base address (bigint out of range): ${x.toString()}`);
+            console.error(`invalid target base address (bigint out of range): ${x.toString()}`);
+            return 0;
         }
         return n;
     }
@@ -177,7 +185,10 @@ export class CachedMemoryHost {
     readValue(container: RefContainer): any {
         const variableName = container.anchor?.name;
         const widthBytes = container.widthBytes ?? 0;
-        if (!variableName || widthBytes <= 0) throw new Error('readValue: invalid target');
+        if (!variableName || widthBytes <= 0) {
+            console.error('readValue: invalid target');
+            return;
+        }
 
         const entry = this.getEntry(variableName);
         const byteOff = container.offsetBytes ?? 0;
@@ -207,7 +218,10 @@ export class CachedMemoryHost {
     writeValue(container: RefContainer, value: any, actualSize?: number): void {
         const variableName = container.anchor?.name;
         const widthBytes = container.widthBytes ?? 0;
-        if (!variableName || widthBytes <= 0) throw new Error('writeValue: invalid target');
+        if (!variableName || widthBytes <= 0) {
+            console.error('writeValue: invalid target');
+            return;
+        }
 
         const entry = this.getEntry(variableName);
         const byteOff = container.offsetBytes ?? 0;
@@ -228,13 +242,17 @@ export class CachedMemoryHost {
             if (typeof value === 'boolean') valBig = value ? 1n : 0n;
             else if (typeof value === 'bigint') valBig = value;
             else if (typeof value === 'number') valBig = BigInt(Math.trunc(value));
-            else throw new Error('writeValue: unsupported value type');
+            else {
+                console.error('writeValue: unsupported value type');
+                return;
+            }
 
             buf = leBigIntToBytes(valBig, widthBytes);
         }
 
         if (actualSize !== undefined && actualSize < widthBytes) {
-            throw new Error(`writeValue: actualSize (${actualSize}) must be >= widthBytes (${widthBytes})`);
+            console.error(`writeValue: actualSize (${actualSize}) must be >= widthBytes (${widthBytes})`);
+            return;
         }
 
         const total = actualSize ?? widthBytes;
@@ -245,13 +263,25 @@ export class CachedMemoryHost {
         name: string,
         size: number,
         value: number | bigint | Uint8Array,
-        targetBase?: number | bigint,  // target base address where it was read from
-        actualSize?: number,            // total logical bytes for this element (>= size)
+        offset: number,                     // NEW: controls where to place the data
+        targetBase?: number | bigint,       // target base address where it was read from
+        actualSize?: number,                // total logical bytes for this element (>= size)
     ): void {
+        if (!Number.isSafeInteger(offset)) {
+            console.error(`setVariable: offset must be a safe integer, got ${offset}`);
+            return;
+        }
+
         const entry = this.getEntry(name);
 
-        // append behind existing bytes
-        const appendOff = entry.data.byteLength ?? 0;
+        // Decide where to write:
+        //  - offset === -1 → append at the end
+        //  - otherwise     → write at the given offset
+        const appendOff = offset === -1 ? (entry.data.byteLength ?? 0) : offset;
+        if (appendOff < 0) {
+            console.error(`setVariable: offset must be >= 0 or -1, got ${offset}`);
+            return;
+        }
 
         // normalize payload to exactly `size` bytes (numbers/bigints LE-encoded)
         const buf = new Uint8Array(size);
@@ -262,11 +292,13 @@ export class CachedMemoryHost {
         } else if (value instanceof Uint8Array) {
             buf.set(value.subarray(0, size), 0); // truncate/zero-pad to `size`
         } else {
-            throw new Error('setVariable: unsupported value type');
+            console.error('setVariable: unsupported value type');
+            return;
         }
 
         if (actualSize !== undefined && actualSize < size) {
-            throw new Error(`setVariable: actualSize (${actualSize}) must be >= size (${size})`);
+            console.error(`setVariable: actualSize (${actualSize}) must be >= size (${size})`);
+            return;
         }
         const total = actualSize ?? size;
 
@@ -277,7 +309,9 @@ export class CachedMemoryHost {
         const meta = this.getOrInitMeta(name);
         meta.offsets.push(appendOff);
         meta.sizes.push(total);
-        meta.bases.push(targetBase !== undefined ? this.toAddrNumber(targetBase) : 0);
+        meta.bases.push(
+            targetBase !== undefined ? this.toAddrNumber(targetBase) : 0
+        );
 
         // maintain uniform stride when consistent
         if (meta.elementSize === undefined && meta.sizes.length === 1) {
@@ -290,7 +324,36 @@ export class CachedMemoryHost {
     }
 
     writeBytes(name: string, offset: number, bytes: Uint8Array, size = bytes.length): void {
-        this.setVariable(name, size, bytes, offset);
+        // `offset` here is the same "where to write" offset:
+        //  - offset === -1 → append at end
+        //  - else          → write starting at `offset`
+        //
+        // For the recorded target base, reuse offset when it's non-negative.
+        const base = offset >= 0 ? offset : undefined;
+        this.setVariable(name, size, bytes, offset, base);
+    }
+
+    /**
+     * Write a numeric value into a symbol at a given byte offset.
+     *
+     * - `size` is the number of bytes to encode (1, 2, 4, 8, ...).
+     * - `offset === -1` appends to the end of the symbol.
+     * - Otherwise, writes at the given byte offset within the symbol.
+     */
+    writeNumber(name: string, offset: number, value: number, size: number): void {
+        if (!Number.isSafeInteger(size) || size <= 0) {
+            console.error(`writeNumber: size must be a positive safe integer, got ${size}`);
+            return;
+        }
+        if (!Number.isFinite(value)) {
+            console.error(`writeNumber: value must be finite, got ${value}`);
+            return;
+        }
+
+        // Reuse setVariable so that metadata (offsets/sizes/bases) stays consistent.
+        // For the recorded base, we treat non-negative offset as the base.
+        const base = offset >= 0 ? offset : undefined;
+        this.setVariable(name, size, value, offset, base, size);
     }
 
     invalidate(name?: string): void {
@@ -324,9 +387,13 @@ export class CachedMemoryHost {
     /** Target base address for element `index` of `name` (number | undefined). */
     getElementTargetBase(name: string, index: number): number | undefined {
         const m = this.elementMeta.get(name);
-        if (!m) throw new Error(`getElementTargetBase: unknown symbol "${name}"`);
+        if (!m) {
+            console.error(`getElementTargetBase: unknown symbol "${name}"`);
+            return undefined;
+        }
         if (index < 0 || index >= m.bases.length) {
-            throw new Error(`getElementTargetBase: index ${index} out of range for "${name}"`);
+            console.error(`getElementTargetBase: index ${index} out of range for "${name}"`);
+            return undefined;
         }
         return m.bases[index];
     }
@@ -334,9 +401,13 @@ export class CachedMemoryHost {
     /** Optional: repair or set an address later. */
     setElementTargetBase(name: string, index: number, base: number | bigint): void {
         const m = this.elementMeta.get(name);
-        if (!m) throw new Error(`setElementTargetBase: unknown symbol "${name}"`);
+        if (!m) {
+            console.error(`setElementTargetBase: unknown symbol "${name}"`);
+            return;
+        }
         if (index < 0 || index >= m.bases.length) {
-            throw new Error(`setElementTargetBase: index ${index} out of range for "${name}"`);
+            console.error(`setElementTargetBase: index ${index} out of range for "${name}"`);
+            return;
         }
         m.bases[index] = this.toAddrNumber(base);
     }

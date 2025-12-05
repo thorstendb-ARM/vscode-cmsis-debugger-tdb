@@ -111,7 +111,6 @@ export class ScvdReadList extends ScvdRead {
     }
 
     // A readlist is considered a pointer if based="1"
-    // TODO: Check for: if the type is a pointer
     public getIsPointer(): boolean {
         const based = this.based ? true : false;
         const typeIsPointer = this.type?.getIsPointer();
