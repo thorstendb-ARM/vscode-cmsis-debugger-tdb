@@ -60,8 +60,6 @@
       <var name="j" type="uint32_t" value="0"/>
       <var name="k" type="uint32_t" value="0"/>
       <var name="l" type="uint32_t" value="0"/>
-      <var name="listVal1" type="uint32_t" value="0"/>
-      <var name="listVal2" type="uint32_t" value="0"/>
       <var name="memberTest" type="memberTest_t" value="0x00000000"/>
       
       <calc>
@@ -72,9 +70,10 @@
         l = 20;
       </calc>
 
+      <var name="listVal1" type="uint32_t" value="0"/>
       <list name="i" start="j" limit="k" >
         <calc>
-          listVal1 = listVal1 + i;
+          listVal1++;
         </calc>
       </list>
 
@@ -82,9 +81,11 @@
         i = 99;
       </calc>
 
+      <var name="listVal2" type="uint32_t" value="0"/>
       <list cond="RTX_En" name="i" start="j" while="l">       
         <calc>
-          listVal2 = listVal2 + i;
+          listVal2++;
+          l--;
         </calc>
       </list>
 

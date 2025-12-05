@@ -79,11 +79,43 @@ export class StatementList extends StatementBase {
             return;
         }
 
-        //const limitExpr = scvdList.limit;
-        //const whileExpr = scvdList.while;
+        let limitValue = 0;
+        const limitExpr = scvdList.limit;
+        if(limitExpr !== undefined) {
+            const limitVal = limitExpr.getValue();
+            limitValue = limitVal ?? 0; // do not enter loop if undefined
+        }
 
-        // initialize loop variable
-        executionContext.memoryHost.writeNumber(name, 0, startValue, varTargetSize);
+        const whileExpr = scvdList.while;
+        if(whileExpr !== undefined && limitExpr !== undefined) {
+            console.error(`${this.line}: Executing "list": ${scvdList.name}, cannot define both limit and while expressions`);
+            return;
+        }
+
+        let loopValue = startValue;
+        let maximumCount = 100000;   // prevent infinite loops
+        while (maximumCount-- > 0) {
+            executionContext.memoryHost.writeNumber(name, 0, loopValue, varTargetSize);    // update loop variable in memory
+
+            if(whileExpr !== undefined) {
+                const whileValue = whileExpr.getValue();
+                if(whileValue === undefined || whileValue === 0) {
+                    break;
+                }
+                loopValue = whileValue;
+            }
+            if(limitExpr !== undefined) {
+                if(loopValue >= limitValue) {
+                    break;
+                }
+                loopValue++;
+            }
+
+            for (const child of this.children) {  // executed in list
+                child.executeStatement(executionContext);
+            }
+        }
+        executionContext.memoryHost.writeNumber(name, 0, loopValue, varTargetSize);    // update last loop variable in memory
 
         console.log(`${this.line}: Executing list: ${scvdList.name}`);
     }
