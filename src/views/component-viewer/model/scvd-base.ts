@@ -344,6 +344,20 @@ export abstract class ScvdBase implements ScvdGuiInterface {
         console.error(`GetSize not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
         return undefined;
     }
+    getTargetSize(): number | undefined {
+        console.error(`GetTargetSize not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
+        return undefined;
+    }
+
+    getTypeSize(): number | undefined {
+        console.error(`GetTypeSize not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
+        return undefined;
+    }
+
+    getVirtualSize(): number | undefined {
+        console.error(`GetVirtualSize not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
+        return undefined;
+    }
 
     public getElementReadSize(): number | undefined {
         console.error(`GetElementReadSize not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);

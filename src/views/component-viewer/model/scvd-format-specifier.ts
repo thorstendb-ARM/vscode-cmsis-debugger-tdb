@@ -25,32 +25,6 @@ export class ScvdFormatSpecifier {
         this.utf16leDecoder = new TextDecoder('utf-16le');
     }
 
-    /**
- * Decode a USB string descriptor (wchar_t-based, UTF-16LE) into a JS string.
- *
- * @param desc Bytes of the USB string descriptor (bLength, bDescriptorType, UTF-16LE data...)
- */
-    private decodeUsbStringDescriptor(desc: Uint8Array): string {
-        if (desc.length < 2) return '';
-
-        const totalLength = desc[0];          // bLength (total bytes including header)
-        const type = desc[1];                 // bDescriptorType (should be 0x03 for string)
-
-        if (type !== 0x03) {
-            console.error(`Not a string descriptor (bDescriptorType=${type})`);
-            return '';
-        }
-
-        // Clamp to the actual buffer length just in case
-        const len = Math.min(totalLength, desc.length);
-
-        // UTF-16LE wchar_t data starts at offset 2
-        const stringBytes = desc.subarray(2, len);
-
-        // Decode UTF-16LE bytes into JS string
-        return this.utf16leDecoder.decode(stringBytes);
-    }
-
     public format_d(value: number | string): string {
         const n = Number(value);
         return Number.isFinite(n) ? n.toString(10) : `${value}`;
@@ -154,13 +128,12 @@ export class ScvdFormatSpecifier {
 
     // ASCII string
     public format_N(value: Uint8Array): string {
-        return this.arrayToString(value, false);
+        return this.decodeAscii(value);
     }
 
     // Unicode string
     public format_U(value: Uint8Array): string {
-        this.decodeUsbStringDescriptor(value);
-        return this.arrayToString(value, true);
+        return this.decodeWcharFromBytes(value);
     }
 
 
@@ -195,32 +168,28 @@ export class ScvdFormatSpecifier {
         return '%';
     }
 
-    public arrayToString(value: Uint8Array, isUnicode: boolean): string {
-        // C string: null-terminated Uint8Array
 
-
-
-        if (value instanceof Uint8Array) {
-            // Prefer UTF-8 decode (typical for C strings nowadays)
-            if (isUnicode && typeof TextDecoder !== 'undefined') {
-                const dec = new TextDecoder('utf-8', { fatal: false });
-                return dec.decode(value);
+    private decodeWcharFromBytes(bytes: Uint8Array): string {
+        // If you have a null terminator, trim at the first 0x0000
+        let end = bytes.length;
+        for (let i = 0; i + 1 < bytes.length; i += 2) {
+            if (bytes[i] === 0 && bytes[i + 1] === 0) {
+                end = i;
+                break;
             }
-
-            // Fallback: simple byte→char (ASCII / Latin-1 style)
-            let end = value.indexOf(0);
-            if (end === -1) {
-                end = value.length;
-            }
-            let s = '';
-            for (let i = 0; i < end; i++) {
-                s += String.fromCharCode(value[i]);
-            }
-            return s;
         }
+        const slice = bytes.subarray(0, end);
+        return this.utf16leDecoder.decode(slice);
+    }
 
-        // Fallback in case something weird sneaks in
-        return String(value);
+    private decodeAscii(bytes: Uint8Array): string {
+        const chars: number[] = [];
+        for (let i = 0; i < bytes.length; i++) {
+            const b = bytes[i];
+            if (b === 0) break;     // if you use C-style null termination
+            chars.push(b & 0x7F);   // or just `chars.push(b);` if high bits never set
+        }
+        return String.fromCharCode(...chars);
     }
 
 
@@ -243,17 +212,18 @@ export class ScvdFormatSpecifier {
         const hexdump = (arr: Uint8Array) =>
             Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join(' ');
 
-        const typeName = (t: number) => ({
-            0x01: 'Device',
-            0x02: 'Configuration',
-            0x03: 'String',
-            0x04: 'Interface',
-            0x05: 'Endpoint',
-            0x06: 'Device Qualifier',
-            0x07: 'Other Speed Config',
-            0x08: 'Interface Power',
-            0x0F: 'BOS',
-        }[t] || `Type ${hex(t)}`);
+        const typeMap: Record<number, string> = Object.create(null);
+        typeMap[0x01] = 'Device';
+        typeMap[0x02] = 'Configuration';
+        typeMap[0x03] = 'String';
+        typeMap[0x04] = 'Interface';
+        typeMap[0x05] = 'Endpoint';
+        typeMap[0x06] = 'Device Qualifier';
+        typeMap[0x07] = 'Other Speed Config';
+        typeMap[0x08] = 'Interface Power';
+        typeMap[0x0F] = 'BOS';
+        const typeName = (t: number) =>
+            Object.prototype.hasOwnProperty.call(typeMap, t) ? typeMap[t] : `Type ${hex(t)}`;
 
         // --- String Descriptor (Type 0x03) ---
         // bLength, bDescriptorType, then UTF-16LE code units

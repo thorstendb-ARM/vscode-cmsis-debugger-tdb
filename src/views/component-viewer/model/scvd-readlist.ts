@@ -147,12 +147,12 @@ export class ScvdReadList extends ScvdRead {
     }
 
     public getSize(): number | undefined {
-        return this.getElementStride();   // TODO!
-    }
-
-    public getElementReadSize(): number | undefined {
-        const typeSize = this.type?.getElementReadSize();
-        return typeSize;
+        const based = this.getBased();
+        if(based) {
+            const ptrSize = 4; // pointer size is 4 bytes
+            return ptrSize;
+        }
+        return super.getSize();
     }
 
     public getElementStride(): number | undefined {
