@@ -55,24 +55,22 @@
         RTX_En = 1;
       </calc>
 
-      <!-- <var name="R0" type="uint32_t" value="0x1"/>
+      <var name="R0" type="uint32_t" value="0x1"/>
       <var name="i" type="uint32_t" value="0"/>
       <var name="j" type="uint32_t" value="0"/>
       <var name="k" type="uint32_t" value="0"/>
       <var name="l" type="uint32_t" value="0"/>
-      <var name="memberTest" type="memberTest_t" value="0x00000000"/> -->
+      <var name="memberTest" type="memberTest_t" value="0x00000000"/>
       
-      <!-- <calc>
+      <calc>
         R0  = __GetRegVal ("R0");
         i = 0;
         j = 1;
         k = 2;
         l = 0;
-      </calc> -->
+      </calc>
 
-      <!-- <calc>
-        memberTest[j] = 0x44444444;
-        memberTest[k] = 0x88888888;
+      <calc>
         memberTest.m_var1 = 0x11111111;
         memberTest.a = 0x12;
         memberTest.b = 0x34;
@@ -84,21 +82,16 @@
         memberTest.C = 0xCC;
         memberTest.D = 0xDD;
         memberTest.m_var2 = 0x22222222;
-        memberTest.m_var3[i+l] = 0xAAAAAAAA;
-        memberTest.m_var3[j+l] = 0xBBBBBBBB;
-        memberTest.m_var3[k+l] = 0xCCCCCCCC;
-        memberTest._addr = 0xa1a1a1a1;
-        memberTest[1]._addr = 0xb2b2b2b2;
-      </calc> -->
+      </calc>
 
-      <!-- <var name="StackStart" type="uint32_t" value="0x00000000"/>
+      <var name="StackStart" type="uint32_t" value="0x00000000"/>
       <var name="StackSize" type="uint32_t" value="0x00000000"/>
       <var name="StackUsage" type="uint32_t" value="0x00000000"/>
       <calc>
         StackStart = __FindSymbol ("tstack");
         StackSize  = __size_of ("tstack") * 4;
         StackUsage = __CalcMemUsed (StackStart, StackSize, 0x8A8A8A8A, 0xE25A2EA5);
-      </calc> -->
+      </calc>
 
       <var name="V_Major" type="uint32_t" value="0"/>
       <var name="V_Minor" type="uint32_t" value="0"/>
@@ -110,140 +103,110 @@
         V_Patch =  os_Info.version % 10000;
       </calc>
 
-      <!-- <read name="os_Config" type="osRtxConfig_t" symbol="osRtxConfig" const="1"/> -->
+      <read name="os_Config" type="osRtxConfig_t" symbol="osRtxConfig" const="1"/>
 
       <!-- Read the linked list starting with ValueA: -->
       <readlist name="MyListA" type="MyList" symbol="ValueA" next="nextL" />
 
       <!-- Read the linked list starting with head pointer ListStart: -->
-      <!-- <readlist name="MyListB" type="MyList" symbol="ListStart" based="1" next="nextL" /> -->
+      <readlist name="MyListB" type="MyList" symbol="ListStart" based="1" next="nextL" />
 
       <!-- Clear a previous list and read ValueA, ValueB, and ValueArray. -->
-      <!-- <readlist name="MyListC" type="MyList" symbol="ValueA" init="1"                          /> 
+      <readlist name="MyListC" type="MyList" symbol="ValueA" init="1"                          /> 
       <readlist name="MyListC" type="MyList" symbol="ValueB"                                   />
-      <readlist name="MyListC" type="MyList" symbol="ValueArray" count="__size_of(ValueArray)" /> -->
+      <readlist name="MyListC" type="MyList" symbol="ValueArray" count="__size_of(ValueArray)" />
 
       <!-- Read the list based on the pointers stored in pArray: -->
-      <!-- <readlist name="MyListD" type="MyList" symbol="pArray" based="1" count="__size_of(pArray)" /> -->
+      <readlist name="MyListD" type="MyList" symbol="pArray" based="1" count="__size_of(pArray)" />
 
       <!-- Read the pArray using read and read the list items addressed with pArray[1] and pArray[2]. -->
-      <!-- <readlist name="pArray" type="*MyList" symbol="pArray" count="__size_of(pArray)" /> 
+      <readlist name="pArray" type="*MyList" symbol="pArray" count="__size_of(pArray)" /> 
       <readlist name="MyListE" type="MyList" offset="pArray[1]"  />
-      <readlist name="MyListE" type="MyList" offset="pArray[2]"  /> -->
+      <readlist name="MyListE" type="MyList" offset="pArray[2]"  />
 
-      <!-- <read name="string_val"  type="int8_t"   symbol="string"  size="10"   />
+
+      <read name="string_val"  type="int8_t"   symbol="string"  size="10"   />
       <read name="wstring_val" type="int16_t"  symbol="wString" size="15"   />
-      <var name="i_value"     type="uint8_t"  symbol="iValue" value="1" /> -->
+      <var name="i_value"     type="uint8_t"  symbol="iValue" value="1" />
   
       <out name="MyTest">
-            <!-- <item property="MyListB ListStart"    value="%x[MyListB[0]]"/> -->
-
           <item property="System" value="">
             <item property="RTX enable"   value="%t[RTX_En ? &quot;Enabled&quot; : &quot;Disabled&quot;]" /> 
             <item property="Kernel ID"    value="RTX V%d[V_Major].%d[V_Minor].%d[V_Patch]" cond="RTX_En != 0"/>
           </item>
           
-          <!-- <item property="USB Descriptors">
+          <item property="USB Descriptors">
             <item property="string value %%t"     value="%t[string_val]" /> 
             <item property="status %%t"     value="Status=%t[i_value==0 ? &quot;Free&quot; : &quot;Busy&quot;]" /> 
             <item property="wString value %%U"    value="%U[wstring_val]" />
-          </item> -->
+          </item>
 
-          <!-- <item property="Stack">
+          <item property="Stack">
             <item property="StackStart"    value="%x[StackStart]"/>
             <item property="StackSize"     value="%d[StackSize] bytes"/>
             <item alert="(StackUsage >> 31)"    
               property="tstack @%x[StackStart] size=%d[StackSize]"
               value="Usage %d[StackUsage &amp; 0xFFFFF] %d[(StackUsage &gt;&gt; 20) &amp; 0xFF]%%" />
-          </item> -->
+          </item>
 
           <item property="Lists contents">
             <item property="MyListA ValueA nextL" value="%x[MyListA[0].nextL]"/>
             <item property="MyListA ValueA valueL" value="%x[MyListA[0].valueL]"/>
             <item property="MyListA ValueA nameL" value="%N[MyListA[0].nameL]"/>
             <item property="MyListA ValueA"       value="%x[MyListA[0].nextL], %x[MyListA[0].valueL], %x[MyListA[0].nameL]"/>
-            <item property="MyListB ListStart"    value="%x[MyListB[0]]"/>
-            <item property="MyListC ValueA, ValueB, ValueArray"    value="%x[MyListC[0]], %x[MyListC[1]], %x[MyListC[2]], %x[MyListC[3]], %x[MyListC[4]]"/>
+            <item property="MyListB ListStart nextL"    value="%x[MyListB[0].nextL]"/>
+            <item property="MyListC valueL A/B/VA0-2"    value="%x[MyListC[0].valueL], %x[MyListC[1].valueL], %x[MyListC[2].valueL], %x[MyListC[3].valueL], %x[MyListC[4].valueL]"/>
             <item property="MyListD pArray"       value="%x[MyListD[0]], %x[MyListD[1]], %x[MyListD[2]], %x[MyListD[3]], %x[MyListD[4]]"/>
-            <item property="MyListE pArray"       value="%x[MyListE[0]]"/>
+            <item property="MyListE pArray"       value="%x[MyListE[0].valueL], %x[MyListE[1].valueL]"/>
             <item property="pArray"               value="%x[pArray[0]], %x[pArray[1]], %x[pArray[2]], %x[pArray[3]], %x[pArray[4]]"/>
           </item>
 
           <item property="Lists ._addr">
             <item property="MyListA ValueA"       value="%x[MyListA[0]._addr]"/>
-            <!-- <item property="MyListB ListStart"    value="%x[MyListB[0]._addr]"/>
-            <item property="MyListC ValueA, ValueB, ValueArray"    value="%x[MyListC[0]._addr], %x[MyListC[1]._addr], %x[MyListC[2]._addr], %x[MyListC[3]._addr], %x[MyListC[4]._addr]"/>
+            <item property="MyListB ListStart"    value="%x[MyListB[0]._addr]"/>
+            <item property="MyListC A/B/VA0-2y"    value="%x[MyListC[0]._addr], %x[MyListC[1]._addr], %x[MyListC[2]._addr], %x[MyListC[3]._addr], %x[MyListC[4]._addr]"/>
             <item property="MyListD pArray"       value="%x[MyListD[0]._addr], %x[MyListD[1]._addr], %x[MyListD[2]._addr], %x[MyListD[3]._addr], %x[MyListD[4]._addr]"/>
-            <item property="MyListE pArray"       value="%x[MyListE._addr]"/>
-            <item property="pArray"               value="%x[pArray[0]._addr], %x[pArray[1]._addr], %x[pArray[2]._addr], %x[pArray[3]._addr], %x[pArray[4]._addr]"/> -->
+            <item property="MyListE pArray"       value="%x[MyListE[0]._addr]"/>
+            <item property="pArray"               value="%x[pArray[0]._addr], %x[pArray[1]._addr], %x[pArray[2]._addr], %x[pArray[3]._addr], %x[pArray[4]._addr]"/>
           </item>
 
-          <!-- <item property="Vars">
+          <item property="Vars">
             <item property="R0"    value="%x[R0]"/>
             <item property="i"     value="%x[i]"/>
             <item property="j"     value="%x[j]"/>
             <item property="k"     value="%x[k]"/>
             <item property="l"     value="%x[l]"/>
-          </item> -->
+          </item>
 
-          <!-- <item property="memberTest offset">
+          <item property="memberTest offset">
             <item property="memberTest a"     value="%x[memberTest.a]"/>
             <item property="memberTest b"     value="%x[memberTest.b]"/>
             <item property="memberTest c"     value="%x[memberTest.c]"/>
             <item property="memberTest d"     value="%x[memberTest.d]"/>
-          </item> -->
+          </item>
           
-          <!-- <item property="memberTest no offset">
+          <item property="memberTest no offset">
             <item property="memberTest A"     value="%x[memberTest.A]"/>
             <item property="memberTest B"     value="%x[memberTest.B]"/>
             <item property="memberTest C"     value="%x[memberTest.C]"/>
             <item property="memberTest D"     value="%x[memberTest.D]"/>
-          </item> -->
+          </item>
 
-          <!-- <item property="memberTest both arrified">
-            <item property="memberTest[0].a"     value="%x[memberTest[0].a]"/>
-            <item property="memberTest[0].b"     value="%x[memberTest[0].b]"/>
-            <item property="memberTest[0].c"     value="%x[memberTest[0].c]"/>
-            <item property="memberTest[0].d"     value="%x[memberTest[0].d]"/>
+          <item property="memberTest calculations">
+            <item property="memberTest sum"   value="%x[memberTest.sum]"/>
+          </item>
 
-            <item property="memberTest[0].A"     value="%x[memberTest[0].A]"/>
-            <item property="memberTest[0].B"     value="%x[memberTest[0].B]"/>
-            <item property="memberTest[0].C"     value="%x[memberTest[0].C]"/>
-            <item property="memberTest[0].D"     value="%x[memberTest[0].D]"/>
-          </item> -->
-
-          <!-- <item property="memberTest sum"   value="%x[memberTest.sum]"/>
-
-          <item property="memberTest index array">
-            <item property="memberTest idx i"  value="%x[memberTest[i]]"/>
-            <item property="memberTest idx i+l"  value="%x[memberTest[i+l]]"/>
-
-            <item property="memberTest idx j"  value="%x[memberTest[j]]"/>
-            <item property="memberTest idx j+l"  value="%x[memberTest[j+l]]"/>
-
-            <item property="memberTest idx k"  value="%x[memberTest[k]]"/>
-            <item property="memberTest idx k+l"  value="%x[memberTest[k+l]]"/>
-          </item> -->
-
-          <!-- <item property="memberTest var">
+          <item property="memberTest var">
             <item property="memberTest m_var1"  value="%x[memberTest.m_var1]"/>
             <item property="memberTest m_var2"  value="%x[memberTest.m_var2]"/>
+          </item>
 
-            <item property="memberTest m_var3[0]"  value="%x[memberTest.m_var3[0]]"/>
-            <item property="memberTest m_var3[1]"  value="%x[memberTest.m_var3[1]]"/>
-            <item property="memberTest m_var3[2]"  value="%x[memberTest.m_var3[2]]"/>
-
-            <item property="memberTest m_var3[i]"  value="%x[memberTest.m_var3[i]]"/>
-            <item property="memberTest m_var3[j]"  value="%x[memberTest.m_var3[j]]"/>
-            <item property="memberTest m_var3[k]"  value="%x[memberTest.m_var3[k]]"/>
-          </item> -->
-
-          <!-- <item property="String: true / false">
+          <item property="String: true / false">
             <item property="i"  value="%x[i? &quot;true&quot; : &quot;false&quot;]"/>
             <item property="j"  value="%x[j? &quot;true&quot; : &quot;false&quot;]"/>
             <item property="k"  value="%x[k? &quot;true&quot; : &quot;false&quot;]"/>
             <item property="i+j"  value="%x[(i+j)? &quot;true&quot; : &quot;false&quot;]"/>
-          </item> -->
+          </item>
 
       </out>
     </object>

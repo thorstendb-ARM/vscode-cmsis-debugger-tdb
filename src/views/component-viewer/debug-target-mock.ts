@@ -128,9 +128,9 @@ export const MOCK = {
 
         // 3 x MyList structs stored starting at ADDR.MyList.ValueArray
         ValueArray: [
-            { next: 0, value: 10, name: ADDR.MyList.Str.V0 },
-            { next: 0, value: 20, name: ADDR.MyList.Str.V1 },
-            { next: 0, value: 30, name: ADDR.MyList.Str.V2 },
+            { next: 0, value: 0x1d, name: ADDR.MyList.Str.V0 },
+            { next: 0, value: 0x1e, name: ADDR.MyList.Str.V1 },
+            { next: 0, value: 0x1f, name: ADDR.MyList.Str.V2 },
         ],
 
         // 5 pointers at ADDR.MyList.pArray
