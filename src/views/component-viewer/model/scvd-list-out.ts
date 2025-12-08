@@ -93,6 +93,11 @@ export class ScvdListOut extends ScvdList {
     //     return this.item.length > 0 || this.listOut.length > 0;
     // }
 
+    public getGuiName(): string | undefined {
+        //return 'List';
+        return undefined;
+    }
+
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
 

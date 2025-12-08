@@ -150,7 +150,7 @@
   
       <out name="MyTest">
           <item property="List test" value="" cond="RTX_En">
-            <list name="i" start="0" limit="3">
+            <list name="i" start="0" limit="pArray._count">
               <item property="pArray"    value="%x[pArray[i]]" />
             </list>
           </item>
