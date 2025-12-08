@@ -47,6 +47,11 @@ export class ScvdExpression extends ScvdBase {
         this._isPrintExpression = isPrintExpression ?? false;
     }
 
+    public invalidate() {
+        this._result = undefined;
+        super.invalidate();
+    }
+
     public get expressionAst(): ParseResult | undefined {
         return this._expressionAst;
     }
@@ -84,6 +89,9 @@ export class ScvdExpression extends ScvdBase {
     }
 
     private get value(): number | string | undefined {
+        // if(this._result !== undefined) {
+        //     return this._result;
+        // }
         this.evaluate();
         return this._result;
     }

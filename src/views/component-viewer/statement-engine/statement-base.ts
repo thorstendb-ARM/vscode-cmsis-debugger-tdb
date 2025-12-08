@@ -18,6 +18,15 @@ import { ScvdBase } from '../model/scvd-base';
 import { ExecutionContext } from '../scvd-eval-context';
 import { ScvdGuiInterface } from '../model/scvd-gui-interface';
 
+
+export interface LoopVariable {
+    name: string;
+    currentValue: number;
+    size: number;
+    offset: number;
+    executionContext: ExecutionContext;
+}
+
 /**
  * Base statement node using an **array** for children.
  * - Children are appended as added.
@@ -29,6 +38,7 @@ export class StatementBase implements ScvdGuiInterface {
     private _parent: StatementBase | undefined;
     private _children: StatementBase[] = [];
     private _scvdItem: ScvdBase;
+    private _loopVar: LoopVariable | undefined;
 
     constructor(
         item: ScvdBase, parent: StatementBase | undefined
@@ -42,7 +52,7 @@ export class StatementBase implements ScvdGuiInterface {
         return this._parent;
     }
 
-    public get children(): readonly StatementBase[] {
+    public get children(): StatementBase[] {
         return this._children;
     }
 
@@ -62,6 +72,13 @@ export class StatementBase implements ScvdGuiInterface {
     public get line(): number {
         const lineNo = Number(this.scvdItem.lineNo);
         return isNaN(lineNo) ? 0 : lineNo;
+    }
+
+    public get loopVar(): LoopVariable | undefined {
+        return this._loopVar;
+    }
+    public set loopVar(loopVar: LoopVariable | undefined) {
+        this._loopVar = loopVar;
     }
 
     /**
@@ -89,8 +106,17 @@ export class StatementBase implements ScvdGuiInterface {
         }
 
         this.onExecute(executionContext);
+
         for (const child of this.children) {
             child.executeStatement(executionContext);
+        }
+    }
+
+    private restoreLoopVariable(): void {
+        const loopVar = this.loopVar;
+        const executionContext = loopVar?.executionContext;
+        if(executionContext !== undefined && loopVar !== undefined) {
+            executionContext.memoryHost.setVariable(loopVar.name, loopVar.size, loopVar.currentValue, loopVar.offset);
         }
     }
 
@@ -107,28 +133,21 @@ export class StatementBase implements ScvdGuiInterface {
         return { name: this.scvdItem.getGuiName(), value: this.scvdItem.getGuiValue() };
     }
 
-    public getGuiChildren(): ScvdBase[] | undefined {
-        return this.scvdItem.children;
+    public getGuiChildren(): ScvdGuiInterface[] {
+        return this.children;
     }
 
     public hasGuiChildren(): boolean {
-        return this.scvdItem.children.length > 0;
+        return this.children.length > 0;
     }
 
     public getGuiName(): string | undefined {
-        return this.scvdItem.name;
+        return this.scvdItem.getGuiName();
     }
 
     public getGuiValue(): string | undefined {
-        const val = this.scvdItem.getValue();
-        if (val !== undefined) {
-            if(typeof val === 'number') {
-                return val.toString();
-            } else if(typeof val === 'string') {
-                return val;
-            }
-        }
-        return undefined;
+        this.restoreLoopVariable();
+        return this.scvdItem.getGuiValue();
     }
 
     public getGuiConditionResult(): boolean {

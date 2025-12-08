@@ -98,6 +98,7 @@ export class StatementList extends StatementBase {
             executionContext.memoryHost.writeNumber(name, 0, loopValue, varTargetSize);    // update loop variable in memory
 
             if(whileExpr !== undefined) {
+                whileExpr.invalidate();
                 const whileValue = whileExpr.getValue();
                 if(whileValue !== undefined) {
                     loopValue = whileValue;

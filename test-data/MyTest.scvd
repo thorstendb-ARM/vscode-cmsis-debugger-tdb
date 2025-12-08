@@ -149,6 +149,12 @@
       <var name="i_value"     type="uint8_t"  symbol="iValue" value="1" />
   
       <out name="MyTest">
+          <item property="List test" value="" cond="RTX_En">
+            <list name="i" start="0" limit="3">
+              <item property="pArray"    value="%x[pArray[i]]" />
+            </list>
+          </item>
+
           <item property="System" value="">
             <item property="RTX enable"   value="%t[RTX_En ? &quot;Enabled&quot; : &quot;Disabled&quot;]" /> 
             <item property="Kernel ID"    value="RTX V%d[V_Major].%d[V_Minor].%d[V_Patch]" cond="RTX_En != 0"/>

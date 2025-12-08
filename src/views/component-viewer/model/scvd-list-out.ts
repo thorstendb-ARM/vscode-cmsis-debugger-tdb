@@ -81,17 +81,17 @@ export class ScvdListOut extends ScvdList {
         return newItem;
     }
 
-    public getGuiChildren(): ScvdBase[] | undefined {
-        const guiItems = [this.item, this.listOut]
-            .flat()                                 // merge
-            .filter(x => x.getGuiConditionResult())    // filter
-            .sort(this.sortByLine);                 // sort in-place, returned
-        return guiItems && guiItems.length > 0 ? guiItems : undefined;
-    }
+    // public getGuiChildren(): ScvdBase[] | undefined {
+    //     const guiItems = [this.item, this.listOut]
+    //         .flat()                                 // merge
+    //         .filter(x => x.getGuiConditionResult())    // filter
+    //         .sort(this.sortByLine);                 // sort in-place, returned
+    //     return guiItems && guiItems.length > 0 ? guiItems : undefined;
+    // }
 
-    public hasGuiChildren(): boolean {
-        return this.item.length > 0 || this.listOut.length > 0;
-    }
+    // public hasGuiChildren(): boolean {
+    //     return this.item.length > 0 || this.listOut.length > 0;
+    // }
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];

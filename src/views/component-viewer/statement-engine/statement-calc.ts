@@ -34,6 +34,7 @@ export class StatementCalc extends StatementBase {
 
         const expressions = calcItem.expression;
         expressions.forEach((expr) => {
+            expr.invalidate();
             const value = expr.getValue();
             console.log(`${this.line} Executing "calc": ${expr.expression}, value: ${value}`);
         });

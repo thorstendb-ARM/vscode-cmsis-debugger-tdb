@@ -22,6 +22,7 @@ import { StatementBase } from './statement-base';
 import { StatementCalc } from './statement-calc';
 import { StatementItem } from './statement-item';
 import { StatementList } from './statement-list';
+import { StatementListOut } from './statement-list-out';
 import { StatementObject } from './statement-object';
 import { StatementOut } from './statement-out';
 import { StatementRead } from './statement-read';
@@ -89,6 +90,9 @@ export class StatementEngine {
             case 'ScvdList':
                 // List-specific logic.
                 return new StatementList(item, parent);
+            case 'ScvdListOut':
+                // List-specific logic.
+                return new StatementListOut(item, parent);
             case 'ScvdOut':
                 // Output-specific logic.
                 return new StatementOut(item, parent);

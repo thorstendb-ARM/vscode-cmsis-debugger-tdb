@@ -106,10 +106,10 @@ export class Resolver {
     }
 
     private resolveRecursive(item: ScvdBase, resolveFunc: ResolveSymbolCb): boolean {
-        const resolvedItem = item.resolveAndLink(resolveFunc);
-        if(resolvedItem) {
-            console.log('Resolved item:', item.getExplorerDisplayName());
-        }
+        /*const resolvedItem =*/ item.resolveAndLink(resolveFunc);
+        // if(resolvedItem) {
+        //     console.log('Resolved item:', item.getExplorerDisplayName());
+        // }
 
         item.forEach(child => {
             this.resolveRecursive(child, resolveFunc);

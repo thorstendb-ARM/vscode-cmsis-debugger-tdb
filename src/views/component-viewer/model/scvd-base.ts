@@ -370,13 +370,13 @@ export abstract class ScvdBase {
         return { name: this.getGuiName(), value: this.getGuiValue() };
     }
 
-    public getGuiChildren(): ScvdBase[] | undefined {
-        return undefined;
-    }
+    // public getGuiChildren(): ScvdGuiInterface[] {
+    //     return undefined;
+    // }
 
-    public hasGuiChildren(): boolean {
-        return false;
-    }
+    // public hasGuiChildren(): boolean {
+    //     return false;
+    // }
 
     public getGuiName(): string | undefined {
         return this.name;
