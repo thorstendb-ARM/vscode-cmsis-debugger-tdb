@@ -188,7 +188,7 @@ export class StatementListOut extends StatementBase {
             }
 
             for (const child of this.children) {  // executed in list
-                const loopVar: LoopVariable = { name: name, currentValue: loopValue, size: varTargetSize, offset: 0, executionContext: executionContext };
+                const loopVar: LoopVariable = { name: name, value: loopValue, size: varTargetSize, offset: 0, executionContext: executionContext };
                 this.addIteratedChildren(child, loopVar);
             }
 
@@ -209,10 +209,6 @@ export class StatementListOut extends StatementBase {
 
 
     // ------------  GUI Interface Begin ------------
-    public getGuiEntry(): { name: string | undefined, value: string | undefined } {
-        return { name: this.scvdItem.getGuiName(), value: this.scvdItem.getGuiValue() };
-    }
-
     public getGuiChildren(): ScvdGuiInterface[] {
         return this._iteratedChildren;
     }
@@ -220,23 +216,6 @@ export class StatementListOut extends StatementBase {
     public hasGuiChildren(): boolean {
         return this._iteratedChildren.length > 0;
     }
-
-    public getGuiName(): string | undefined {
-        return this.scvdItem.getGuiName();
-    }
-
-    public getGuiValue(): string | undefined {
-        return this.scvdItem.getGuiValue();
-    }
-
-    public getGuiConditionResult(): boolean {
-        return true;    // use getConditionResult() later
-    }
-
-    public getGuiLineInfo(): string {
-        return this.scvdItem.getLineInfoStr();
-    }
-
     // ------------  GUI Interface End ------------
 
 }

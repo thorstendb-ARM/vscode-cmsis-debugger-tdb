@@ -21,7 +21,7 @@ import { ScvdGuiInterface } from '../model/scvd-gui-interface';
 
 export interface LoopVariable {
     name: string;
-    currentValue: number;
+    value: number;
     size: number;
     offset: number;
     executionContext: ExecutionContext;
@@ -39,6 +39,7 @@ export class StatementBase implements ScvdGuiInterface {
     private _children: StatementBase[] = [];
     private _scvdItem: ScvdBase;
     private _loopVar: LoopVariable | undefined;
+    private _origLoopVar: LoopVariable | undefined;
 
     constructor(
         item: ScvdBase, parent: StatementBase | undefined
@@ -81,6 +82,13 @@ export class StatementBase implements ScvdGuiInterface {
         this._loopVar = loopVar;
     }
 
+    private get currentLoopVar(): LoopVariable | undefined {
+        return this._origLoopVar;
+    }
+    private set currentLoopVar(loopVar: LoopVariable | undefined) {
+        this._origLoopVar = loopVar;
+    }
+
     /**
     * Stable sort by `line`, then recurse into children.
     * Uses index tiebreak to guarantee same-line insertion order.
@@ -112,11 +120,27 @@ export class StatementBase implements ScvdGuiInterface {
         }
     }
 
-    private restoreLoopVariable(): void {
-        const loopVar = this.loopVar;
+    protected restoreLoopVariable(restoreCurrent: boolean = false): void {
+        if(this.loopVar?.executionContext === undefined) {
+            return;
+        }
+        const val = this.loopVar.executionContext.memoryHost.getVariable(this.loopVar.name, this.loopVar.size, this.loopVar.offset);
+        if(!restoreCurrent) {
+            if(val !== undefined) {
+                this.currentLoopVar = {
+                    ...this.loopVar,
+                    value: val,
+                };
+            }
+        }
+
+        const loopVar = restoreCurrent ? this.currentLoopVar : this.loopVar;    // restore original if undefined
+        if(val === loopVar?.value) {
+            return; // no change
+        }
         const executionContext = loopVar?.executionContext;
         if(executionContext !== undefined && loopVar !== undefined) {
-            executionContext.memoryHost.setVariable(loopVar.name, loopVar.size, loopVar.currentValue, loopVar.offset);
+            executionContext.memoryHost.setVariable(loopVar.name, loopVar.size, loopVar.value, loopVar.offset);
         }
     }
 
@@ -142,12 +166,17 @@ export class StatementBase implements ScvdGuiInterface {
     }
 
     public getGuiName(): string | undefined {
-        return this.scvdItem.getGuiName();
+        this.restoreLoopVariable();
+        const value = this.scvdItem.getGuiName();
+        this.restoreLoopVariable(true);
+        return value;
     }
 
     public getGuiValue(): string | undefined {
         this.restoreLoopVariable();
-        return this.scvdItem.getGuiValue();
+        const value = this.scvdItem.getGuiValue();
+        this.restoreLoopVariable(true);
+        return value;
     }
 
     public getGuiConditionResult(): boolean {

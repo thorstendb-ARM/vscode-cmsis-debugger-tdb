@@ -356,6 +356,122 @@ export class CachedMemoryHost {
         this.setVariable(name, size, value, offset, base, size);
     }
 
+    /**
+     * Read a numeric value from a symbol at a given byte offset.
+     *
+     * - `size` is the number of bytes to decode (1, 2, 4, 8, ...).
+     * - Returns a JS `number` for sizes <= 4, and a `bigint` for sizes > 4.
+     * - `offset` is a byte offset within the symbol.
+     */
+    readNumber(name: string, offset: number, size: number): number | bigint | undefined {
+        if (!Number.isSafeInteger(size) || size <= 0) {
+            console.error(`readNumber: size must be a positive safe integer, got ${size}`);
+            return undefined;
+        }
+        if (!Number.isSafeInteger(offset) || offset < 0) {
+            console.error(`readNumber: offset must be a non-negative safe integer, got ${offset}`);
+            return undefined;
+        }
+
+        const entry = this.getEntry(name);
+        const totalBytes = entry.data.byteLength ?? 0;
+
+        if (offset + size > totalBytes) {
+            console.error(
+                `readNumber: range [${offset}, ${offset + size}) out of bounds for "${name}" (len=${totalBytes})`
+            );
+            return undefined;
+        }
+
+        const raw = entry.data.read(offset, size);
+
+        if (this.endianness !== 'little') {
+            // TODO: add BE support if/when needed
+        }
+
+        const v = bytesToLEBigInt(raw);
+
+        // Match the general "small → number, larger → bigint" pattern
+        if (size <= 4) {
+            return Number(v);
+        }
+
+        return v;
+    }
+
+    /**
+     * Get bytes previously recorded for a symbol.
+     *
+     * - No args           → whole symbol.
+     * - `offset` only     → best-effort element at that offset (using metadata),
+     *                       or `[offset .. end)` if no matching element exists.
+     * - `offset` + `size` → exact range `[offset .. offset+size)`.
+     */
+    getVariable(name: string, size?: number, offset?: number): number | undefined {
+        const entry = this.getEntry(name);
+        const totalBytes = entry.data.byteLength ?? 0;
+
+        if (totalBytes === 0) {
+            // symbol exists but has no data yet
+            return undefined;
+        }
+
+        const off = offset ?? 0;
+        if (!Number.isSafeInteger(off) || off < 0) {
+            console.error(`getVariable: offset must be a non-negative safe integer, got ${off}`);
+            return undefined;
+        }
+        if (off >= totalBytes) {
+            console.error(
+                `getVariable: offset ${off} out of range for "${name}" (len=${totalBytes})`
+            );
+            return undefined;
+        }
+
+        let spanSize: number;
+
+        if (size !== undefined) {
+            // explicit size wins
+            if (!Number.isSafeInteger(size) || size <= 0) {
+                console.error(`getVariable: size must be a positive safe integer, got ${size}`);
+                return undefined;
+            }
+            spanSize = size;
+        } else {
+            // infer size from metadata if possible
+            const meta = this.elementMeta.get(name);
+            if (meta) {
+                const idx = meta.offsets.indexOf(off);
+                if (idx >= 0) {
+                    spanSize = meta.sizes[idx];
+                } else {
+                    // no matching element → default to [off .. end)
+                    spanSize = totalBytes - off;
+                }
+            } else {
+                // no metadata at all → [off .. end)
+                spanSize = totalBytes - off;
+            }
+        }
+
+        if (off + spanSize > totalBytes) {
+            console.error(
+                `getVariable: range [${off}, ${off + spanSize}) out of bounds for "${name}" (len=${totalBytes})`
+            );
+            return undefined;
+        }
+
+        // read() returns a view; return a copy so callers can't mutate our backing store
+        const raw = entry.data.read(off, spanSize).slice();
+        const valBig = bytesToLEBigInt(raw);
+        const num = Number(valBig);
+        if (!Number.isSafeInteger(num)) {
+            console.error(`getVariable: value exceeds safe integer range for size=${spanSize}`);
+            return undefined;
+        }
+        return num;
+    }
+
     invalidate(name?: string): void {
         if (name === undefined) this.cache.invalidateAll();
         else this.cache.invalidate(name);
