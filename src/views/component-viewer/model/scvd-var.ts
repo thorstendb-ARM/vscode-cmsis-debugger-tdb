@@ -110,6 +110,7 @@ export class ScvdVar extends ScvdBase {
         return this.getTargetSize();
     }
 
+    // TODO: total size in bytes or type size?
     public getTargetSize(): number | undefined {
         const typeSize = this.getTypeSize();
         const elements = this.size ?? 1;
