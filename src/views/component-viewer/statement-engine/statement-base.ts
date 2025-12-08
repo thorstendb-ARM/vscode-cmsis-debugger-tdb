@@ -16,6 +16,7 @@
 
 import { ScvdBase } from '../model/scvd-base';
 import { ExecutionContext } from '../scvd-eval-context';
+import { ScvdGuiInterface } from '../model/scvd-gui-interface';
 
 /**
  * Base statement node using an **array** for children.
@@ -24,12 +25,14 @@ import { ExecutionContext } from '../scvd-eval-context';
  *   statements on the same line keep the order they were added.
  * - `executeStatement()` walks the tree depth-first in current order.
  */
-export class StatementBase {
+export class StatementBase implements ScvdGuiInterface {
     private _parent: StatementBase | undefined;
     private _children: StatementBase[] = [];
     private _scvdItem: ScvdBase;
 
-    constructor(item: ScvdBase, parent: StatementBase | undefined) {
+    constructor(
+        item: ScvdBase, parent: StatementBase | undefined
+    ) {
         this._scvdItem = item;
         this._parent = parent;
         parent?.addChild(this);
@@ -98,4 +101,44 @@ export class StatementBase {
         console.log(`${this.line}: ${this.scvdItem.constructor.name}`);
         return;
     }
+
+    // ------------  GUI Interface Begin ------------
+    public getGuiEntry(): { name: string | undefined, value: string | undefined } {
+        return { name: this.scvdItem.getGuiName(), value: this.scvdItem.getGuiValue() };
+    }
+
+    public getGuiChildren(): ScvdBase[] | undefined {
+        return this.scvdItem.children;
+    }
+
+    public hasGuiChildren(): boolean {
+        return this.scvdItem.children.length > 0;
+    }
+
+    public getGuiName(): string | undefined {
+        return this.scvdItem.name;
+    }
+
+    public getGuiValue(): string | undefined {
+        const val = this.scvdItem.getValue();
+        if (val !== undefined) {
+            if(typeof val === 'number') {
+                return val.toString();
+            } else if(typeof val === 'string') {
+                return val;
+            }
+        }
+        return undefined;
+    }
+
+    public getGuiConditionResult(): boolean {
+        return true;    // use getConditionResult() later
+    }
+
+    public getGuiLineInfo(): string {
+        return this.scvdItem.getLineInfoStr();
+    }
+
+    // ------------  GUI Interface End ------------
+
 }

@@ -16,6 +16,7 @@
 
 import { ScvdBase } from '../model/scvd-base';
 import { ScvdComponentViewer } from '../model/scvd-comonent-viewer';
+import { ScvdGuiInterface } from '../model/scvd-gui-interface';
 import { ExecutionContext } from '../scvd-eval-context';
 import { StatementBase } from './statement-base';
 import { StatementCalc } from './statement-calc';
@@ -32,6 +33,7 @@ export class StatementEngine {
     private _model: ScvdComponentViewer;
     private _statementTree: StatementBase | undefined;
     private _executionContext: ExecutionContext;
+    private _statementOut: ScvdGuiInterface[] | undefined;
 
     constructor(
         model: ScvdComponentViewer,
@@ -51,6 +53,18 @@ export class StatementEngine {
 
     get executionContext(): ExecutionContext {
         return this._executionContext;
+    }
+
+    get statementOut(): ScvdGuiInterface[] | undefined {
+        return this._statementOut;
+    }
+    private addStatementOut(value: ScvdGuiInterface | undefined) {
+        if (value) {
+            if(this._statementOut === undefined) {
+                this._statementOut = [];
+            }
+            this._statementOut.push(value);
+        }
     }
 
     private buildStatement(item: ScvdBase, parent: StatementBase | undefined) : StatementBase | undefined {
@@ -119,6 +133,20 @@ export class StatementEngine {
             this._statementTree = statementTree;
         }
 
+        const findStatementOut = (node: StatementBase | undefined): StatementOut | undefined => {
+            if (!node) return undefined;
+            if (node instanceof StatementOut) {
+                this.addStatementOut(node);
+            }
+            const children = node.children as StatementBase[] | undefined;
+            if (!children) return undefined;
+            for (const child of children) {
+                const found = findStatementOut(child);
+                if (found) return found;
+            }
+            return undefined;
+        };
+        findStatementOut(this._statementTree);
         return true;
     }
 
@@ -129,5 +157,9 @@ export class StatementEngine {
             console.log('Executing statements in the statement tree...');
             this._statementTree.executeStatement(this.executionContext);
         }
+    }
+
+    public getGuiOut(): ScvdGuiInterface[] | undefined {
+        return this.statementOut;
     }
 }

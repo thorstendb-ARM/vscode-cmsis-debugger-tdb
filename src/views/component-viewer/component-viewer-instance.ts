@@ -16,6 +16,7 @@ import { ScvdComponentViewer } from './model/scvd-comonent-viewer';
 import { StatementEngine } from './statement-engine/statement-engine';
 import { ScvdEvalContext } from './scvd-eval-context';
 import { GDBTargetDebugSession } from '../../debug-session';
+import { ScvdGuiInterface } from './model/scvd-gui-interface';
 
 
 const xmlOpts: ParserOptions = {
@@ -33,6 +34,7 @@ export class ComponentViewerInstance {
     private _memUsageStart: number = 0;
     private _memUsageLast: number = 0;
     private _timeUsageLast: number = 0;
+    private _statementEngine: StatementEngine | undefined;
 
     public constructor(
     ) {
@@ -118,10 +120,10 @@ export class ComponentViewerInstance {
         this.model.calculateTypedefs();
         stats.push(this.getStats('  model.calculateTypedefs'));
 
-        const statementEngine = new StatementEngine(this.model, executionContext);
-        statementEngine.initialize();
+        this.statementEngine = new StatementEngine(this.model, executionContext);
+        this.statementEngine.initialize();
         stats.push(this.getStats('  statementEngine.initialize'));
-        statementEngine.executeAll();
+        this.statementEngine.executeAll();
         stats.push(this.getStats('  statementEngine.executeAll'));
 
         //this.model.debugAll();
@@ -158,8 +160,26 @@ export class ComponentViewerInstance {
         this._model = value;
     }
 
+    public get statementEngine(): StatementEngine | undefined {
+        return this._statementEngine;
+    }
+
+    private set statementEngine(value: StatementEngine | undefined) {
+        this._statementEngine = value;
+    }
+
     public updateModel(activeSession: GDBTargetDebugSession): void {
         // TODO: Update values in the model by re-evaluating necessary statements
         console.log(activeSession);
+    }
+
+    public getGuiOut(): ScvdGuiInterface[] | undefined {
+        return this.statementEngine?.getGuiOut();
+    }
+
+    public executeStatements(): void {
+        if(this._statementEngine !== undefined) {
+            this._statementEngine.executeAll();
+        }
     }
 }

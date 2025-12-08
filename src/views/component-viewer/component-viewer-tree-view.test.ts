@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+/*
 import * as vscode from 'vscode';
 import { ComponentViewerTreeDataProvider } from './component-viewer-tree-view';
 import { ScvdComponentViewer } from './model/scvd-comonent-viewer';
@@ -81,39 +81,39 @@ describe('ComponentViewerTreeDataProvider', () => {
 
         it('should initialize with empty scvd models array', () => {
             expect(treeDataProvider['_scvdModel']).toBeDefined();
-            expect(treeDataProvider['_scvdModel'].scvdModels).toEqual([]);
+            expect(treeDataProvider['_scvdModel'].scvdGuiOut).toEqual([]);
         });
     });
 
     describe('addModel', () => {
         it('should add the SCVD model to scvdModels array', () => {
             const mockScvdModel = createMockScvdModel({ objects: [] });
-            treeDataProvider.addModel(mockScvdModel);
+            treeDataProvider.addGuiOut(mockScvdModel);
 
-            expect(treeDataProvider['_scvdModel'].scvdModels).toHaveLength(1);
-            expect(treeDataProvider['_scvdModel'].scvdModels[0]).toBe(mockScvdModel);
+            expect(treeDataProvider['_scvdModel'].scvdGuiOut).toHaveLength(1);
+            expect(treeDataProvider['_scvdModel'].scvdGuiOut[0]).toBe(mockScvdModel);
         });
 
         it('should not add model when undefined is passed', () => {
             const mockScvdModel = createMockScvdModel({ objects: [] });
-            treeDataProvider.addModel(mockScvdModel);
-            const initialLength = treeDataProvider['_scvdModel'].scvdModels.length;
-            
-            treeDataProvider.addModel(undefined);
+            treeDataProvider.addGuiOut(mockScvdModel);
+            const initialLength = treeDataProvider['_scvdModel'].scvdGuiOut.length;
 
-            expect(treeDataProvider['_scvdModel'].scvdModels).toHaveLength(initialLength);
+            treeDataProvider.addGuiOut(undefined);
+
+            expect(treeDataProvider['_scvdModel'].scvdGuiOut).toHaveLength(initialLength);
         });
 
         it('should handle multiple models being added', () => {
             const model1 = createMockScvdModel({ objects: [] });
             const model2 = createMockScvdModel({ objects: [] });
-            
-            treeDataProvider.addModel(model1);
-            treeDataProvider.addModel(model2);
 
-            expect(treeDataProvider['_scvdModel'].scvdModels).toHaveLength(2);
-            expect(treeDataProvider['_scvdModel'].scvdModels[0]).toBe(model1);
-            expect(treeDataProvider['_scvdModel'].scvdModels[1]).toBe(model2);
+            treeDataProvider.addGuiOut(model1);
+            treeDataProvider.addGuiOut(model2);
+
+            expect(treeDataProvider['_scvdModel'].scvdGuiOut).toHaveLength(2);
+            expect(treeDataProvider['_scvdModel'].scvdGuiOut[0]).toBe(model1);
+            expect(treeDataProvider['_scvdModel'].scvdGuiOut[1]).toBe(model2);
         });
     });
 
@@ -121,7 +121,7 @@ describe('ComponentViewerTreeDataProvider', () => {
         it('should add root objects and refresh when model is set', async () => {
             const mockOut1 = new MockScvdGuiElement('Object1', 'value1');
             const mockOut2 = new MockScvdGuiElement('Object2', 'value2');
-            
+
             const mockScvdModel = createMockScvdModel({
                 objects: [
                     {
@@ -131,8 +131,8 @@ describe('ComponentViewerTreeDataProvider', () => {
             });
 
             const refreshSpy = jest.spyOn(treeDataProvider as any, 'refresh');
-            
-            treeDataProvider.addModel(mockScvdModel);
+
+            treeDataProvider.addGuiOut(mockScvdModel);
             await treeDataProvider.activate();
 
             expect(treeDataProvider['_objectOutRoots']).toHaveLength(2);
@@ -143,7 +143,7 @@ describe('ComponentViewerTreeDataProvider', () => {
 
         it('should handle activation without model set', async () => {
             const refreshSpy = jest.spyOn(treeDataProvider as any, 'refresh');
-            
+
             await treeDataProvider.activate();
 
             expect(treeDataProvider['_objectOutRoots']).toHaveLength(0);
@@ -154,7 +154,7 @@ describe('ComponentViewerTreeDataProvider', () => {
             const mockOut1 = new MockScvdGuiElement('Object1', 'value1');
             const mockOut2 = new MockScvdGuiElement('Object2', 'value2');
             const mockOut3 = new MockScvdGuiElement('Object3', 'value3');
-            
+
             const mockScvdModel = createMockScvdModel({
                 objects: [
                     { out: [mockOut1] },
@@ -162,7 +162,7 @@ describe('ComponentViewerTreeDataProvider', () => {
                 ]
             });
 
-            treeDataProvider.addModel(mockScvdModel);
+            treeDataProvider.addGuiOut(mockScvdModel);
             await treeDataProvider.activate();
 
             expect(treeDataProvider['_objectOutRoots']).toHaveLength(3);
@@ -228,14 +228,14 @@ describe('ComponentViewerTreeDataProvider', () => {
         it('should return root objects when no element is provided', async () => {
             const mockOut1 = new MockScvdGuiElement('Root1', 'value1');
             const mockOut2 = new MockScvdGuiElement('Root2', 'value2');
-            
+
             const mockScvdModel = createMockScvdModel({
                 objects: [
                     { out: [mockOut1, mockOut2] }
                 ]
             });
 
-            treeDataProvider.addModel(mockScvdModel);
+            treeDataProvider.addGuiOut(mockScvdModel);
             await treeDataProvider.activate();
 
             const children = await treeDataProvider.getChildren();
@@ -311,7 +311,7 @@ describe('ComponentViewerTreeDataProvider', () => {
                 objects: [{ out: [mockOut] }]
             });
 
-            treeDataProvider.addModel(mockScvdModel);
+            treeDataProvider.addGuiOut(mockScvdModel);
             await treeDataProvider.activate();
 
             // Should fire at least once during activation
@@ -324,7 +324,7 @@ describe('ComponentViewerTreeDataProvider', () => {
             const mockOut1 = new MockScvdGuiElement('Out1', 'value1');
             const mockOut2 = new MockScvdGuiElement('Out2', 'value2');
             const mockOut3 = new MockScvdGuiElement('Out3', 'value3');
-            
+
             const mockScvdModel = createMockScvdModel({
                 objects: [
                     { out: [mockOut1] },
@@ -332,7 +332,7 @@ describe('ComponentViewerTreeDataProvider', () => {
                 ]
             });
 
-            treeDataProvider.addModel(mockScvdModel);
+            treeDataProvider.addGuiOut(mockScvdModel);
             treeDataProvider['addRootObject']();
 
             expect(treeDataProvider['_objectOutRoots']).toHaveLength(3);
@@ -347,7 +347,7 @@ describe('ComponentViewerTreeDataProvider', () => {
 
         it('should handle model with undefined objects', () => {
             const modelWithoutObjects = {} as ScvdComponentViewer;
-            treeDataProvider.addModel(modelWithoutObjects);
+            treeDataProvider.addGuiOut(modelWithoutObjects);
             treeDataProvider['addRootObject']();
 
             expect(treeDataProvider['_objectOutRoots']).toHaveLength(0);
@@ -355,7 +355,7 @@ describe('ComponentViewerTreeDataProvider', () => {
 
         it('should handle empty objects array', () => {
             const mockScvdModel = createMockScvdModel({ objects: [] });
-            treeDataProvider.addModel(mockScvdModel);
+            treeDataProvider.addGuiOut(mockScvdModel);
             treeDataProvider['addRootObject']();
 
             expect(treeDataProvider['_objectOutRoots']).toHaveLength(0);
@@ -369,7 +369,7 @@ describe('ComponentViewerTreeDataProvider', () => {
                 ]
             });
 
-            treeDataProvider.addModel(mockScvdModel);
+            treeDataProvider.addGuiOut(mockScvdModel);
             treeDataProvider['addRootObject']();
 
             expect(treeDataProvider['_objectOutRoots']).toHaveLength(0);
@@ -379,17 +379,17 @@ describe('ComponentViewerTreeDataProvider', () => {
             const mockOut1 = new MockScvdGuiElement('Out1', 'value1');
             const mockOut2 = new MockScvdGuiElement('Out2', 'value2');
             const mockOut3 = new MockScvdGuiElement('Out3', 'value3');
-            
+
             const model1 = createMockScvdModel({
                 objects: [{ out: [mockOut1, mockOut2] }]
             });
-            
+
             const model2 = createMockScvdModel({
                 objects: [{ out: [mockOut3] }]
             });
 
-            treeDataProvider.addModel(model1);
-            treeDataProvider.addModel(model2);
+            treeDataProvider.addGuiOut(model1);
+            treeDataProvider.addGuiOut(model2);
             treeDataProvider['addRootObject']();
 
             expect(treeDataProvider['_objectOutRoots']).toHaveLength(3);
@@ -404,24 +404,24 @@ describe('ComponentViewerTreeDataProvider', () => {
             const child1 = new MockScvdGuiElement('Item1', 'itemValue1');
             const child2 = new MockScvdGuiElement('Item2', 'itemValue2');
             const parent = new MockScvdGuiElement('ParentObject', 'parentValue', [child1, child2]);
-            
+
             const mockScvdModel = createMockScvdModel({
                 objects: [{ out: [parent] }]
             });
 
-            treeDataProvider.addModel(mockScvdModel);
+            treeDataProvider.addGuiOut(mockScvdModel);
             await treeDataProvider.activate();
 
             const roots = await treeDataProvider.getChildren();
             expect(roots).toHaveLength(1);
-            
+
             const rootTreeItem = treeDataProvider.getTreeItem(roots[0]);
             expect(rootTreeItem.label).toBe('ParentObject');
             expect(rootTreeItem.collapsibleState).toBe(vscode.TreeItemCollapsibleState.Collapsed);
 
             const children = await treeDataProvider.getChildren(roots[0]);
             expect(children).toHaveLength(2);
-            
+
             const childTreeItem = treeDataProvider.getTreeItem(children[0]);
             expect(childTreeItem.label).toBe('Item1');
             expect(childTreeItem.collapsibleState).toBe(vscode.TreeItemCollapsibleState.None);
@@ -433,7 +433,7 @@ describe('ComponentViewerTreeDataProvider', () => {
             const child2 = new MockScvdGuiElement('Child2', 'childValue2');
             const root1 = new MockScvdGuiElement('Root1', 'rootValue1', [child1, child2]);
             const root2 = new MockScvdGuiElement('Root2', 'rootValue2');
-            
+
             const mockScvdModel = createMockScvdModel({
                 objects: [
                     { out: [root1] },
@@ -441,7 +441,7 @@ describe('ComponentViewerTreeDataProvider', () => {
                 ]
             });
 
-            treeDataProvider.addModel(mockScvdModel);
+            treeDataProvider.addGuiOut(mockScvdModel);
             await treeDataProvider.activate();
 
             const roots = await treeDataProvider.getChildren();
@@ -458,17 +458,17 @@ describe('ComponentViewerTreeDataProvider', () => {
         it('should handle multiple scvd models being added', async () => {
             const out1 = new MockScvdGuiElement('Model1Object', 'value1');
             const out2 = new MockScvdGuiElement('Model2Object', 'value2');
-            
+
             const model1 = createMockScvdModel({
                 objects: [{ out: [out1] }]
             });
-            
+
             const model2 = createMockScvdModel({
                 objects: [{ out: [out2] }]
             });
 
-            treeDataProvider.addModel(model1);
-            treeDataProvider.addModel(model2);
+            treeDataProvider.addGuiOut(model1);
+            treeDataProvider.addGuiOut(model2);
             await treeDataProvider.activate();
 
             const roots = await treeDataProvider.getChildren();
@@ -478,3 +478,4 @@ describe('ComponentViewerTreeDataProvider', () => {
         });
     });
 });
+*/

@@ -10,13 +10,13 @@ import { SidebarDebugView } from './sidebar-debug-view';
 
 const scvdMockTestFiles: Map<string, boolean> = new Map<string, boolean>([
     ['test-data/MyTest.scvd',           true],
-    ['test-data/RTX5.scvd',             true],
-    ['test-data/BaseExample.scvd',      true],
-    ['test-data/Network.scvd',          true],
-    ['test-data/USB.scvd',              true],
-    ['test-data/FileSystem.scvd',       true],
-    ['test-data/EventRecorder.scvd',    true],
-    ['test-data/GetRegVal_Test.scvd',   true],
+    ['test-data/RTX5.scvd',             false],
+    ['test-data/BaseExample.scvd',      false],
+    ['test-data/Network.scvd',          false],
+    ['test-data/USB.scvd',              false],
+    ['test-data/FileSystem.scvd',       false],
+    ['test-data/EventRecorder.scvd',    false],
+    ['test-data/GetRegVal_Test.scvd',   false],
 ]);
 
 const scvdMockFiles: string[] = Array.from(scvdMockTestFiles.entries())
@@ -64,8 +64,7 @@ export class ComponentViewerController {
                 if (this.useMocks) {
                     await this.useMocksInstances(this._context);
                     await this.componentViewerTreeDataProvider?.activate();
-                }
-                else {
+                } else {
                     await this.componentViewerTreeDataProvider?.deleteModels();
                 }
             }
@@ -80,7 +79,7 @@ export class ComponentViewerController {
         for (const scvdFile of scvdMockFiles) {
             const instance = new ComponentViewerInstance();
             try {
-            await instance.readModel(URI.file(path.join(context.extensionPath, scvdFile)));
+                await instance.readModel(URI.file(path.join(context.extensionPath, scvdFile)));
             } catch (error) {
                 console.log(`Error reading mock SCVD file ${scvdFile}:`, error);
                 continue;
@@ -120,7 +119,7 @@ export class ComponentViewerController {
         await this.buildMockInstancesArray(context);
         // Add all mock models to the tree view
         for (const instance of this.instances) {
-            this.componentViewerTreeDataProvider?.addModel(instance.model);
+            this.componentViewerTreeDataProvider?.addGuiOut(instance.getGuiOut());
         }
     }
 
@@ -131,7 +130,7 @@ export class ComponentViewerController {
         if (this.instances.length > 0) {
             // Add all models from cbuild-run to the tree view
             for (const instance of this.instances) {
-                this.componentViewerTreeDataProvider?.addModel(instance.model);
+                this.componentViewerTreeDataProvider?.addGuiOut(instance.getGuiOut());
             }
             this.componentViewerTreeDataProvider?.showModelData();
             return;

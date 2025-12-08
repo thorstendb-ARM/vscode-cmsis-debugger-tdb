@@ -224,7 +224,7 @@ export class ScvdTypedef extends ScvdBase {
         return (addr + 3) & ~3;
     }
 
-    public calculateOffsets() {
+    public calculateOffsets() { // move to after starting debug session
         let currentNextOffset = 0;
         this._member.forEach( (member: ScvdMember) => {
             const memberOffset = member.offset;
@@ -243,6 +243,7 @@ export class ScvdTypedef extends ScvdBase {
                     }
                 } else {
                     member.offset = currentNextOffset.toString();  // set current offset
+                    console.error(`ScvdTypedef.calculateOffsets: no offset defined for member: ${member.name} in typedef: ${this.getExplorerDisplayName()}`);
                 }
                 member.offset?.configure();
             }
