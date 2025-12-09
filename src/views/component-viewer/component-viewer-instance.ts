@@ -75,7 +75,7 @@ export class ComponentViewerInstance {
         return `${text}, Time: ${timeUsage} ms, Mem: ${memUsage}, Mem Increase: ${memIncrease} MB, (Total: ${memCurrent} MB)`;
     }
 
-    public async readModel(filename: URI) {
+    public async readModel(filename: URI): Promise<void> {
         const stats: string[] = [];
 
         stats.push(this.getStats(`  Start reading SCVD file ${filename}`));

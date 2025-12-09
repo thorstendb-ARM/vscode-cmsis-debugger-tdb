@@ -81,13 +81,13 @@ export interface DataHost {
   // Optional named intrinsics
   // Note: __GetRegVal(reg) is special-cased (no container); others use the evalIntrinsic convention
   __GetRegVal?(reg: string): number | undefined;
-  __FindSymbol?(symbol: string): number | undefined;
+  __FindSymbol?(symbol: string): Promise<number | undefined>;
   __CalcMemUsed?(args: number[]): number | undefined;
 
   /** sizeof-like intrinsic – semantics are host-defined (usually bytes). */
   __size_of?(symbol: string): number | undefined;
 
-  __Symbol_exists?(symbol: string): number | undefined;
+  __Symbol_exists?(symbol: string): Promise<number | undefined>;
   __Offset_of?(container: RefContainer, typedefMember: string): number | undefined;
 
   // Additional named intrinsics

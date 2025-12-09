@@ -45,7 +45,6 @@ export class ScvdEvalContext {
         model: ScvdComponentViewer
     ) {
         this._model = model;
-
         this._memoryHost = new CachedMemoryHost({ endianness: 'little' });
         this._registerHost = new Cm81MRegisterCache(createMockCm81MRegisterReader());
         this._debugTarget = new ScvdDebugTarget();
@@ -63,19 +62,19 @@ export class ScvdEvalContext {
     }
 
     private get model(): ScvdComponentViewer {
-        return this._model;
+        return this._model !== undefined ? this._model : (() => { throw new Error('SCVD EvalContext: Model not initialized'); })();
     }
 
     private get memoryHost(): CachedMemoryHost {
-        return this._memoryHost;
+        return this._memoryHost !== undefined ? this._memoryHost : (() => { throw new Error('SCVD EvalContext: MemoryHost not initialized'); })();
     }
 
     private get registerHost(): Cm81MRegisterCache {
-        return this._registerHost;
+        return this._registerHost !== undefined ? this._registerHost : (() => { throw new Error('SCVD EvalContext: RegisterHost not initialized'); })();
     }
 
     private get ctx(): EvalContext {
-        return this._ctx;
+        return this._ctx !== undefined ? this._ctx : (() => { throw new Error('SCVD EvalContext: EvalContext not initialized'); })();
     }
 
     public getExecutionContext(): ExecutionContext {
@@ -83,7 +82,7 @@ export class ScvdEvalContext {
             memoryHost: this.memoryHost,
             registerHost: this.registerHost,
             evalContext: this.ctx,
-            debugTarget: this._debugTarget,
+            debugTarget: this._debugTarget !== undefined ? this._debugTarget : (() => { throw new Error('SCVD EvalContext: DebugTarget not initialized'); })(),
         };
     }
 
@@ -99,6 +98,6 @@ export class ScvdEvalContext {
         return undefined;
     }
 
-    public init() {
+    public init(): void {
     }
 }

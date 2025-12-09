@@ -23,7 +23,25 @@ const scvdMockFiles: string[] = Array.from(scvdMockTestFiles.entries())
     .filter(([_, include]) => include)
     .map(([filePath]) => filePath);
 
-//const mocksFlag = false;
+// Helper function to create a mock GDBTargetDebugSession for testing
+export function createMockDebugSession(): GDBTargetDebugSession {
+    const mockVSCodeSession: vscode.DebugSession = {
+        id: 'mock-session-id',
+        name: 'Mock Debug Session',
+        type: 'gdbtarget',
+        workspaceFolder: undefined,
+        configuration: {
+            type: 'gdbtarget',
+            name: 'Mock Debug Session',
+            request: 'launch'
+        },
+        customRequest: async () => ({}),
+        getDebugProtocolBreakpoint: async () => undefined
+    };
+    return new GDBTargetDebugSession(mockVSCodeSession);
+}
+
+
 export class ComponentViewerController {
     private activeSession: GDBTargetDebugSession | undefined;
     private instances: ComponentViewerInstance[] = [];
@@ -74,14 +92,15 @@ export class ComponentViewerController {
     }
 
     protected async buildMockInstancesArray(context: vscode.ExtensionContext): Promise<void> {
-
         const mockedInstances: ComponentViewerInstance[] = [];
+        //const mockSession = createMockDebugSession();
         for (const scvdFile of scvdMockFiles) {
             const instance = new ComponentViewerInstance();
             try {
-                await instance.readModel(URI.file(path.join(context.extensionPath, scvdFile)));
+                // use a mocked GDBTargetDebugSession
+            await instance.readModel(URI.file(path.join(context.extensionPath, scvdFile)));
             } catch (error) {
-                console.log(`Error reading mock SCVD file ${scvdFile}:`, error);
+                console.error('Error reading mock SCVD file:', scvdFile, error);
                 continue;
             }
             mockedInstances.push(instance);
@@ -90,7 +109,7 @@ export class ComponentViewerController {
         const sidebarModel = this.instances[0].model; // Shall be removed later
         if(sidebarModel !== undefined) {
             this.treeDataProvider?.setModel(sidebarModel); // Shall be removed later
-        }
+        }   
     }
 
     protected async readScvdFiles(session?: GDBTargetDebugSession): Promise<void> {
