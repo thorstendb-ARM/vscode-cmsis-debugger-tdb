@@ -67,10 +67,14 @@ export class ScvdDebugTarget {
         if(symbol === undefined) {
             return undefined;
         }
-
-        const symbolInfo = this.mock.getMockSymbolInfo(symbol);
-        if(symbolInfo !== undefined) {
-            return symbolInfo?.member?.length ?? 1;
+        // if the session is a mock session, return mock data. if it's not a mock session, use the target access to get real data
+        if(this.activeSession.session.name.startsWith('mock-session-')) {
+            const symbolInfo = this.mock.getMockSymbolInfo(symbol);
+            if(symbolInfo !== undefined) {
+                return symbolInfo?.member?.length ?? 1;
+            }
+        } else {
+          // TODO For real sessions, this functionality is not implemented yet  
         }
         return undefined;
     }

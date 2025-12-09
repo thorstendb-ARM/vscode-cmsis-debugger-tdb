@@ -122,9 +122,9 @@ export class ScvdEvalInterface implements DataHost {
 
     /* ---------------- Intrinsics ---------------- */
 
-    __FindSymbol(symbolName: string): number | undefined {
+    async __FindSymbol(symbolName: string): Promise<number | undefined> {
         if (typeof symbolName === 'string') {
-            const symbolAddress = this.debugTarget.findSymbolAddress(symbolName);
+            const symbolAddress = await this.debugTarget.findSymbolAddress(symbolName);
             return symbolAddress;
         }
         return undefined;
@@ -134,8 +134,8 @@ export class ScvdEvalInterface implements DataHost {
         return this.registerCache.read(regName); // read from register cache
     }
 
-    __Symbol_exists(symbol: string): number | undefined {
-        return this.debugTarget.findSymbolAddress(symbol) ? 1 : 0;
+    async __Symbol_exists(symbol: string): Promise<number | undefined> {
+        return await this.debugTarget.findSymbolAddress(symbol) ? 1 : 0;
     }
 
     /* Returns

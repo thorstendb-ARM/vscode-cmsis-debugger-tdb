@@ -26,7 +26,7 @@ export class StatementReadList extends StatementBase {
         super(item, parent);
     }
 
-    protected onExecute(executionContext: ExecutionContext): void {
+    protected async onExecute(executionContext: ExecutionContext): Promise<void> {
         const mustRead = this.scvdItem.mustRead;
         if(mustRead === false) {
             console.log(`${this.line} Skipping "read" as already initialized: ${this.scvdItem.name}`);
@@ -70,7 +70,7 @@ export class StatementReadList extends StatementBase {
         // Check if symbol address is defined, use as base address
         const symbol = scvdReadList.symbol;
         if(symbol?.symbol !== undefined) {
-            const symAddr = executionContext.debugTarget.findSymbolAddress(symbol.symbol);
+            const symAddr = await executionContext.debugTarget.findSymbolAddress(symbol.symbol);
             if(symAddr === undefined) {
                 console.error(`${this.line}: Executing "readlist": ${scvdReadList.name}, symbol: ${symbol?.name}, could not find symbol address for symbol: ${symbol?.symbol}`);
                 return;
@@ -131,7 +131,7 @@ export class StatementReadList extends StatementBase {
             const itemAddress = nextPtrAddr;
 
             // Read data from target
-            const readData = executionContext.debugTarget.readMemory(itemAddress, readBytes);
+            const readData = await executionContext.debugTarget.readMemory(itemAddress, readBytes);
             if(readData === undefined) {
                 console.error(`${this.line}: Executing "readlist": ${scvdReadList.name}, symbol: ${symbol?.name}, address: ${baseAddress}, size: ${readBytes} bytes, readMemory failed`);
                 return;

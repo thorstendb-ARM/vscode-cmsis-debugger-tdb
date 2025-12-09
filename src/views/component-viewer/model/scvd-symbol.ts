@@ -55,12 +55,12 @@ export class ScvdSymbol extends ScvdBase {
         this._memberInfo.push({ name: name, size: size, offset: offset });
     }
 
-    public fetchSymbolInformation(): boolean {
+    public async fetchSymbolInformation(): Promise<boolean> {
         if(this.symbol === undefined || this._executionContext === undefined) {
             return false;
         }
 
-        const symbolInfo = this._executionContext.debugTarget.getSymbolInfo(this.symbol);
+        const symbolInfo = await this._executionContext.debugTarget.getSymbolInfo(this.symbol);
         if (symbolInfo !== undefined) {
             this.address = symbolInfo.address;
             symbolInfo.member?.forEach(member => {
