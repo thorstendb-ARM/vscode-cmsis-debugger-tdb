@@ -124,6 +124,7 @@ export class StatementReadList extends StatementBase {
                 }
             }
         }
+        console.log(`${this.line}: Executing target readlist: ${scvdReadList.name}, symbol: ${symbol?.name}, address: ${baseAddress}, size: ${readBytes} bytes`);
 
         // ---- fetch count of items to read. count is always 1..1024 ----
         const count = scvdReadList.getCount();  // Number of list items to read, default is 1. Limited to 1..1024 in ScvdExpression.
@@ -190,6 +191,5 @@ export class StatementReadList extends StatementBase {
         if(scvdReadList.const === true) {   // Mark variable as already initialized
             scvdReadList.mustRead = false;
         }
-        console.log(`${this.line}: Executing target readlist: ${scvdReadList.name}, symbol: ${symbol?.name}, address: ${baseAddress}, size: ${readBytes} bytes`);
     }
 }

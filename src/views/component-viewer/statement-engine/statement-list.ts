@@ -45,6 +45,7 @@ export class StatementList extends StatementBase {
             console.error(`${this.line}: Executing "list": could not cast to ScvdList`);
             return;
         }
+        console.log(`${this.line}: Executing list: ${scvdList.name}`);
 
         const name = scvdList.name;
         if(name === undefined) {
@@ -122,9 +123,6 @@ export class StatementList extends StatementBase {
             }
         }
         executionContext.memoryHost.writeNumber(name, 0, loopValue, varTargetSize);    // update last loop variable in memory
-
-        console.log(`${this.line}: Executing list: ${scvdList.name}`);
-
         return;
     }
 }

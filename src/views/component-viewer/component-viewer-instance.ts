@@ -123,7 +123,7 @@ export class ComponentViewerInstance {
         this.statementEngine = new StatementEngine(this.model, executionContext);
         this.statementEngine.initialize();
         stats.push(this.getStats('  statementEngine.initialize'));
-        this.statementEngine.executeAll();
+        await this.statementEngine.executeAll();
         stats.push(this.getStats('  statementEngine.executeAll'));
 
         //this.model.debugAll();

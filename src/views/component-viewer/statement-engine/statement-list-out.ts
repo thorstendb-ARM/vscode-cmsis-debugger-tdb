@@ -16,7 +16,7 @@
 
 import { ScvdBase } from '../model/scvd-base';
 import { ScvdGuiInterface } from '../model/scvd-gui-interface';
-import { ScvdList } from '../model/scvd-list';
+import { ScvdListOut } from '../model/scvd-list-out';
 import { ExecutionContext } from '../scvd-eval-context';
 import { LoopVariable, StatementBase } from './statement-base';
 import { StatementCalc } from './statement-calc';
@@ -73,7 +73,6 @@ export class StatementListOut extends StatementBase {
         }
     }
 
-
     private addIteratedChild(child: StatementBase, loopVar: LoopVariable): StatementBase | undefined {
         if(child !== undefined) {
             if(this._iteratedChildren === undefined) {
@@ -117,43 +116,44 @@ export class StatementListOut extends StatementBase {
 
     protected async onExecute(executionContext: ExecutionContext): Promise<void> {
         this.clearIteratedChildren();
-        const scvdList = this.scvdItem.castToDerived(ScvdList);
+        const scvdList = this.scvdItem.castToDerived(ScvdListOut);
         if (scvdList === undefined) {
-            console.error(`${this.line}: Executing "list": could not cast to ScvdList`);
+            console.error(`${this.line}: Executing "out-list": could not cast to ScvdList`);
             return;
         }
+        console.log(`${this.line}: Executing out-list: ${scvdList.name}`);
 
         const name = scvdList.name;
         if(name === undefined) {
-            console.error(`${this.line}: Executing "list": no name defined`);
+            console.error(`${this.line}: Executing "out-list": no name defined`);
             return;
         }
 
         const startExpr = scvdList.start;
         if(startExpr === undefined) {
-            console.error(`${this.line}: Executing "list": ${scvdList.name}, no start expression defined`);
+            console.error(`${this.line}: Executing "out-list": ${scvdList.name}, no start expression defined`);
             return;
         }
         const startValue = startExpr.getValue();
         if (startValue === undefined) {
-            console.error(`${this.line}: Executing "list": ${scvdList.name}, could not evaluate start expression`);
+            console.error(`${this.line}: Executing "out-list": ${scvdList.name}, could not evaluate start expression`);
             return;
         }
 
         const modelBase = executionContext.evalContext.container.base;
         if(modelBase === undefined) {
-            console.error(`${this.line}: Executing "list": ${scvdList.name}, no base container defined`);
+            console.error(`${this.line}: Executing "out-list": ${scvdList.name}, no base container defined`);
             return;
         }
 
         const varItem = modelBase.getSymbol(name);
         if(varItem === undefined) {
-            console.error(`${this.line}: Executing "list": ${scvdList.name}, could not find variable in base container: ${modelBase.name}`);
+            console.error(`${this.line}: Executing "out-list": ${scvdList.name}, could not find variable in base container: ${modelBase.name}`);
             return;
         }
         const varTargetSize = varItem.getTargetSize();
         if(varTargetSize === undefined) {
-            console.error(`${this.line}: Executing "list": ${scvdList.name}, variable: ${varItem.name}, could not determine target size`);
+            console.error(`${this.line}: Executing "out-list": ${scvdList.name}, variable: ${varItem.name}, could not determine target size`);
             return;
         }
 
@@ -166,7 +166,7 @@ export class StatementListOut extends StatementBase {
 
         const whileExpr = scvdList.while;
         if(whileExpr !== undefined && limitExpr !== undefined) {
-            console.error(`${this.line}: Executing "list": ${scvdList.name}, cannot define both limit and while expressions`);
+            console.error(`${this.line}: Executing "out-list": ${scvdList.name}, cannot define both limit and while expressions`);
             return;
         }
 
@@ -204,8 +204,6 @@ export class StatementListOut extends StatementBase {
             }
         }
         executionContext.memoryHost.writeNumber(name, 0, loopValue, varTargetSize);    // update last loop variable in memory
-
-        console.log(`${this.line}: Executing list: ${scvdList.name}`);
         return;
     }
 

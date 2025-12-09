@@ -77,6 +77,7 @@ export class StatementRead extends StatementBase {
             console.error(`${this.line}: Executing "read": ${scvdRead.name}, symbol: ${symbol?.name}, could not find symbol address for symbol: ${symbol?.symbol}`);
             return;
         }
+        console.log(`${this.line}: Executing target read: ${scvdRead.name}, symbol: ${symbol?.name}, address: ${baseAddress}, size: ${readBytes} bytes`);
 
         // Read from target memory
         const readData = await executionContext.debugTarget.readMemory(baseAddress, readBytes);
@@ -91,7 +92,6 @@ export class StatementRead extends StatementBase {
         if(scvdRead.const === true) {   // Mark variable as already initialized
             scvdRead.mustRead = false;
         }
-        console.log(`${this.line}: Executing target read: ${scvdRead.name}, symbol: ${symbol?.name}, address: ${baseAddress}, size: ${readBytes} bytes`);
         return;
     }
 }
