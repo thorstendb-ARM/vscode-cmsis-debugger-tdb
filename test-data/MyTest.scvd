@@ -149,9 +149,23 @@
       <var name="i_value"     type="uint8_t"  symbol="iValue" value="1" />
   
       <out name="MyTest">
-          <item property="List test" value="" cond="RTX_En">
+          <item property="MyList count" value="" cond="RTX_En">
+              <item property="MyListA"    value="%d[MyListA._count]" />
+              <item property="MyListB"    value="%d[MyListB._count]" />
+              <item property="MyListC"    value="%d[MyListC._count]" />
+              <item property="MyListD"    value="%d[MyListD._count]" />
+              <item property="MyListE"    value="%d[MyListE._count]" />
+          </item>
+
+          <item property="List test limit" value="" cond="RTX_En">
             <list name="i" start="0" limit="pArray._count">
               <item property="pArray"    value="%x[pArray[i]]" />
+            </list>
+          </item>
+
+          <item property="List test while" value="" cond="RTX_En">
+            <list name="i" start="0" while="MyListA[i].nextL">
+              <item property="pArray"    value="%x[MyListA[i].nameL]" />
             </list>
           </item>
 

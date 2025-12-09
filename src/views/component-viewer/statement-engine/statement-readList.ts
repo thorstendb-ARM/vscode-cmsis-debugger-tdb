@@ -129,12 +129,15 @@ export class StatementReadList extends StatementBase {
         let readIdx = 0;
         while(nextPtrAddr !== undefined) {
             const itemAddress = nextPtrAddr;
+
+            // Read data from target
             const readData = executionContext.debugTarget.readMemory(itemAddress, readBytes);
             if(readData === undefined) {
                 console.error(`${this.line}: Executing "readlist": ${scvdReadList.name}, symbol: ${symbol?.name}, address: ${baseAddress}, size: ${readBytes} bytes, readMemory failed`);
                 return;
             }
 
+            // Store in memory host
             executionContext.memoryHost.setVariable(itemName, readBytes, readData, -1, itemAddress, virtualBytes);
             readIdx ++;
 
@@ -167,7 +170,7 @@ export class StatementReadList extends StatementBase {
             }
 
             if(nextPtrAddr === 0) {
-                break;  // NULL pointer, end of linked list
+                nextPtrAddr = undefined;  // NULL pointer, end of linked list
             }
         }
 

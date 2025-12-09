@@ -36,7 +36,7 @@ export const ADDR = {
         ValueC:     0x20005100,
         ValueB:     0x20005120,
         ValueA:     0x20005140,
-        ListStart:  0x20005160,   // holds pointer to ValueA
+        ListStart:  0x20005140,   // holds pointer to ValueA
         ValueArray: 0x20005200,   // 3 x MyList (12 bytes each) => 36 bytes
         pArray:     0x20005000,   // 5 pointers (20 bytes)
 

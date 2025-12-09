@@ -72,7 +72,7 @@ export class ComponentViewerInstance {
         this._memUsageLast = memCurrent;
         this._timeUsageLast = timeCurrent;
 
-        return `${text}, Time: ${timeUsage} ms, Mem: ${memUsage}, Mem Increase: ${memIncrease}, MB (Total: ${memCurrent} MB)`;
+        return `${text}, Time: ${timeUsage} ms, Mem: ${memUsage}, Mem Increase: ${memIncrease} MB, (Total: ${memCurrent} MB)`;
     }
 
     public async readModel(filename: URI) {
