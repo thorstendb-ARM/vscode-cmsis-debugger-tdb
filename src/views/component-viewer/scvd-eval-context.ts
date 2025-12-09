@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import { GDBTargetDebugSession } from '../../debug-session';
 import { CachedMemoryHost } from './cache/cache';
 import { Cm81MRegisterCache } from './cache/register-cache';
 import { EvalContext } from './evaluator';
@@ -98,6 +99,7 @@ export class ScvdEvalContext {
         return undefined;
     }
 
-    public init(): void {
+    public init(debugSession: GDBTargetDebugSession): void {
+        this._debugTarget.init(debugSession);
     }
 }

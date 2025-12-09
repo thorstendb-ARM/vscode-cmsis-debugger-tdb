@@ -98,7 +98,7 @@ export class ComponentViewerController {
             const instance = new ComponentViewerInstance();
             try {
                 // use a mocked GDBTargetDebugSession
-            await instance.readModel(URI.file(path.join(context.extensionPath, scvdFile)));
+            await instance.readModel(URI.file(path.join(context.extensionPath, scvdFile)), createMockDebugSession());
             } catch (error) {
                 console.error('Error reading mock SCVD file:', scvdFile, error);
                 continue;
@@ -128,8 +128,10 @@ export class ComponentViewerController {
         const cbuildRunInstances: ComponentViewerInstance[] = [];
         for (const scvdFilePath of scvdFilesPaths) {
             const instance = new ComponentViewerInstance();
-            await instance.readModel(URI.file(scvdFilePath));
-            cbuildRunInstances.push(instance);
+            if (this.activeSession !== undefined) {
+                await instance.readModel(URI.file(scvdFilePath), this.activeSession);
+                cbuildRunInstances.push(instance);
+            }
         }
         this.instances = cbuildRunInstances;
     }
