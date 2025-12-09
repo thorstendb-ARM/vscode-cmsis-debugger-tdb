@@ -29,7 +29,8 @@ export class StatementCalc extends StatementBase {
     protected async onExecute(_executionContext: ExecutionContext): Promise<void> {
         const calcItem = this.scvdItem.castToDerived(ScvdCalc);
         if (!calcItem) {
-            throw new Error('Invalid SCVD item');
+            console.error(`${this.line}: Executing "calc": could not cast to ScvdCalc`);
+            return;
         }
 
         const expressions = calcItem.expression;
