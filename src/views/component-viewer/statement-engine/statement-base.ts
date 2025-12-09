@@ -145,11 +145,10 @@ export class StatementBase implements ScvdGuiInterface {
     }
 
     /** Override in subclasses to perform work for this node. */
-    protected onExecute(_executionContext: ExecutionContext): void {
+    protected async onExecute(_executionContext: ExecutionContext): Promise<void> {
         // no-op in base
         //console.log(`${this.line}: Executing "${this.scvdItem.constructor.name}", ${this.scvdItem.getExplorerDisplayName()}`);
         console.log(`${this.line}: ${this.scvdItem.constructor.name}`);
-        return;
     }
 
     // ------------  GUI Interface Begin ------------

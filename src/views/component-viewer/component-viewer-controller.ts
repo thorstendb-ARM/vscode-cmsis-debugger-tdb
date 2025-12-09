@@ -106,10 +106,10 @@ export class ComponentViewerController {
             mockedInstances.push(instance);
         }
         this.instances = mockedInstances;
-        const sidebarModel = this.instances[0].model; // Shall be removed later
+        /*const sidebarModel = this.instances[0].model; // Shall be removed later
         if(sidebarModel !== undefined) {
             this.treeDataProvider?.setModel(sidebarModel); // Shall be removed later
-        }   
+        }*/
     }
 
     protected async readScvdFiles(session?: GDBTargetDebugSession): Promise<void> {

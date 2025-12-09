@@ -26,17 +26,18 @@ export class StatementCalc extends StatementBase {
         super(item, parent);
     }
 
-    protected onExecute(_executionContext: ExecutionContext): void {
+    protected async onExecute(_executionContext: ExecutionContext): Promise<void> {
         const calcItem = this.scvdItem.castToDerived(ScvdCalc);
         if (!calcItem) {
-            throw new Error('Invalid SCVD item');
+            console.error(`${this.line}: Executing "calc": could not cast to ScvdCalc`);
+            return;
         }
 
         const expressions = calcItem.expression;
-        expressions.forEach((expr) => {
+        for (const expr of expressions) {
             expr.invalidate();
             const value = expr.getValue();
             console.log(`${this.line} Executing "calc": ${expr.expression}, value: ${value}`);
-        });
+        }
     }
 }

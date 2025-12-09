@@ -35,15 +35,17 @@ export class StatementList extends StatementBase {
 
         await this.onExecute(executionContext);
         /*for (const child of this.children) {  // executed in list
-            child.executeStatement(executionContext);
+            await child.executeStatement(executionContext);
         }*/
     }
 
-    protected onExecute(executionContext: ExecutionContext): void {
+    protected async onExecute(executionContext: ExecutionContext): Promise<void> {
         const scvdList = this.scvdItem.castToDerived(ScvdList);
         if (scvdList === undefined) {
+            console.error(`${this.line}: Executing "list": could not cast to ScvdList`);
             return;
         }
+        console.log(`${this.line}: Executing list: ${scvdList.name}`);
 
         const name = scvdList.name;
         if(name === undefined) {
@@ -117,11 +119,10 @@ export class StatementList extends StatementBase {
             }
 
             for (const child of this.children) {  // executed in list
-                child.executeStatement(executionContext);
+                await child.executeStatement(executionContext);
             }
         }
         executionContext.memoryHost.writeNumber(name, 0, loopValue, varTargetSize);    // update last loop variable in memory
-
-        console.log(`${this.line}: Executing list: ${scvdList.name}`);
+        return;
     }
 }
