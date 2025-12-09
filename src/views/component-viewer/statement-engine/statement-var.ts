@@ -26,7 +26,7 @@ export class StatementVar extends StatementBase {
         super(item, parent);
     }
 
-    protected onExecute(executionContext: ExecutionContext): void {
+    protected async onExecute(executionContext: ExecutionContext): Promise<void> {
         console.log(`${this.line}: Executing "var": ${this.scvdItem.name}`);
 
         const varItem = this.scvdItem.castToDerived(ScvdVar);

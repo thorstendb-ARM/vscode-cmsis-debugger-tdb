@@ -154,12 +154,12 @@ export class StatementEngine {
         return true;
     }
 
-    public executeAll(): void {
+    public async executeAll(): Promise<void> {
         // Execute all statements in the statement tree.
         // This is a placeholder implementation.
         if (this._statementTree) {
             console.log('Executing statements in the statement tree...');
-            this._statementTree.executeStatement(this.executionContext);
+            await this._statementTree.executeStatement(this.executionContext);
         }
     }
 

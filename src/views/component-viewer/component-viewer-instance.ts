@@ -177,9 +177,9 @@ export class ComponentViewerInstance {
         return this.statementEngine?.getGuiOut();
     }
 
-    public executeStatements(): void {
+    public async executeStatements(): Promise<void> {
         if(this._statementEngine !== undefined) {
-            this._statementEngine.executeAll();
+            await this._statementEngine.executeAll();
         }
     }
 }

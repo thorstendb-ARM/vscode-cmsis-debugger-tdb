@@ -106,19 +106,20 @@ export class StatementListOut extends StatementBase {
 
         await this.onExecute(executionContext);
         /*for (const child of this.children) {  // executed in list
-            child.executeStatement(executionContext);
+            await child.executeStatement(executionContext);
         }*/
     }
 
-    private addIteratedChildren(child: StatementBase, loopVar: LoopVariable): void {
+    private async addIteratedChildren(child: StatementBase, loopVar: LoopVariable): Promise<void> {
         this.addIteratedChild(child, loopVar);
-        child.executeStatement(loopVar.executionContext);
+        await child.executeStatement(loopVar.executionContext);
     }
 
-    protected onExecute(executionContext: ExecutionContext): void {
+    protected async onExecute(executionContext: ExecutionContext): Promise<void> {
         this.clearIteratedChildren();
         const scvdList = this.scvdItem.castToDerived(ScvdList);
         if (scvdList === undefined) {
+            console.error(`${this.line}: Executing "list": could not cast to ScvdList`);
             return;
         }
 
@@ -205,6 +206,7 @@ export class StatementListOut extends StatementBase {
         executionContext.memoryHost.writeNumber(name, 0, loopValue, varTargetSize);    // update last loop variable in memory
 
         console.log(`${this.line}: Executing list: ${scvdList.name}`);
+        return;
     }
 
 

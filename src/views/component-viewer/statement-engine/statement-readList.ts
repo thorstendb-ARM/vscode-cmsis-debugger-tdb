@@ -35,6 +35,7 @@ export class StatementReadList extends StatementBase {
 
         const scvdReadList = this.scvdItem.castToDerived(ScvdReadList);
         if (scvdReadList === undefined) {
+            console.error(`${this.line}: Executing "readlist": could not cast to ScvdReadList`);
             return;
         }
 
