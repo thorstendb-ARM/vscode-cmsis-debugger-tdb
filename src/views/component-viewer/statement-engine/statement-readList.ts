@@ -66,7 +66,7 @@ export class StatementReadList extends StatementBase {
 
         // ---- calculate base address from symbol and/or offset ----
         let baseAddress: number | undefined = undefined;
-        let maxArraySize: number = 1;
+        let maxArraySize: number = 1024;
 
         // Check if symbol address is defined, use as base address
         const symbol = scvdReadList.symbol;

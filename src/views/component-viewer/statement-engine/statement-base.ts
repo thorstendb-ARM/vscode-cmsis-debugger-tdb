@@ -106,17 +106,17 @@ export class StatementBase implements ScvdGuiInterface {
         }
     }
 
-    public executeStatement(executionContext: ExecutionContext): void {
+    public async executeStatement(executionContext: ExecutionContext): Promise<void> {
         const conditionResult = this.scvdItem.getConditionResult();
         if (conditionResult === false) {
             console.log(`  Skipping ${this.scvdItem.getExplorerDisplayName()} for condition result: ${conditionResult}`);
             return;
         }
 
-        this.onExecute(executionContext);
+        await this.onExecute(executionContext);
 
         for (const child of this.children) {
-            child.executeStatement(executionContext);
+            await child.executeStatement(executionContext);
         }
     }
 

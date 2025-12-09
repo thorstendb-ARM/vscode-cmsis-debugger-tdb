@@ -26,14 +26,14 @@ export class StatementList extends StatementBase {
         super(item, parent);
     }
 
-    public executeStatement(executionContext: ExecutionContext): void {
+    public async executeStatement(executionContext: ExecutionContext): Promise<void> {
         const conditionResult = this.scvdItem.getConditionResult();
         if (conditionResult === false) {
             console.log(`  Skipping ${this.scvdItem.getExplorerDisplayName()} for condition result: ${conditionResult}`);
             return;
         }
 
-        this.onExecute(executionContext);
+        await this.onExecute(executionContext);
         /*for (const child of this.children) {  // executed in list
             child.executeStatement(executionContext);
         }*/
