@@ -23,7 +23,6 @@ import { ScvdComponentViewer } from './model/scvd-comonent-viewer';
 import { ScvdFormatSpecifier } from './model/scvd-format-specifier';
 import { ScvdDebugTarget } from './scvd-debug-target';
 import { ScvdEvalInterface } from './scvd-eval-interface';
-import { GDBTargetDebugSession } from '../../debug-session';
 
 export interface ExecutionContext {
     memoryHost: CachedMemoryHost;
@@ -43,9 +42,9 @@ export class ScvdEvalContext {
     private _model: ScvdComponentViewer;
 
     constructor(
+        model: ScvdComponentViewer
     ) {
         this._model = model;
-
         this._memoryHost = new CachedMemoryHost({ endianness: 'little' });
         this._registerHost = new Cm81MRegisterCache(createMockCm81MRegisterReader());
         this._debugTarget = new ScvdDebugTarget();
@@ -99,22 +98,6 @@ export class ScvdEvalContext {
         return undefined;
     }
 
-    public init(model: ScvdComponentViewer, gdbTargetDebugSession: GDBTargetDebugSession): void {
-        this._model = model;
-
-        this._memoryHost = new CachedMemoryHost({ endianness: 'little' });
-        this._registerHost = new Cm81MRegisterCache(createMockCm81MRegisterReader());
-        this._debugTarget = new ScvdDebugTarget(gdbTargetDebugSession);
-        this._evalHost = new ScvdEvalInterface(this._memoryHost, this._registerHost, this._debugTarget);
-        const outItem = this.getOutItem();
-        if(outItem === undefined) {
-            throw new Error('SCVD EvalContext: No output item defined');
-        }
-
-        this._ctx = new EvalContext({
-            data: this._evalHost,               // DataHost
-            container: outItem,                 // ScvdBase root for symbol resolution
-            printf: printfHook,
-        });
+    public init(): void {
     }
 }

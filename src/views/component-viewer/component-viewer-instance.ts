@@ -35,7 +35,6 @@ export class ComponentViewerInstance {
     private _memUsageLast: number = 0;
     private _timeUsageLast: number = 0;
     private _statementEngine: StatementEngine | undefined;
-    private scvdEvalContext = new ScvdEvalContext();
 
     public constructor(
     ) {
@@ -76,7 +75,7 @@ export class ComponentViewerInstance {
         return `${text}, Time: ${timeUsage} ms, Mem: ${memUsage}, Mem Increase: ${memIncrease} MB, (Total: ${memCurrent} MB)`;
     }
 
-    public async readModel(filename: URI, gdbTargetDebugSession: GDBTargetDebugSession): Promise<void> {
+    public async readModel(filename: URI): Promise<void> {
         const stats: string[] = [];
 
         stats.push(this.getStats(`  Start reading SCVD file ${filename}`));
@@ -101,10 +100,11 @@ export class ComponentViewerInstance {
         this.model.readXml(xml);
         stats.push(this.getStats('  model.readXml'));
 
-        this.scvdEvalContext.init(this.model, gdbTargetDebugSession);
+        const scvdEvalContext = new ScvdEvalContext(this.model);
+        scvdEvalContext.init();
         stats.push(this.getStats('  evalContext.init'));
 
-        const executionContext = this.scvdEvalContext.getExecutionContext();
+        const executionContext = scvdEvalContext.getExecutionContext();
         this.model.setExecutionContextAll(executionContext);
         stats.push(this.getStats('  model.setExecutionContextAll'));
 

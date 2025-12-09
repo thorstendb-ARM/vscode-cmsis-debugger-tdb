@@ -17,7 +17,7 @@
 import { DebugTargetMock } from './debug-target-mock';
 import { ComponentViewerTargetAccess } from './component-viewer-target-access';
 import { GDBTargetDebugSession } from '../../debug-session/gdbtarget-debug-session';
-
+import { createMockDebugSession } from './component-viewer-controller';
 
 export interface MemberInfo {
     name: string;
@@ -34,13 +34,11 @@ export interface SymbolInfo {
 
 export class ScvdDebugTarget {
     private mock = new DebugTargetMock();
-    private activeSession: GDBTargetDebugSession;
+    private activeSession: GDBTargetDebugSession = createMockDebugSession();
     private targetAccess: ComponentViewerTargetAccess;
 
     constructor(
-        gdbTargetDebugSession: GDBTargetDebugSession
     ) {
-        this.activeSession = gdbTargetDebugSession;
         this.targetAccess = new ComponentViewerTargetAccess(this.activeSession);
     }
 

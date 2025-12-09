@@ -24,7 +24,7 @@ const scvdMockFiles: string[] = Array.from(scvdMockTestFiles.entries())
     .map(([filePath]) => filePath);
 
 // Helper function to create a mock GDBTargetDebugSession for testing
-function createMockDebugSession(): GDBTargetDebugSession {
+export function createMockDebugSession(): GDBTargetDebugSession {
     const mockVSCodeSession: vscode.DebugSession = {
         id: 'mock-session-id',
         name: 'Mock Debug Session',
@@ -93,12 +93,12 @@ export class ComponentViewerController {
 
     protected async buildMockInstancesArray(context: vscode.ExtensionContext): Promise<void> {
         const mockedInstances: ComponentViewerInstance[] = [];
-        const mockSession = createMockDebugSession();
+        //const mockSession = createMockDebugSession();
         for (const scvdFile of scvdMockFiles) {
             const instance = new ComponentViewerInstance();
             try {
                 // use a mocked GDBTargetDebugSession
-            await instance.readModel(URI.file(path.join(context.extensionPath, scvdFile)), mockSession);
+            await instance.readModel(URI.file(path.join(context.extensionPath, scvdFile)));
             } catch (error) {
                 console.error('Error reading mock SCVD file:', scvdFile, error);
                 continue;
@@ -128,7 +128,7 @@ export class ComponentViewerController {
         const cbuildRunInstances: ComponentViewerInstance[] = [];
         for (const scvdFilePath of scvdFilesPaths) {
             const instance = new ComponentViewerInstance();
-            await instance.readModel(URI.file(scvdFilePath), session);
+            await instance.readModel(URI.file(scvdFilePath));
             cbuildRunInstances.push(instance);
         }
         this.instances = cbuildRunInstances;
