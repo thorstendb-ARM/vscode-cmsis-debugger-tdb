@@ -177,7 +177,7 @@ export class StatementListOut extends StatementBase {
             if(whileExpr !== undefined) {
                 whileExpr.invalidate();
                 const whileValue = whileExpr.getValue();
-                if(loopValue === 0 || whileValue === undefined) {   // break on read error too
+                if(whileValue === 0 || whileValue === undefined) {   // break on read error too
                     break;
                 }
             }

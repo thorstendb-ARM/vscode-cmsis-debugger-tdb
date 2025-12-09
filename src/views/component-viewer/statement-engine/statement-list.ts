@@ -97,6 +97,7 @@ export class StatementList extends StatementBase {
         while (maximumCount-- > 0) {
             executionContext.memoryHost.writeNumber(name, 0, loopValue, varTargetSize);    // update loop variable in memory
 
+            // while-loop
             if(whileExpr !== undefined) {
                 whileExpr.invalidate();
                 const whileValue = whileExpr.getValue();
@@ -107,6 +108,7 @@ export class StatementList extends StatementBase {
                     break;
                 }
             }
+            // for-loop: test condition, exit if met
             if(limitExpr !== undefined) {
                 if(loopValue >= limitValue) {
                     break;

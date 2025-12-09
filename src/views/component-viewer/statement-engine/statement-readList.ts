@@ -66,6 +66,7 @@ export class StatementReadList extends StatementBase {
 
         // ---- calculate base address from symbol and/or offset ----
         let baseAddress: number | undefined = undefined;
+        let maxArraySize: number = 1;
 
         // Check if symbol address is defined, use as base address
         const symbol = scvdReadList.symbol;
@@ -76,6 +77,9 @@ export class StatementReadList extends StatementBase {
                 return;
             }
             baseAddress = symAddr;
+
+            // fetch maximum existing array size
+            maxArraySize = executionContext.debugTarget.getNumArrayElements(symbol.symbol) ?? 1;
         }
 
         // Add offset to base address. If no symbol defined, offset is used as base address
@@ -128,13 +132,13 @@ export class StatementReadList extends StatementBase {
 
         let readIdx = 0;
         while(nextPtrAddr !== undefined) {
-            const itemAddress = nextPtrAddr;
+            const itemAddress: number | undefined = nextPtrAddr;
 
             // Read data from target
             const readData = await executionContext.debugTarget.readMemory(itemAddress, readBytes);
             if(readData === undefined) {
                 console.error(`${this.line}: Executing "readlist": ${scvdReadList.name}, symbol: ${symbol?.name}, address: ${baseAddress}, size: ${readBytes} bytes, readMemory failed`);
-                return;
+                break;
             }
 
             // Store in memory host
@@ -142,8 +146,13 @@ export class StatementReadList extends StatementBase {
             readIdx ++;
 
             // check count
-            if(count !== undefined && readIdx >= count) {
-                break;
+            if(count !== undefined) {
+                if(readIdx >= count) {
+                    break;
+                } else if(readIdx > maxArraySize) {
+                    console.warn(`${this.line}: Executing "readlist": ${scvdReadList.name}, symbol: ${symbol?.name}, reached maximum array size: ${maxArraySize} for variable: ${itemName}`);
+                    break;
+                }
             }
             // Check overall maximum read size
             if(readIdx >= ScvdReadList.READ_SIZE_MAX) {
@@ -157,29 +166,29 @@ export class StatementReadList extends StatementBase {
             // calculate next address
             if(next) {
                 if(nextTargetSize === undefined || nextOffset === undefined) {
-                    return;
+                    break;
                 }
                 const nextPtrUint8Arr = readData.subarray(nextOffset, nextOffset + nextTargetSize);
                 if(nextPtrUint8Arr.length !== nextTargetSize) {
                     console.error(`${this.line}: Executing "readlist": ${scvdReadList.name}, symbol: ${symbol?.name}, could not extract next pointer data from read data`);
-                    return;
+                    break;
                 }
                 nextPtrAddr = nextPtrUint8Arr[0] | (nextPtrUint8Arr[1] << 8) | (nextPtrUint8Arr[2] << 16) | (nextPtrUint8Arr[3] << 24);
             } else {
                 nextPtrAddr = baseAddress + (isPointer ? (readIdx * 4) : (readIdx * targetSize));
             }
 
-            if(nextPtrAddr === 0) {
-                nextPtrAddr = undefined;  // NULL pointer, end of linked list
+            if(nextPtrAddr === 0) { // NULL pointer, end of linked list
+                nextPtrAddr = undefined;
+            } else if(nextPtrAddr === itemAddress) {    // loop detection
+                console.warn(`${this.line}: Executing "readlist": ${scvdReadList.name}, symbol: ${symbol?.name}, detected loop in linked list at address: ${itemAddress.toString(16)}`);
+                break;
             }
         }
-
 
         if(scvdReadList.const === true) {   // Mark variable as already initialized
             scvdReadList.mustRead = false;
         }
         console.log(`${this.line}: Executing target readlist: ${scvdReadList.name}, symbol: ${symbol?.name}, address: ${baseAddress}, size: ${readBytes} bytes`);
-        return;
     }
-
 }

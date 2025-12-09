@@ -48,7 +48,7 @@ export class ScvdDebugTarget {
             return undefined;
         }
         // if the session is a mock session, return mock data. if it's not a mock session, use the target access to get real data
-        if(this.activeSession.session.name.startsWith('mock-session-')) {
+        if(this.activeSession.session.id.startsWith('mock-session-')) {
             return this.mock.getMockSymbolInfo(symbol);
         } else {
             const symbolName = symbol;
@@ -66,13 +66,13 @@ export class ScvdDebugTarget {
             return undefined;
         }
         // if the session is a mock session, return mock data. if it's not a mock session, use the target access to get real data
-        if(this.activeSession.session.name.startsWith('mock-session-')) {
+        if(this.activeSession.session.id.startsWith('mock-session-')) {
             const symbolInfo = this.mock.getMockSymbolInfo(symbol);
             if(symbolInfo !== undefined) {
                 return symbolInfo?.member?.length ?? 1;
             }
         } else {
-          // TODO For real sessions, this functionality is not implemented yet  
+            // TODO For real sessions, this functionality is not implemented yet
         }
         return undefined;
     }
@@ -87,7 +87,7 @@ export class ScvdDebugTarget {
 
     public async readMemory(address: number, size: number): Promise<Uint8Array | undefined> {
         // If the session is a mock session, return mock data. If it's not a mock session, use the target access to get real data
-        if(this.activeSession.session.name.startsWith('mock-session-')) {
+        if(this.activeSession.session.id.startsWith('mock-session-')) {
             return this.mock.getMockMemoryData(address, size);
         } else {
             const dataAsString = await this.targetAccess.evaluateMemory(address.toString(), size, 0);
