@@ -35,7 +35,7 @@ export interface LoopVariable {
  *   statements on the same line keep the order they were added.
  * - `executeStatement()` walks the tree depth-first in current order.
  */
-export class StatementBase implements ScvdGuiInterface {
+export class StatementBase {
     private _parent: StatementBase | undefined;
     private _children: StatementBase[] = [];
     private _scvdItem: ScvdBase;
