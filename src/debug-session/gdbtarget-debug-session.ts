@@ -19,6 +19,7 @@ import { DebugProtocol } from '@vscode/debugprotocol';
 import { logger } from '../logger';
 import { CbuildRunReader } from '../cbuild-run';
 import { PeriodicRefreshTimer } from './periodic-refresh-timer';
+import { OutputEventFilter } from './output-event-filter';
 
 /**
  * GDBTargetDebugSession - Wrapper class to provide session state/details
@@ -28,11 +29,30 @@ export class GDBTargetDebugSession {
     public readonly canAccessWhileRunning: boolean;
     private _cbuildRun: CbuildRunReader|undefined;
     private _cbuildRunParsePromise: Promise<void>|undefined;
+    private outputEventFilter = new OutputEventFilter();
 
     constructor(public session: vscode.DebugSession) {
         this.refreshTimer = new PeriodicRefreshTimer(this);
         this.canAccessWhileRunning = this.session.configuration.type === 'gdbtarget' && this.session.configuration['auxiliaryGdb'] === true;
         this.refreshTimer.enabled = this.canAccessWhileRunning;
+    }
+
+    /**
+     * Filters and renames specific output events, logs those events to 'Arm CMSIS Debugger' output channel.
+     *
+     * Renaming the events to 'cmsis-debugger-discarded' makes VS Code and loaded debug view
+     * extensions ignore them.
+     *
+     * @param event The output event to process in the filter.
+     */
+    public filterOutputEvent(event: DebugProtocol.OutputEvent): void {
+        if (this.outputEventFilter.filterOutputEvent(event)) {
+            // Log original event properties for potential diagnostics purposes.
+            logger.debug(`[Filtered output event]: category='${event.body.category}', seq='${event.seq}', session='${this.session.name}'`);
+            logger.debug(`\t'${event.body.output}'`);
+            event.event = 'cmsis-debugger-discarded'; // Discard the event by changing the event name
+            return;
+        }
     }
 
     public async getCbuildRun(): Promise<CbuildRunReader|undefined> {
