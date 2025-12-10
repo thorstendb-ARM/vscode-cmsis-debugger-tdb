@@ -342,6 +342,9 @@ export abstract class ScvdBase {
         console.error(`GetIsPointer not implemented: item=${this.classname}: ${this.getDisplayLabel()}`);
         return false;
     }
+    public async getArraySize(): Promise<number | undefined> {
+        return Promise.resolve(undefined); // default
+    }
 
     // member’s byte offset
     public async getMemberOffset(): Promise<number | undefined> {

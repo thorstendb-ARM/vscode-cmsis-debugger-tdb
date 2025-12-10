@@ -128,6 +128,9 @@ export class ScvdRead extends ScvdBase {
     public getVirtualSize(): number | undefined {
         return this.type?.getVirtualSize();
     }
+    public async getArraySize(): Promise<number | undefined> {
+        return await this.size?.getValue();
+    }
 
     public getIsPointer(): boolean {
         return this.type?.getIsPointer() ?? false;

@@ -34,6 +34,11 @@ export class StatementPrint extends StatementBase {
         }
 
         const childGuiTree = new ScvdGuiTree(guiTree);
+        const guiName = await this.scvdItem.getGuiName();
+        const guiValue = await this.scvdItem.getGuiValue();
+        childGuiTree.setGuiName(guiName);
+        childGuiTree.setGuiValue(guiValue);
+
         await this.onExecute(executionContext, childGuiTree);
 
         if(this.children.length > 0) {
@@ -43,12 +48,7 @@ export class StatementPrint extends StatementBase {
         }
     }
 
-    protected async onExecute(_executionContext: ExecutionContext, guiTree: ScvdGuiTree): Promise<void> {
+    protected async onExecute(_executionContext: ExecutionContext, _guiTree: ScvdGuiTree): Promise<void> {
         console.log(`${this.line}: ${this.scvdItem.constructor.name}`);
-
-        const guiName = await this.scvdItem.getGuiName();
-        const guiValue = await this.scvdItem.getGuiValue();
-        guiTree.setGuiName(guiName);
-        guiTree.setGuiValue(guiValue);
     }
 }

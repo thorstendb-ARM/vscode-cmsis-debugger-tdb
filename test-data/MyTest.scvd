@@ -55,6 +55,9 @@
         RTX_En = 1;
       </calc>
 
+      <read name="wstring_val" type="int16_t"  symbol="wString" size="15"   />
+
+
       <var name="R0" type="uint32_t" value="0x1"/>
       <var name="i" type="uint32_t" value="0"/>
       <var name="j" type="uint32_t" value="0"/>
@@ -145,10 +148,13 @@
 
 
       <read name="string_val"  type="int8_t"   symbol="string"  size="10"   />
-      <read name="wstring_val" type="int16_t"  symbol="wString" size="15"   />
       <var name="i_value"     type="uint8_t"  symbol="iValue" value="1" />
   
       <out name="MyTest">
+          <item property="Test read">
+            <item property="wString value %%U"    value="%U[wstring_val]" />
+          </item>
+
           <item property="MyList count" value="" cond="RTX_En">
               <item property="MyListA"    value="%d[MyListA._count]" />
               <item property="MyListB"    value="%d[MyListB._count]" />
@@ -175,9 +181,9 @@
           </item>
 
           <item property="List value after execution">
-            <item property="List Val1"    value="%t[listVal1]"/>
-            <item property="List Val2"    value="%t[listVal2]"/>
-            <item property="i"            value="%t[i]"/>
+            <item property="List Val1"    value="%d[listVal1]"/>
+            <item property="List Val2"    value="%d[listVal2]"/>
+            <item property="i"            value="%x[i]"/>
           </item>
 
           <item property="USB Descriptors">

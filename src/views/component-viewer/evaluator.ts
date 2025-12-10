@@ -295,7 +295,7 @@ async function mustRef(node: ASTNode, ctx: EvalContext, forWrite = false): Promi
             // Prefer a byte-based width helper if host provides one
             const dataAny = ctx.data as any;
             if (typeof dataAny.getByteWidth === 'function') {
-                const w = dataAny.getByteWidth(ref);
+                const w = await dataAny.getByteWidth(ref);
                 if (typeof w === 'number' && w > 0) {
                     ctx.container.widthBytes = w;
                 }
@@ -346,7 +346,7 @@ async function mustRef(node: ASTNode, ctx: EvalContext, forWrite = false): Promi
                 // Width: prefer host byte-width helper if present
                 const dataAny = ctx.data as any;
                 if (typeof dataAny.getByteWidth === 'function') {
-                    const w = dataAny.getByteWidth(child);
+                    const w = await dataAny.getByteWidth(child);
                     if (typeof w === 'number' && w > 0) {
                         ctx.container.widthBytes = w;
                     }
@@ -373,7 +373,7 @@ async function mustRef(node: ASTNode, ctx: EvalContext, forWrite = false): Promi
             // Width: prefer host byte-width helper if present
             const dataAny = ctx.data as any;
             if (typeof dataAny.getByteWidth === 'function') {
-                const w = dataAny.getByteWidth(child);
+                const w = await dataAny.getByteWidth(child);
                 if (typeof w === 'number' && w > 0) {
                     ctx.container.widthBytes = w;
                 }
@@ -411,7 +411,7 @@ async function mustRef(node: ASTNode, ctx: EvalContext, forWrite = false): Promi
             // Update width to element width if host exposes a byte-width helper
             const dataAny = ctx.data as any;
             if (typeof dataAny.getByteWidth === 'function') {
-                const w = dataAny.getByteWidth(elementRef);
+                const w = await dataAny.getByteWidth(elementRef);
                 if (typeof w === 'number' && w > 0) {
                     ctx.container.widthBytes = w;
                 }
