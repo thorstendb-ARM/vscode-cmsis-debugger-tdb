@@ -6,15 +6,21 @@ import { createMockDebugSession} from './component-viewer-controller';
 
 
 export class ComponentViewerTargetAccess {
-
+    // Check if mocks shall be used from configuration
+    private useMocks = vscode.workspace.getConfiguration('vscode-cmsis-debugger').get('useMocks');
     _activeSession: GDBTargetDebugSession | undefined;
-    constructor (session: GDBTargetDebugSession) {
-        this._activeSession = session;
+    constructor () {
     }
 
     // Function to reset active session
-    public setActiveSession(): void {
-        this._activeSession = createMockDebugSession();
+    public setActiveSession(session: GDBTargetDebugSession): void {
+        if (this.useMocks) {
+            this._activeSession = createMockDebugSession();
+            return;
+        } else {
+            this._activeSession = session;
+            return;
+        }
     }
 
     public async evaluateSymbolAddress(address: string, context = 'hover'): Promise<string> {

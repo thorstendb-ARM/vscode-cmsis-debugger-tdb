@@ -39,10 +39,14 @@ export class ScvdDebugTarget {
 
     constructor(
     ) {
-        this.targetAccess = new ComponentViewerTargetAccess(this.activeSession);
+        this.targetAccess = new ComponentViewerTargetAccess();
     }
 
     // -------------  Interface to debugger  -----------------
+    public init(session: GDBTargetDebugSession): void {
+        this.activeSession = session;
+        this.targetAccess.setActiveSession(session);
+    }
     public async getSymbolInfo(symbol: string): Promise<SymbolInfo | undefined> {
         if(symbol === undefined) {
             return undefined;
