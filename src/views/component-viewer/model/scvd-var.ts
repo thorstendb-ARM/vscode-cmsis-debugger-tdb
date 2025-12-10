@@ -66,18 +66,18 @@ export class ScvdVar extends ScvdBase {
         }
     }
 
-    public getValue(): number | undefined {
+    public async getValue(): Promise<number | undefined> {
         if (this._value === undefined) {
             return undefined;
         }
-        const val = this._value.getValue();
+        const val = await this._value.getValue();
         if (typeof val === 'number') {
             return val;
         }
         return undefined;
     }
 
-    public setValue(val: number): number | undefined {
+    public async setValue(val: number): Promise<number | undefined> {
         if (this._value === undefined) {
             return undefined;
         }
@@ -85,7 +85,7 @@ export class ScvdVar extends ScvdBase {
         if( valExpr === undefined) {
             return undefined;
         }
-        valExpr.setValue(val);
+        await valExpr.setValue(val);
         return val;
     }
 
@@ -135,10 +135,10 @@ export class ScvdVar extends ScvdBase {
     }
 
     // member’s byte offset
-    public getMemberOffset(): number | undefined {
+    public async getMemberOffset(): Promise<number | undefined> {
         const offsetExpr = this._offset;
         if (offsetExpr !== undefined) {
-            const offsetValue = offsetExpr.getValue();
+            const offsetValue = await offsetExpr.getValue();
             if (typeof offsetValue === 'number') {
                 return offsetValue;
             }
@@ -188,6 +188,10 @@ export class ScvdVar extends ScvdBase {
             return `${propertyName} = ${valueStr}`;
         }
         return propertyName;
+    }
+
+    protected getImmediateValue(): number | string | undefined {
+        return this._value?.getCachedValue();
     }
 
 }

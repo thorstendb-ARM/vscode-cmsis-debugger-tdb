@@ -29,6 +29,8 @@ import type { ScvdBase } from './model/scvd-base';
 
 export type EvaluateResult = number | string | undefined;
 
+type MaybePromise<T> = T | Promise<T>;
+
 /** Container context carried during evaluation. */
 export interface RefContainer {
   /** Root model where identifier lookups begin. */
@@ -56,47 +58,47 @@ export interface RefContainer {
 /** Host contract used by the evaluator (implemented by ScvdEvalInterface). */
 export interface DataHost {
   // Resolution APIs — must set container.current to the resolved ref on success
-  getSymbolRef(container: RefContainer, name: string, forWrite?: boolean): ScvdBase | undefined;
-  getMemberRef(container: RefContainer, property: string, forWrite?: boolean): ScvdBase | undefined;
+  getSymbolRef(container: RefContainer, name: string, forWrite?: boolean): MaybePromise<ScvdBase | undefined>;
+  getMemberRef(container: RefContainer, property: string, forWrite?: boolean): MaybePromise<ScvdBase | undefined>;
 
   // Value access acts on container.{anchor,offsetBytes,widthBytes}
-  readValue(container: RefContainer): any;                  // may return undefined -> error
-  writeValue(container: RefContainer, value: any): any;     // may return undefined -> error
+  readValue(container: RefContainer): MaybePromise<any>;                  // may return undefined -> error
+  writeValue(container: RefContainer, value: any): MaybePromise<any>;     // may return undefined -> error
 
   // Optional: advanced lookups / intrinsics use the whole container context
-  resolveColonPath?(container: RefContainer, parts: string[]): any; // undefined => not found
+  resolveColonPath?(container: RefContainer, parts: string[]): MaybePromise<any>; // undefined => not found
   stats?(): { symbols?: number; bytesUsed?: number };
-  evalIntrinsic?(name: string, container: RefContainer, args: any[]): any; // undefined => not handled
+  evalIntrinsic?(name: string, container: RefContainer, args: any[]): MaybePromise<any>; // undefined => not handled
 
   // Optional metadata (lets evaluator accumulate offsets itself)
   /** Bytes per element (including any padding/alignment inside the array layout). */
-  getElementStride?(ref: ScvdBase): number;                       // bytes per element
+  getElementStride?(ref: ScvdBase): MaybePromise<number>;                       // bytes per element
 
   /** Member offset in bytes from base. */
-  getMemberOffset?(base: ScvdBase, member: ScvdBase): number;     // bytes
+  getMemberOffset?(base: ScvdBase, member: ScvdBase): MaybePromise<number>;     // bytes
 
   /** Optional: provide an element model (prototype/type) for array-ish refs. */
-  getElementRef?(ref: ScvdBase): ScvdBase | undefined;
+  getElementRef?(ref: ScvdBase): MaybePromise<ScvdBase | undefined>;
 
   // Optional named intrinsics
   // Note: __GetRegVal(reg) is special-cased (no container); others use the evalIntrinsic convention
-  __GetRegVal?(reg: string): number | undefined;
-  __FindSymbol?(symbol: string): Promise<number | undefined>;
-  __CalcMemUsed?(args: number[]): number | undefined;
+  __GetRegVal?(reg: string): MaybePromise<number | undefined>;
+  __FindSymbol?(symbol: string): MaybePromise<number | undefined>;
+  __CalcMemUsed?(args: number[]): MaybePromise<number | undefined>;
 
   /** sizeof-like intrinsic – semantics are host-defined (usually bytes). */
-  __size_of?(symbol: string): number | undefined;
+  __size_of?(symbol: string): MaybePromise<number | undefined>;
 
-  __Symbol_exists?(symbol: string): Promise<number | undefined>;
-  __Offset_of?(container: RefContainer, typedefMember: string): number | undefined;
+  __Symbol_exists?(symbol: string): MaybePromise<number | undefined>;
+  __Offset_of?(container: RefContainer, typedefMember: string): MaybePromise<number | undefined>;
 
   // Additional named intrinsics
   // __Running is special-cased (no container) and returns 1 or 0 for use in expressions
-  __Running?(): number | undefined;
+  __Running?(): MaybePromise<number | undefined>;
 
   // Pseudo-member evaluators used as obj._count / obj._addr; must return numbers
-  _count?(container: RefContainer): number | undefined;
-  _addr?(container: RefContainer): number | undefined;    // added as var because arrays can have different base addresses
+  _count?(container: RefContainer): MaybePromise<number | undefined>;
+  _addr?(container: RefContainer): MaybePromise<number | undefined>;    // added as var because arrays can have different base addresses
 
   // Optional printf formatting hook used by % specifiers in PrintfExpression.
   // If it returns a string, the evaluator uses it. If it returns undefined,
@@ -206,29 +208,38 @@ const NAME_ARG_INTRINSICS = new Set<string>([
     '__GetRegVal', // keeps consistency: reg names not values
 ]);
 
-function evalArgsForIntrinsic(name: string, rawArgs: ASTNode[], ctx: EvalContext): any[] {
+async function evalArgsForIntrinsic(name: string, rawArgs: ASTNode[], ctx: EvalContext): Promise<any[]> {
     const needsName = NAME_ARG_INTRINSICS.has(name);
 
-    return rawArgs.map((a, i) => {
-        if (!needsName) return evalNode(a, ctx);
+    const resolved: any[] = [];
+    for (let i = 0; i < rawArgs.length; i++) {
+        const arg = rawArgs[i];
+        if (!needsName) {
+            resolved.push(await evalNode(arg, ctx));
+            continue;
+        }
 
         // For name-based intrinsics, allow Identifier or "string literal"
-        if (a.kind === 'Identifier') {
-            return (a as Identifier).name;
+        if (arg.kind === 'Identifier') {
+            resolved.push((arg as Identifier).name);
+            continue;
         }
-        if (a.kind === 'StringLiteral') {
-            return (a as StringLiteral).value;
+        if (arg.kind === 'StringLiteral') {
+            resolved.push((arg as StringLiteral).value);
+            continue;
         }
         // Make the failure explicit; this avoids silently passing evaluated values like 0.
         throw new Error(`${name} expects an identifier or string literal for argument ${i + 1}`);
-    });
+    }
+
+    return resolved;
 }
 
 /* =============================================================================
  * Small utility to avoid container clobbering during nested evals
  * ============================================================================= */
 
-function withIsolatedContainer<T>(ctx: EvalContext, fn: () => T): T {
+async function withIsolatedContainer<T>(ctx: EvalContext, fn: () => MaybePromise<T>): Promise<T> {
     const c = ctx.container;
     const saved: RefContainer = {
         base: c.base,
@@ -240,7 +251,7 @@ function withIsolatedContainer<T>(ctx: EvalContext, fn: () => T): T {
         index: c.index,
     };
     try {
-        return fn();
+        return await fn();
     } finally {
         c.anchor = saved.anchor;
         c.offsetBytes = saved.offsetBytes;
@@ -255,7 +266,7 @@ function withIsolatedContainer<T>(ctx: EvalContext, fn: () => T): T {
  * Strict ref/value utilities (single-root + contextual hints)
  * ============================================================================= */
 
-type LValue = { get(): any; set(v: any): any };
+type LValue = { get(): Promise<any>; set(v: any): Promise<any> };
 
 /** Accumulate a byte offset into the container (anchor-relative). */
 function addByteOffset(ctx: EvalContext, bytes: number) {
@@ -264,12 +275,12 @@ function addByteOffset(ctx: EvalContext, bytes: number) {
     c.offsetBytes = ((c.offsetBytes ?? 0) + add);
 }
 
-function mustRef(node: ASTNode, ctx: EvalContext, forWrite = false): ScvdBase {
+async function mustRef(node: ASTNode, ctx: EvalContext, forWrite = false): Promise<ScvdBase> {
     switch (node.kind) {
         case 'Identifier': {
             const id = node as Identifier;
             // Identifier lookup always starts from the root base
-            const ref = ctx.data.getSymbolRef(ctx.container, id.name, forWrite);
+            const ref = await ctx.data.getSymbolRef(ctx.container, id.name, forWrite);
             if (!ref) throw new Error(`Unknown symbol '${id.name}'`);
             // Start a new anchor chain at this identifier
             ctx.container.anchor = ref;
@@ -301,10 +312,10 @@ function mustRef(node: ASTNode, ctx: EvalContext, forWrite = false): ScvdBase {
                 const ai = ma.object as ArrayIndex;
 
                 // Resolve array symbol and establish anchor/current
-                const baseRef = mustRef(ai.array, ctx, forWrite);
+                const baseRef = await mustRef(ai.array, ctx, forWrite);
 
                 // Evaluate index in isolation (so i/j/mem.length don't clobber outer anchor)
-                const idx = asNumber(withIsolatedContainer(ctx, () => evalNode(ai.index, ctx))) | 0;
+                const idx = asNumber(await withIsolatedContainer(ctx, () => evalNode(ai.index, ctx))) | 0;
 
                 // Remember the index for hosts that use it
                 ctx.container.index = idx;
@@ -313,22 +324,21 @@ function mustRef(node: ASTNode, ctx: EvalContext, forWrite = false): ScvdBase {
                 const arrayRef = ctx.container.current ?? baseRef;
 
                 // Apply array offset using the correct dimension's stride (bytes)
-                const strideBytes = ctx.data.getElementStride?.(arrayRef) ?? 0;
+                const strideBytes = ctx.data.getElementStride ? await ctx.data.getElementStride(arrayRef) : 0;
                 if (typeof strideBytes === 'number' && strideBytes !== 0) {
                     addByteOffset(ctx, idx * strideBytes);
                 }
 
                 // Base for member resolution = element model if host provides one
-                const baseForMember = ctx.data.getElementRef?.(arrayRef) ?? arrayRef;
+                const baseForMember = ctx.data.getElementRef ? (await ctx.data.getElementRef(arrayRef)) ?? arrayRef : arrayRef;
                 ctx.container.current = baseForMember;
 
                 // Resolve member
-                const child = ctx.data.getMemberRef(ctx.container, ma.property, forWrite);
+                const child = await ctx.data.getMemberRef(ctx.container, ma.property, forWrite);
                 if (!child) throw new Error(`Missing member '${ma.property}'`);
 
                 // Accumulate member byte offset
-                const memberOffsetBytes =
-                    ctx.data.getMemberOffset?.(baseForMember, child) ?? 0;
+                const memberOffsetBytes = ctx.data.getMemberOffset ? await ctx.data.getMemberOffset(baseForMember, child) : 0;
                 if (typeof memberOffsetBytes === 'number' && memberOffsetBytes !== 0) {
                     addByteOffset(ctx, memberOffsetBytes);
                 }
@@ -349,14 +359,13 @@ function mustRef(node: ASTNode, ctx: EvalContext, forWrite = false): ScvdBase {
             }
 
             // Default path: resolve base then member
-            const baseRef = mustRef(ma.object, ctx, forWrite);
+            const baseRef = await mustRef(ma.object, ctx, forWrite);
 
             ctx.container.current = baseRef;
-            const child = ctx.data.getMemberRef(ctx.container, ma.property, forWrite);
+            const child = await ctx.data.getMemberRef(ctx.container, ma.property, forWrite);
             if (!child) throw new Error(`Missing member '${ma.property}'`);
 
-            const memberOffsetBytes =
-                ctx.data.getMemberOffset?.(baseRef, child) ?? 0;
+            const memberOffsetBytes = ctx.data.getMemberOffset ? await ctx.data.getMemberOffset(baseRef, child) : 0;
             if (typeof memberOffsetBytes === 'number' && memberOffsetBytes !== 0) {
                 addByteOffset(ctx, memberOffsetBytes);
             }
@@ -379,10 +388,10 @@ function mustRef(node: ASTNode, ctx: EvalContext, forWrite = false): ScvdBase {
             const ai = node as ArrayIndex;
 
             // Resolve array base (establishes anchor/current on the array)
-            const baseRef = mustRef(ai.array, ctx, forWrite);
+            const baseRef = await mustRef(ai.array, ctx, forWrite);
 
             // Evaluate the index in isolation
-            const idx = asNumber(withIsolatedContainer(ctx, () => evalNode(ai.index, ctx))) | 0;
+            const idx = asNumber(await withIsolatedContainer(ctx, () => evalNode(ai.index, ctx))) | 0;
 
             // Translate index -> byte offset
             ctx.container.index = idx;
@@ -390,13 +399,13 @@ function mustRef(node: ASTNode, ctx: EvalContext, forWrite = false): ScvdBase {
             const arrayRef = ctx.container.current ?? baseRef;
             ctx.container.member = undefined;
 
-            const strideBytes = ctx.data.getElementStride?.(arrayRef) ?? 0;
+            const strideBytes = ctx.data.getElementStride ? await ctx.data.getElementStride(arrayRef) : 0;
             if (typeof strideBytes === 'number' && strideBytes !== 0) {
                 addByteOffset(ctx, idx * strideBytes);
             }
 
             // Current target becomes element if host exposes it, otherwise array
-            const elementRef = ctx.data.getElementRef?.(arrayRef) ?? arrayRef;
+            const elementRef = ctx.data.getElementRef ? (await ctx.data.getElementRef(arrayRef)) ?? arrayRef : arrayRef;
             ctx.container.current = elementRef;
 
             // Update width to element width if host exposes a byte-width helper
@@ -420,17 +429,17 @@ function mustRef(node: ASTNode, ctx: EvalContext, forWrite = false): ScvdBase {
     }
 }
 
-function mustRead(ctx: EvalContext, label?: string): any {
-    const v = ctx.data.readValue(ctx.container);
+async function mustRead(ctx: EvalContext, label?: string): Promise<any> {
+    const v = await ctx.data.readValue(ctx.container);
     if (v === undefined) {
         throw new Error(label ? `Undefined value for ${label}` : 'Undefined value');
     }
     return v;
 }
 
-function lref(node: ASTNode, ctx: EvalContext): LValue {
+async function lref(node: ASTNode, ctx: EvalContext): Promise<LValue> {
     // Resolve and set the current target in the container for writes
-    mustRef(node, ctx, true);
+    await mustRef(node, ctx, true);
 
     // Snapshot the LHS write target so RHS evaluation can't clobber it
     const target: RefContainer = {
@@ -443,12 +452,12 @@ function lref(node: ASTNode, ctx: EvalContext): LValue {
         index: ctx.container.index,
     };
     return {
-        get(): any {
-            mustRef(node, ctx, false);
-            return mustRead(ctx);
+        async get(): Promise<any> {
+            await mustRef(node, ctx, false);
+            return await mustRead(ctx);
         },
-        set(v: any): any {
-            const out = ctx.data.writeValue(target, v); // use frozen target
+        async set(v: any): Promise<any> {
+            const out = await ctx.data.writeValue(target, v); // use frozen target
             if (out === undefined) throw new Error('Write returned undefined');
             return out;
         }
@@ -471,50 +480,52 @@ const VALUE_INTRINSICS = new Set<string>([
     '__FindSymbol',
 ]);
 
-export function evalNode(node: ASTNode, ctx: EvalContext): any {
+export async function evalNode(node: ASTNode, ctx: EvalContext): Promise<any> {
     switch (node.kind) {
         case 'NumberLiteral':  return (node as NumberLiteral).value;
         case 'StringLiteral':  return (node as StringLiteral).value;
 
         case 'Identifier': {
-            mustRef(node, ctx, false);
-            return mustRead(ctx, (node as Identifier).name);
+            await mustRef(node, ctx, false);
+            return await mustRead(ctx, (node as Identifier).name);
         }
 
         case 'MemberAccess': {
             const ma = node as MemberAccess;
             // Support pseudo-members that evaluate to numbers: obj._count and obj._addr
             if (ma.property === '_count' || ma.property === '_addr') {
-                const baseRef = mustRef(ma.object, ctx, false);
+                const baseRef = await mustRef(ma.object, ctx, false);
                 ctx.container.member = baseRef;
                 ctx.container.current = baseRef;
                 const host = ctx.data as any;
-                const fn = host[ma.property] as ((container: RefContainer) => any) | undefined;
+                const fn = host[ma.property] as ((container: RefContainer) => MaybePromise<any>) | undefined;
                 if (typeof fn !== 'function') throw new Error(`Missing pseudo-member ${ma.property}`);
-                const out = fn.call(ctx.data, ctx.container);
+                const out = await fn.call(ctx.data, ctx.container);
                 if (out === undefined) throw new Error(`Pseudo-member ${ma.property} returned undefined`);
                 return out;
             }
             // Default: resolve member and read its value
-            mustRef(node, ctx, false);
-            return mustRead(ctx);
+            await mustRef(node, ctx, false);
+            return await mustRead(ctx);
         }
 
         case 'ArrayIndex': {
-            mustRef(node, ctx, false);
-            return mustRead(ctx);
+            await mustRef(node, ctx, false);
+            return await mustRead(ctx);
         }
 
         case 'ColonPath': {
             const cp = node as ColonPath;
-            const handled = ctx.data.resolveColonPath?.(ctx.container, cp.parts.slice());
+            const handled = ctx.data.resolveColonPath
+                ? await ctx.data.resolveColonPath(ctx.container, cp.parts.slice())
+                : undefined;
             if (handled === undefined) throw new Error(`Unresolved colon path: ${cp.parts.join(':')}`);
             return handled;
         }
 
         case 'UnaryExpression': {
             const u = node as UnaryExpression;
-            const v = evalNode(u.argument, ctx);
+            const v = await evalNode(u.argument, ctx);
             switch (u.operator) {
                 case '+': return (typeof v === 'bigint') ? v : +asNumber(v);
                 case '-': return (typeof v === 'bigint') ? (-toBigInt(v)) : (-asNumber(v));
@@ -526,31 +537,33 @@ export function evalNode(node: ASTNode, ctx: EvalContext): any {
 
         case 'UpdateExpression': {
             const u = node as UpdateExpression;
-            const ref = lref(u.argument, ctx);
-            const prev = ref.get();
+            const ref = await lref(u.argument, ctx);
+            const prev = await ref.get();
             const next = (typeof prev === 'bigint')
                 ? (u.operator === '++' ? (toBigInt(prev) + BigInt(1)) : (toBigInt(prev) - BigInt(1)))
                 : (u.operator === '++' ? asNumber(prev) + 1 : asNumber(prev) - 1);
-            ref.set(next);
+            await ref.set(next);
             return u.prefix ? ref.get() : prev;
         }
 
-        case 'BinaryExpression':   return evalBinary(node as BinaryExpression, ctx);
+        case 'BinaryExpression':   return await evalBinary(node as BinaryExpression, ctx);
 
         case 'ConditionalExpression': {
             const c = node as ConditionalExpression;
-            return truthy(evalNode(c.test, ctx)) ? evalNode(c.consequent, ctx) : evalNode(c.alternate, ctx);
+            return truthy(await evalNode(c.test, ctx))
+                ? await evalNode(c.consequent, ctx)
+                : await evalNode(c.alternate, ctx);
         }
 
         case 'AssignmentExpression': {
             const a = node as AssignmentExpression;
-            const ref = lref(a.left, ctx);
+            const ref = await lref(a.left, ctx);
             if (a.operator === '=') {
-                const value = withIsolatedContainer(ctx, () => evalNode(a.right, ctx));
-                return ref.set(value);
+                const value = await withIsolatedContainer(ctx, () => evalNode(a.right, ctx));
+                return await ref.set(value);
             }
-            const L = evalNode(a.left, ctx);
-            const R = evalNode(a.right, ctx);
+            const L = await evalNode(a.left, ctx);
+            const R = await evalNode(a.right, ctx);
             let out: any;
             switch (a.operator) {
                 case '+=': out = addVals(L, R); break;
@@ -565,7 +578,7 @@ export function evalNode(node: ASTNode, ctx: EvalContext): any {
                 case '|=': out = orVals(L, R); break;
                 default: throw new Error(`Unsupported assignment operator ${a.operator}`);
             }
-            return ref.set(out);
+            return await ref.set(out);
         }
 
         case 'CallExpression': {
@@ -574,22 +587,22 @@ export function evalNode(node: ASTNode, ctx: EvalContext): any {
             if (c.callee.kind === 'Identifier') {
                 const name = (c.callee as Identifier).name;
                 if (VALUE_INTRINSICS.has(name)) {
-                    const args = evalArgsForIntrinsic(name, c.args, ctx);
-                    return routeIntrinsic(ctx, name, args);
+                    const args = await evalArgsForIntrinsic(name, c.args, ctx);
+                    return await routeIntrinsic(ctx, name, args);
                 }
             }
 
-            const args = c.args.map(a => evalNode(a, ctx));
-            const fnVal = evalNode(c.callee, ctx);
-            if (typeof fnVal === 'function') return (fnVal as Function)(...args);
+            const args = await Promise.all(c.args.map(a => evalNode(a, ctx)));
+            const fnVal = await evalNode(c.callee, ctx);
+            if (typeof fnVal === 'function') return await (fnVal as Function)(...args);
             throw new Error('Callee is not callable.');
         }
 
         case 'EvalPointCall': {
             const c = node as EvalPointCall;
             const name = c.intrinsic as string;
-            const args = evalArgsForIntrinsic(name, c.args, ctx);
-            return routeIntrinsic(ctx, name, args);
+            const args = await evalArgsForIntrinsic(name, c.args, ctx);
+            return await routeIntrinsic(ctx, name, args);
         }
 
         case 'PrintfExpression': {
@@ -599,14 +612,14 @@ export function evalNode(node: ASTNode, ctx: EvalContext): any {
                 if (seg.kind === 'TextSegment') out += (seg as TextSegment).text;
                 else {
                     const fs = seg as FormatSegment;
-                    out += formatValue(fs.spec, evalNode(fs.value as any, ctx), ctx);
+                    out += formatValue(fs.spec, await evalNode(fs.value as any, ctx), ctx);
                 }
             }
             return out;
         }
 
         case 'TextSegment':    return (node as TextSegment).text;
-        case 'FormatSegment':  return formatValue((node as FormatSegment).spec, evalNode((node as FormatSegment).value, ctx), ctx);
+        case 'FormatSegment':  return formatValue((node as FormatSegment).spec, await evalNode((node as FormatSegment).value, ctx), ctx);
 
         case 'ErrorNode':      throw new Error('Cannot evaluate an ErrorNode.');
 
@@ -615,13 +628,19 @@ export function evalNode(node: ASTNode, ctx: EvalContext): any {
     }
 }
 
-function evalBinary(node: BinaryExpression, ctx: EvalContext): any {
+async function evalBinary(node: BinaryExpression, ctx: EvalContext): Promise<any> {
     const { operator, left, right } = node;
-    if (operator === '&&') { const lv = evalNode(left, ctx); return truthy(lv) ? evalNode(right, ctx) : lv; }
-    if (operator === '||') { const lv = evalNode(left, ctx); return truthy(lv) ? lv : evalNode(right, ctx); }
+    if (operator === '&&') {
+        const lv = await evalNode(left, ctx);
+        return truthy(lv) ? await evalNode(right, ctx) : lv;
+    }
+    if (operator === '||') {
+        const lv = await evalNode(left, ctx);
+        return truthy(lv) ? lv : await evalNode(right, ctx);
+    }
 
-    const a = evalNode(left, ctx);
-    const b = evalNode(right, ctx);
+    const a = await evalNode(left, ctx);
+    const b = await evalNode(right, ctx);
 
     switch (operator) {
         case '+': return addVals(a, b);
@@ -671,69 +690,69 @@ function formatValue(spec: FormatSegment['spec'], v: any, ctx?: EvalContext): st
  * Intrinsics routing (strict, single-root)
  * ============================================================================= */
 
-function routeIntrinsic(ctx: EvalContext, name: string, args: any[]): any {
+async function routeIntrinsic(ctx: EvalContext, name: string, args: any[]): Promise<any> {
     // Explicit numeric intrinsics (simple parameter lists)
     if (name === '__GetRegVal') {
-        const fn = (ctx.data as any).__GetRegVal as ((reg: string) => number | undefined) | undefined;
+        const fn = (ctx.data as any).__GetRegVal as ((reg: string) => MaybePromise<number | undefined>) | undefined;
         if (typeof fn !== 'function') throw new Error('Missing intrinsic __GetRegVal');
-        const out = fn.call(ctx.data, String(args[0] ?? ''));
+        const out = await fn.call(ctx.data, String(args[0] ?? ''));
         if (out === undefined) throw new Error('Intrinsic __GetRegVal returned undefined');
         return out;
     }
     if (name === '__FindSymbol') {
-        const fn = (ctx.data as any).__FindSymbol as ((sym: string) => number | undefined) | undefined;
+        const fn = (ctx.data as any).__FindSymbol as ((sym: string) => MaybePromise<number | undefined>) | undefined;
         if (typeof fn !== 'function') throw new Error('Missing intrinsic __FindSymbol');
-        const out = fn.call(ctx.data, String(args[0] ?? ''));
+        const out = await fn.call(ctx.data, String(args[0] ?? ''));
         if (out === undefined) throw new Error('Intrinsic __FindSymbol returned undefined');
         return out | 0;
     }
     if (name === '__CalcMemUsed') {
-        const fn = (ctx.data as any).__CalcMemUsed as ((args: any[]) => number | undefined) | undefined;
+        const fn = (ctx.data as any).__CalcMemUsed as ((args: any[]) => MaybePromise<number | undefined>) | undefined;
         if (typeof fn !== 'function') throw new Error('Missing intrinsic __CalcMemUsed');
         const a = args.map(v => Number(v) >>> 0);
-        const out = fn.call(ctx.data, a);
+        const out = await fn.call(ctx.data, a);
         if (out === undefined) throw new Error('Intrinsic __CalcMemUsed returned undefined');
         return out >>> 0;
     }
     if (name === '__size_of') {
-        const fn = (ctx.data as any).__size_of as ((sym: string) => number | undefined) | undefined;
+        const fn = (ctx.data as any).__size_of as ((sym: string) => MaybePromise<number | undefined>) | undefined;
         if (typeof fn !== 'function') throw new Error('Missing intrinsic __size_of');
-        const out = fn.call(ctx.data, String(args[0] ?? ''));
+        const out = await fn.call(ctx.data, String(args[0] ?? ''));
         if (out === undefined) throw new Error('Intrinsic __size_of returned undefined');
         return out | 0;
     }
     if (name === '__Symbol_exists') {
-        const fn = (ctx.data as any).__Symbol_exists as ((sym: string) => number | undefined) | undefined;
+        const fn = (ctx.data as any).__Symbol_exists as ((sym: string) => MaybePromise<number | undefined>) | undefined;
         if (typeof fn !== 'function') throw new Error('Missing intrinsic __Symbol_exists');
-        const out = fn.call(ctx.data, String(args[0] ?? ''));
+        const out = await fn.call(ctx.data, String(args[0] ?? ''));
         if (out === undefined) throw new Error('Intrinsic __Symbol_exists returned undefined');
         return out | 0;
     }
     // Explicit intrinsic that needs the container but returns a number
     if (name === '__Offset_of') {
-        const fn = (ctx.data as any).__Offset_of as ((container: RefContainer, typedefMember: string) => number | undefined) | undefined;
+        const fn = (ctx.data as any).__Offset_of as ((container: RefContainer, typedefMember: string) => MaybePromise<number | undefined>) | undefined;
         if (typeof fn !== 'function') throw new Error('Missing intrinsic __Offset_of');
-        const out = fn.call(ctx.data, ctx.container, String(args[0] ?? ''));
+        const out = await fn.call(ctx.data, ctx.container, String(args[0] ?? ''));
         if (out === undefined) throw new Error('Intrinsic __Offset_of returned undefined');
         return out >>> 0;
     }
     if (name === '__Running') {
-        const fn = (ctx.data as any).__Running as (() => number | undefined) | undefined;
+        const fn = (ctx.data as any).__Running as (() => MaybePromise<number | undefined>) | undefined;
         if (typeof fn !== 'function') throw new Error('Missing intrinsic __Running');
-        const out = fn.call(ctx.data);
+        const out = await fn.call(ctx.data);
         if (out === undefined) throw new Error('Intrinsic __Running returned undefined');
         return out | 0;
     }
 
     // Generic dispatch paths (legacy/custom)
     if (typeof ctx.data.evalIntrinsic === 'function') {
-        const out = ctx.data.evalIntrinsic(name, ctx.container, args);
+        const out = await ctx.data.evalIntrinsic(name, ctx.container, args);
         if (out === undefined) throw new Error(`Intrinsic ${name} returned undefined`);
         return out;
     }
     const direct = (ctx.data as any)[name];
     if (typeof direct === 'function') {
-        const out = direct.call(ctx.data, ctx.container, args);
+        const out = await direct.call(ctx.data, ctx.container, args);
         if (out === undefined) throw new Error(`Intrinsic ${name} returned undefined`);
         return out;
     }
@@ -752,13 +771,13 @@ function normalizeEvaluateResult(v: any): EvaluateResult {
     return undefined;
 }
 
-export function evaluateParseResult(pr: ParseResult, ctx: EvalContext, container?: ScvdBase): EvaluateResult {
+export async function evaluateParseResult(pr: ParseResult, ctx: EvalContext, container?: ScvdBase): Promise<EvaluateResult> {
     const prevBase = ctx.container.base;
     const saved = { ...ctx.container } as RefContainer;
     const override = container !== undefined;
     if (override) ctx.container.base = container as ScvdBase;
     try {
-        const v = evalNode(pr.ast, ctx);
+        const v = await evalNode(pr.ast, ctx);
         return normalizeEvaluateResult(v);
     } catch (e) {
         console.error('Error evaluating parse result:', pr, e);

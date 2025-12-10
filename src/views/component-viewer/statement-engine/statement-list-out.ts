@@ -15,107 +15,32 @@
  */
 
 import { ScvdBase } from '../model/scvd-base';
-import { ScvdGuiInterface } from '../model/scvd-gui-interface';
 import { ScvdListOut } from '../model/scvd-list-out';
 import { ExecutionContext } from '../scvd-eval-context';
+import { ScvdGuiTree } from '../scvd-gui-tree';
 import { LoopVariable, StatementBase } from './statement-base';
-import { StatementCalc } from './statement-calc';
-import { StatementItem } from './statement-item';
-import { StatementList } from './statement-list';
-import { StatementObject } from './statement-object';
-import { StatementOut } from './statement-out';
-import { StatementRead } from './statement-read';
-import { StatementReadList } from './statement-readList';
-import { StatementVar } from './statement-var';
 
 
 export class StatementListOut extends StatementBase {
-    private _iteratedChildren: StatementBase[] = [];
 
     constructor(item: ScvdBase, parent: StatementBase | undefined) {
         super(item, parent);
     }
 
-    private buildStatement(item: ScvdBase, parent: StatementBase | undefined) : StatementBase | undefined {
-        const ctorName = item.constructor?.name;
-
-        switch (ctorName) {
-            case 'ScvdObject':
-                // Object-specific logic
-                return new StatementObject(item, parent);
-            case 'ScvdVar':
-                // Variable-specific logic.
-                return new StatementVar(item, parent);
-            case 'ScvdCalc':
-                // Calculation-specific logic.
-                return new StatementCalc(item, parent);
-            case 'ScvdReadList':
-                // ReadList-specific logic.
-                return new StatementReadList(item, parent);
-            case 'ScvdRead':
-                // Read-specific logic.
-                return new StatementRead(item, parent);
-            case 'ScvdList':
-                // List-specific logic.
-                return new StatementList(item, parent);
-            case 'ScvdListOut':
-                // List-specific logic.
-                return new StatementListOut(item, parent);
-            case 'ScvdOut':
-                // Output-specific logic.
-                return new StatementOut(item, parent);
-            case 'ScvdItem':
-                // Item-specific logic.
-                return new StatementItem(item, parent);
-            default:
-                // Generic logic for other item types.
-                return undefined;
-        }
-    }
-
-    private addIteratedChild(child: StatementBase, loopVar: LoopVariable): StatementBase | undefined {
-        if(child !== undefined) {
-            if(this._iteratedChildren === undefined) {
-                this._iteratedChildren = [];
-            }
-            const newChild = this.buildStatement(child.scvdItem, undefined);
-            if(newChild === undefined) {
-                return undefined;
-            }
-            newChild.loopVar = loopVar;
-            this._iteratedChildren.push(newChild);
-        }
-        return child;
-    }
-
-    get iteratedChildren(): StatementBase[] | undefined {
-        return this._iteratedChildren;
-    }
-
-    public clearIteratedChildren(): void {
-        this._iteratedChildren = [];
-    }
-
-    public async executeStatement(executionContext: ExecutionContext): Promise<void> {
-        const conditionResult = this.scvdItem.getConditionResult();
+    public async executeStatement(executionContext: ExecutionContext, guiTree: ScvdGuiTree): Promise<void> {
+        const conditionResult = await this.scvdItem.getConditionResult();
         if (conditionResult === false) {
             console.log(`  Skipping ${this.scvdItem.getExplorerDisplayName()} for condition result: ${conditionResult}`);
             return;
         }
 
-        await this.onExecute(executionContext);
+        await this.onExecute(executionContext, guiTree);
         /*for (const child of this.children) {  // executed in list
-            await child.executeStatement(executionContext);
+            await child.executeStatement(executionContext, guiTree);
         }*/
     }
 
-    private async addIteratedChildren(child: StatementBase, loopVar: LoopVariable): Promise<void> {
-        this.addIteratedChild(child, loopVar);
-        await child.executeStatement(loopVar.executionContext);
-    }
-
-    protected async onExecute(executionContext: ExecutionContext): Promise<void> {
-        this.clearIteratedChildren();
+    protected async onExecute(executionContext: ExecutionContext, guiTree: ScvdGuiTree): Promise<void> {
         const scvdList = this.scvdItem.castToDerived(ScvdListOut);
         if (scvdList === undefined) {
             console.error(`${this.line}: Executing "out-list": could not cast to ScvdList`);
@@ -134,7 +59,7 @@ export class StatementListOut extends StatementBase {
             console.error(`${this.line}: Executing "out-list": ${scvdList.name}, no start expression defined`);
             return;
         }
-        const startValue = startExpr.getValue();
+        const startValue = await startExpr.getValue();
         if (startValue === undefined) {
             console.error(`${this.line}: Executing "out-list": ${scvdList.name}, could not evaluate start expression`);
             return;
@@ -160,7 +85,7 @@ export class StatementListOut extends StatementBase {
         let limitValue = 0;
         const limitExpr = scvdList.limit;
         if(limitExpr !== undefined) {
-            const limitVal = limitExpr.getValue();
+            const limitVal = await limitExpr.getValue();
             limitValue = limitVal ?? 0; // do not enter loop if undefined
         }
 
@@ -177,7 +102,7 @@ export class StatementListOut extends StatementBase {
 
             if(whileExpr !== undefined) {
                 whileExpr.invalidate();
-                const whileValue = whileExpr.getValue();
+                const whileValue = await whileExpr.getValue();
                 if(whileValue === 0 || whileValue === undefined) {   // break on read error too
                     break;
                 }
@@ -188,13 +113,17 @@ export class StatementListOut extends StatementBase {
                 }
             }
 
+            const childGuiTree = new ScvdGuiTree(guiTree);
+            childGuiTree.setGuiName(`${scvdList.name} [${loopValue}]`);
+            childGuiTree.setGuiValue(`${loopValue}`);
+
             for (const child of this.children) {  // executed in list
                 const loopVar: LoopVariable = { name: name, value: loopValue, size: varTargetSize, offset: 0, executionContext: executionContext };
-                this.addIteratedChildren(child, loopVar);
+                await child.executeStatement(loopVar.executionContext, childGuiTree);
             }
 
             if(whileExpr !== undefined) {
-                const whileValue = whileExpr.getValue();
+                const whileValue = await whileExpr.getValue();
                 if(whileValue !== undefined) {
                     loopValue = whileValue;
                 }
@@ -206,16 +135,4 @@ export class StatementListOut extends StatementBase {
         executionContext.memoryHost.writeNumber(name, 0, loopValue, varTargetSize);    // update last loop variable in memory
         return;
     }
-
-
-    // ------------  GUI Interface Begin ------------
-    public getGuiChildren(): ScvdGuiInterface[] {
-        return this._iteratedChildren;
-    }
-
-    public hasGuiChildren(): boolean {
-        return this._iteratedChildren.length > 0;
-    }
-    // ------------  GUI Interface End ------------
-
 }

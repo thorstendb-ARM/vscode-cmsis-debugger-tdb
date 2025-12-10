@@ -17,6 +17,7 @@
 import { ScvdBase } from '../model/scvd-base';
 import { ExecutionContext } from '../scvd-eval-context';
 import { ScvdGuiInterface } from '../model/scvd-gui-interface';
+import { ScvdGuiTree } from '../scvd-gui-tree';
 
 
 export interface LoopVariable {
@@ -106,17 +107,17 @@ export class StatementBase implements ScvdGuiInterface {
         }
     }
 
-    public async executeStatement(executionContext: ExecutionContext): Promise<void> {
-        const conditionResult = this.scvdItem.getConditionResult();
+    public async executeStatement(executionContext: ExecutionContext, guiTree: ScvdGuiTree): Promise<void> {
+        const conditionResult = await this.scvdItem.getConditionResult();
         if (conditionResult === false) {
             console.log(`  Skipping ${this.scvdItem.getExplorerDisplayName()} for condition result: ${conditionResult}`);
             return;
         }
 
-        await this.onExecute(executionContext);
+        await this.onExecute(executionContext, guiTree);
 
         for (const child of this.children) {
-            await child.executeStatement(executionContext);
+            await child.executeStatement(executionContext, guiTree);
         }
     }
 
@@ -145,9 +146,7 @@ export class StatementBase implements ScvdGuiInterface {
     }
 
     /** Override in subclasses to perform work for this node. */
-    protected async onExecute(_executionContext: ExecutionContext): Promise<void> {
-        // no-op in base
-        //console.log(`${this.line}: Executing "${this.scvdItem.constructor.name}", ${this.scvdItem.getExplorerDisplayName()}`);
+    protected async onExecute(_executionContext: ExecutionContext, _guiTree: ScvdGuiTree): Promise<void> {
         console.log(`${this.line}: ${this.scvdItem.constructor.name}`);
     }
 
@@ -165,6 +164,7 @@ export class StatementBase implements ScvdGuiInterface {
     }
 
     public getGuiName(): string | undefined {
+        return '<name> from StatementBase';
         this.restoreLoopVariable();
         const value = this.scvdItem.getGuiName();
         this.restoreLoopVariable(true);

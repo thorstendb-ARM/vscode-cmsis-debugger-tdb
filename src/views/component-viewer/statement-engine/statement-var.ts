@@ -17,6 +17,7 @@
 import { ScvdBase } from '../model/scvd-base';
 import { ScvdVar } from '../model/scvd-var';
 import { ExecutionContext } from '../scvd-eval-context';
+import { ScvdGuiTree } from '../scvd-gui-tree';
 import { StatementBase } from './statement-base';
 
 
@@ -26,14 +27,14 @@ export class StatementVar extends StatementBase {
         super(item, parent);
     }
 
-    protected async onExecute(executionContext: ExecutionContext): Promise<void> {
+    protected async onExecute(executionContext: ExecutionContext, _guiTree: ScvdGuiTree): Promise<void> {
         console.log(`${this.line}: Executing "var": ${this.scvdItem.name}`);
 
         const varItem = this.scvdItem.castToDerived(ScvdVar);
         if(varItem !== undefined) {
             const name = varItem.name;
             const targetSize = varItem.getTargetSize();
-            const value = varItem.getValue();
+            const value = await varItem.getValue();
             if(name !== undefined && targetSize !== undefined && value !== undefined) {
                 executionContext.memoryHost.setVariable(name, targetSize, value, -1, 0);
                 console.log(`${this.line} Variable "${name}" created with value: ${value}`);

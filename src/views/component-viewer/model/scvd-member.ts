@@ -117,7 +117,10 @@ export class ScvdMember extends ScvdBase {
     }
 
     public getEnum(index: number): ScvdEnum | undefined {
-        const enumItem = this._enum.find((item) => item.value?.getValue() === index);
+        const enumItem = this._enum.find((item) => {
+            const val = item.value?.getCachedValue();
+            return typeof val === 'number' && val === index;
+        });
         return enumItem;
     }
 
@@ -132,10 +135,10 @@ export class ScvdMember extends ScvdBase {
     }
 
     // member’s byte offset
-    public getMemberOffset(): number | undefined {
+    public async getMemberOffset(): Promise<number | undefined> {
         const offsetExpr = this._offset;
         if (offsetExpr !== undefined) {
-            const offsetValue = offsetExpr.getValue();
+            const offsetValue = await offsetExpr.getValue();
             if (typeof offsetValue === 'number') {
                 return offsetValue;
             }

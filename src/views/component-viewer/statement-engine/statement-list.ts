@@ -17,6 +17,7 @@
 import { ScvdBase } from '../model/scvd-base';
 import { ScvdList } from '../model/scvd-list';
 import { ExecutionContext } from '../scvd-eval-context';
+import { ScvdGuiTree } from '../scvd-gui-tree';
 import { StatementBase } from './statement-base';
 
 
@@ -26,20 +27,20 @@ export class StatementList extends StatementBase {
         super(item, parent);
     }
 
-    public async executeStatement(executionContext: ExecutionContext): Promise<void> {
-        const conditionResult = this.scvdItem.getConditionResult();
+    public async executeStatement(executionContext: ExecutionContext, guiTree: ScvdGuiTree): Promise<void> {
+        const conditionResult = await this.scvdItem.getConditionResult();
         if (conditionResult === false) {
             console.log(`  Skipping ${this.scvdItem.getExplorerDisplayName()} for condition result: ${conditionResult}`);
             return;
         }
 
-        await this.onExecute(executionContext);
+        await this.onExecute(executionContext, guiTree);
         /*for (const child of this.children) {  // executed in list
-            await child.executeStatement(executionContext);
+            await child.executeStatement(executionContext, guiTree);
         }*/
     }
 
-    protected async onExecute(executionContext: ExecutionContext): Promise<void> {
+    protected async onExecute(executionContext: ExecutionContext, guiTree: ScvdGuiTree): Promise<void> {
         const scvdList = this.scvdItem.castToDerived(ScvdList);
         if (scvdList === undefined) {
             console.error(`${this.line}: Executing "list": could not cast to ScvdList`);
@@ -58,7 +59,7 @@ export class StatementList extends StatementBase {
             console.error(`${this.line}: Executing "list": ${scvdList.name}, no start expression defined`);
             return;
         }
-        const startValue = startExpr.getValue();
+        const startValue = await startExpr.getValue();
         if (startValue === undefined) {
             console.error(`${this.line}: Executing "list": ${scvdList.name}, could not evaluate start expression`);
             return;
@@ -84,7 +85,7 @@ export class StatementList extends StatementBase {
         let limitValue = 0;
         const limitExpr = scvdList.limit;
         if(limitExpr !== undefined) {
-            const limitVal = limitExpr.getValue();
+            const limitVal = await limitExpr.getValue();
             limitValue = limitVal ?? 0; // do not enter loop if undefined
         }
 
@@ -102,7 +103,7 @@ export class StatementList extends StatementBase {
             // while-loop
             if(whileExpr !== undefined) {
                 whileExpr.invalidate();
-                const whileValue = whileExpr.getValue();
+                const whileValue = await whileExpr.getValue();
                 if(whileValue !== undefined) {
                     loopValue = whileValue;
                 }
@@ -119,10 +120,9 @@ export class StatementList extends StatementBase {
             }
 
             for (const child of this.children) {  // executed in list
-                await child.executeStatement(executionContext);
+                await child.executeStatement(executionContext, guiTree);
             }
         }
         executionContext.memoryHost.writeNumber(name, 0, loopValue, varTargetSize);    // update last loop variable in memory
-        return;
     }
 }

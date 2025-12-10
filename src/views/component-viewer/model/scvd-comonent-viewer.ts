@@ -114,12 +114,12 @@ export class ScvdComponentViewer extends ScvdBase {
         return true;
     }
 
-    public calculateTypedefs(): boolean {
+    public async calculateTypedefs(): Promise<boolean> {
         const typedefs = this.typedefs;
         if(typedefs === undefined || typedefs.typedef.length === 0) {
             return false;
         }
-        typedefs.calculateTypedefs();
+        await typedefs.calculateTypedefs();
         return true;
     }
 
@@ -145,14 +145,14 @@ export class ScvdComponentViewer extends ScvdBase {
         });
     }
 
-    public debugAll(): boolean {
+    public async debugAll(): Promise<boolean> {
         return this.debugRecursive(this);
     }
-    private debugRecursive(item: ScvdBase): boolean {
-        item.debug();
-        item.children.forEach( (child: ScvdBase) => {
-            this.debugRecursive(child);
-        });
+    private async debugRecursive(item: ScvdBase): Promise<boolean> {
+        await item.debug();
+        for (const child of item.children) {
+            await this.debugRecursive(child);
+        }
         return true;
     }
 

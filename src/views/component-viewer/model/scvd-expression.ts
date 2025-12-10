@@ -76,11 +76,11 @@ export class ScvdExpression extends ScvdBase {
         this._result = undefined;
     }
 
-    public evaluateExpression(): EvaluateResult {
+    public async evaluateExpression(): Promise<EvaluateResult> {
         if(this.expressionAst === undefined || this._executionContext === undefined) {
             return undefined;
         }
-        const result = evaluateParseResult(this.expressionAst, this._executionContext.evalContext /*, this*/); // pass 'this' for local variable resolution
+        const result = await evaluateParseResult(this.expressionAst, this._executionContext.evalContext /*, this*/); // pass 'this' for local variable resolution
         return result;
     }
 
@@ -88,16 +88,13 @@ export class ScvdExpression extends ScvdBase {
         return this._result;
     }
 
-    private get value(): number | string | undefined {
-        // if(this._result !== undefined) {
-        //     return this._result;
-        // }
-        this.evaluate();
+    private async evaluateValue(): Promise<number | string | undefined> {
+        await this.evaluate();
         return this._result;
     }
 
-    public getValue(): number | undefined {
-        const val = this.value;
+    public async getValue(): Promise<number | undefined> {
+        const val = await this.evaluateValue();
         if (val == undefined || typeof val !== 'number') {
             return undefined;
         }
@@ -112,13 +109,13 @@ export class ScvdExpression extends ScvdBase {
         return val;
     }
 
-    public setValue(val: number): number | undefined {
+    public async setValue(val: number): Promise<number | undefined> {
         if(typeof this._result === 'number') {
             this.resetExpression();
             this._result = val;
         } else {
             this.expression = val.toString();
-            this.configure();
+            await this.configure();
         }
         return val;
     }
@@ -139,20 +136,23 @@ export class ScvdExpression extends ScvdBase {
         return { min: this._rangeMin, max: this._rangeMax };
     }
 
-    public getResultBoolean(): boolean {
-        return typeof this.value === 'number' && this.value > 0;
+    public async getResultBoolean(): Promise<boolean> {
+        const value = await this.evaluateValue();
+        return typeof value === 'number' && value > 0;
     }
 
-    public evaluate() {
-        if(this.expressionAst !== undefined) {  // AST exists
-            if(this.expressionAst.constValue === undefined) {   // not a constant expression
-                const result = this.evaluateExpression();
-                if(result !== undefined) {
-                    this._result = result;
-                }
-            } else {    // constant expression
-                this._result = this.expressionAst.constValue;
+    public async evaluate(): Promise<void> {
+        if(this.expressionAst === undefined) {
+            return;
+        }
+
+        if(this.expressionAst.constValue === undefined) {   // not a constant expression
+            const result = await this.evaluateExpression();
+            if(result !== undefined) {
+                this._result = result;
             }
+        } else {    // constant expression
+            this._result = this.expressionAst.constValue;
         }
     }
 
@@ -208,15 +208,14 @@ export class ScvdExpression extends ScvdBase {
         return super.validate(prevResult && true);
     }
 
-    public debug(): boolean {
-        this.evaluate();
+    public async debug(): Promise<boolean> {
+        await this.evaluate();
         console.log(this.getLineInfoStr(), 'Expr:', this.expression, '\nResult:', this.getResultString());
 
         return super.debug();
     }
 
     public getResultString(): string | undefined {
-        this.evaluate();
         if(this._result !== undefined) {
             if (typeof this._result === 'number') {
                 return this._result.toString();
@@ -237,7 +236,7 @@ export class ScvdExpression extends ScvdBase {
             info.push({ name: 'Expression', value: this.expression });
         }
         info.push({ name: 'Result', value: this.getResultString() ?? 'undefined' });
-        if (this.value) {
+        if (this._result !== undefined) {
             info.push({ name: 'Value', value: this.getGuiValue() ?? 'undefined' });
         }
         info.push(...itemInfo);
@@ -262,6 +261,14 @@ export class ScvdExpression extends ScvdBase {
             }
         }*/
         return scvdVarName + ': ' + ((resultStr !== '') ? resultStr : expression);
+    }
+
+    protected getImmediateValue(): number | string | undefined {
+        return this._result;
+    }
+
+    public getCachedValue(): number | string | undefined {
+        return this._result;
     }
 
 }

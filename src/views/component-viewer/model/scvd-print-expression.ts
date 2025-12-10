@@ -40,7 +40,7 @@ export class ScvdPrintExpression extends ScvdExpression {
         return super.validate(prevResult && true);
     }
 
-    public debug(): boolean {
+    public async debug(): Promise<boolean> {
         return super.debug();
     }
 

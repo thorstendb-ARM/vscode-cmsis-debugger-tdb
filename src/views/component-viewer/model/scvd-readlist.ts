@@ -143,8 +143,11 @@ export class ScvdReadList extends ScvdRead {
         return true;
     }
 
-    public getCount(): number | undefined {
-        return this._count?.getValue();
+    public async getCount(): Promise<number | undefined> {
+        if(this._count === undefined) {
+            return undefined;
+        }
+        return await this._count.getValue();
     }
 
     public getNext(): string | undefined {

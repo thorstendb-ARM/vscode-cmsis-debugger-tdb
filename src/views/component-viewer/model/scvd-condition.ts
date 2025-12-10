@@ -21,6 +21,7 @@ import { ScvdExpression } from './scvd-expression';
 
 export class ScvdCondition extends ScvdBase {
     private _expression: ScvdExpression | undefined;
+    private _cachedResult: boolean | undefined;
 
     constructor(
         parent: ScvdBase | undefined,
@@ -44,17 +45,27 @@ export class ScvdCondition extends ScvdBase {
         this._expression.expression = value;
     }
 
-    public get result(): boolean {
-        return this._expression
-            ? this._expression.getValue() ? true : false
-            : true;
+    public async getResult(): Promise<boolean> {
+        if(!this._expression) {
+            this._cachedResult = true;
+            return true;
+        }
+        const value = await this._expression.getValue();
+        const result = value ? true : false;
+        this._cachedResult = result;
+        return result;
+    }
+
+    public getCachedResult(): boolean | undefined {
+        return this._cachedResult;
     }
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
         if (this._expression !== undefined) {
             info.push({ name: 'Expression', value: this._expression.expression ?? '' });
-            info.push({ name: 'Result', value: this.result ? 'true' : 'false' });
+            const cached = this.getCachedResult();
+            info.push({ name: 'Result', value: cached !== undefined ? (cached ? 'true' : 'false') : 'undefined' });
         }
         info.push(...itemInfo);
         return super.getExplorerInfo(info);

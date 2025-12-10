@@ -93,8 +93,8 @@ export class ScvdEvalInterface implements DataHost {
         return 0;
     }
 
-    getMemberOffset(_base: ScvdBase, member: ScvdBase): number {
-        const offset = member.getMemberOffset() ?? 0;
+    async getMemberOffset(_base: ScvdBase, member: ScvdBase): Promise<number> {
+        const offset = await member.getMemberOffset() ?? 0;
         console.log(`getMemberOffset: base=${_base.getExplorerDisplayName()} member=${member.getExplorerDisplayName()} => ${offset}`);
         return offset;
     }
@@ -166,10 +166,10 @@ export class ScvdEvalInterface implements DataHost {
         return undefined;
     }
 
-    __Offset_of(container: RefContainer, typedefMember: string): number | undefined {
+    async __Offset_of(container: RefContainer, typedefMember: string): Promise<number | undefined> {
         const memberRef = container.base.getMember(typedefMember);
         if (memberRef) {
-            const offset = memberRef.getMemberOffset();
+            const offset = await memberRef.getMemberOffset();
             return offset;
         }
         return undefined;

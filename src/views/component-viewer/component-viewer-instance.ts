@@ -17,6 +17,7 @@ import { StatementEngine } from './statement-engine/statement-engine';
 import { ScvdEvalContext } from './scvd-eval-context';
 import { GDBTargetDebugSession } from '../../debug-session';
 import { ScvdGuiInterface } from './model/scvd-gui-interface';
+import { ScvdGuiTree } from './scvd-gui-tree';
 
 
 const xmlOpts: ParserOptions = {
@@ -35,6 +36,7 @@ export class ComponentViewerInstance {
     private _memUsageLast: number = 0;
     private _timeUsageLast: number = 0;
     private _statementEngine: StatementEngine | undefined;
+    private _guiTree: ScvdGuiInterface[] | undefined;
 
     public constructor(
     ) {
@@ -50,6 +52,10 @@ export class ComponentViewerInstance {
             ));
         }
         return result.join('\n');
+    }
+
+    public getGuiTree(): ScvdGuiInterface[] | undefined {
+        return this._guiTree;
     }
 
     public getStats(text: string): string {
@@ -117,13 +123,14 @@ export class ComponentViewerInstance {
         resolver.resolve();
         stats.push(this.getStats('  resolver.resolve'));
 
-        this.model.calculateTypedefs();
+        await this.model.calculateTypedefs();
         stats.push(this.getStats('  model.calculateTypedefs'));
 
         this.statementEngine = new StatementEngine(this.model, executionContext);
         this.statementEngine.initialize();
         stats.push(this.getStats('  statementEngine.initialize'));
-        await this.statementEngine.executeAll();
+        const guiTree = new ScvdGuiTree(undefined);
+        await this.statementEngine.executeAll(guiTree);
         stats.push(this.getStats('  statementEngine.executeAll'));
 
         //this.model.debugAll();
@@ -174,12 +181,12 @@ export class ComponentViewerInstance {
     }
 
     public getGuiOut(): ScvdGuiInterface[] | undefined {
-        return this.statementEngine?.getGuiOut();
+        return this.getGuiTree();
     }
 
-    public async executeStatements(): Promise<void> {
+    public async executeStatements(guiTree: ScvdGuiTree): Promise<void> {
         if(this._statementEngine !== undefined) {
-            await this._statementEngine.executeAll();
+            await this._statementEngine.executeAll(guiTree);
         }
     }
 }

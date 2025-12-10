@@ -129,7 +129,7 @@ export abstract class ScvdBase {
     }
 
     // default condition always true
-    public getConditionResult(): boolean {
+    public async getConditionResult(): Promise<boolean> {
         return true;
     }
 
@@ -267,7 +267,7 @@ export abstract class ScvdBase {
         this.valid = prevResult;
         return prevResult;
     }
-    public debug(): boolean {
+    public async debug(): Promise<boolean> {
         return true;
     }
 
@@ -277,11 +277,11 @@ export abstract class ScvdBase {
     }
 
     // expanded values
-    public getValue(): string | number | undefined {
+    public async getValue(): Promise<string | number | undefined> {
         return undefined;   // TODO: change to undefined to indicate no value
     }
 
-    public setValue(val: number | string | bigint): number | string | bigint | undefined {
+    public async setValue(val: number | string | bigint): Promise<number | string | bigint | undefined> {
         return val;
     }
 
@@ -350,7 +350,7 @@ export abstract class ScvdBase {
     }
 
     // member’s byte offset
-    public getMemberOffset(): number | undefined {
+    public async getMemberOffset(): Promise<number | undefined> {
         console.error(`GetMemberOffset not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
         return undefined;
     }
@@ -383,7 +383,7 @@ export abstract class ScvdBase {
     }
 
     public getGuiValue(): string | undefined {
-        const val = this.getValue();
+        const val = this.getImmediateValue();
         if (val !== undefined) {
             if(typeof val === 'number') {
                 return val.toString();
@@ -391,6 +391,10 @@ export abstract class ScvdBase {
                 return val;
             }
         }
+        return undefined;
+    }
+
+    protected getImmediateValue(): string | number | undefined {
         return undefined;
     }
 

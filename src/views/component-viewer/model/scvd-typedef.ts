@@ -56,15 +56,15 @@ export class ScvdTypedefs extends ScvdBase {
         return typedefItem;
     }
 
-    public calculateTypedefs(): void {
+    public async calculateTypedefs(): Promise<void> {
         const typedefs = this.typedef;
         if(typedefs === undefined || typedefs.length === 0) {
             return;
         }
 
-        typedefs.forEach( (typedef: ScvdTypedef) => {
-            typedef.calculateTypedef();
-        });
+        for (const typedef of typedefs) {
+            await typedef.calculateTypedef();
+        }
     }
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
@@ -212,24 +212,24 @@ export class ScvdTypedef extends ScvdBase {
         );
     }
 
-    public calculateTypedef() {
+    public async calculateTypedef() {
         if(this.import !== undefined) {
             this.import.fetchSymbolInformation();
         }
 
-        this.calculateOffsets();
+        await this.calculateOffsets();
     }
 
     private alignToDword(addr: number): number {
         return (addr + 3) & ~3;
     }
 
-    public calculateOffsets() { // move to after starting debug session
+    public async calculateOffsets() { // move to after starting debug session
         let currentNextOffset = 0;
-        this._member.forEach( (member: ScvdMember) => {
+        for (const member of this._member) {
             const memberOffset = member.offset;
             if(memberOffset !== undefined) {   // ---- offset expression is set ----
-                const offsetVal = memberOffset.getValue();
+                const offsetVal = await memberOffset.getValue();
                 if(offsetVal !== undefined) {   // TODO: on error?!
                     if(offsetVal > currentNextOffset) {
                         currentNextOffset = offsetVal;  // store offset
@@ -252,9 +252,9 @@ export class ScvdTypedef extends ScvdBase {
             if(memberSize !== undefined) {   // TODO: on error?!
                 currentNextOffset += memberSize;
             }
-        });
+        }
 
-        const size = this.size?.getValue();
+        const size = this.size ? await this.size.getValue() : undefined;
         if(size !== undefined) {    // if size is defined, use it
             this.targetSize = size;
 
@@ -269,12 +269,12 @@ export class ScvdTypedef extends ScvdBase {
 
         currentNextOffset = this.alignToDword(currentNextOffset + 4);   // make sure no overlaps happen when reading target memory
 
-        this.var.forEach( (varItem: ScvdVar) => {
+        for (const varItem of this.var) {
             const varSize = varItem.getTargetSize() ?? 4; // default size 4 bytes
             varItem.offset = currentNextOffset.toString();  // set current offset
             varItem.offset?.configure();
             currentNextOffset += varSize;
-        });
+        }
         this.virtualSize = currentNextOffset;
     }
 
@@ -282,8 +282,9 @@ export class ScvdTypedef extends ScvdBase {
         const info: ExplorerInfo[] = [];
         if (this._size !== undefined) {
             info.push({ name: 'Size', value: this._size.expression ?? '' });
-            if (this._size.getValue() !== undefined) {
-                info.push({ name: 'Size Value', value: this._size.getGuiValue() ?? 'undefined' });
+            const sizeValue = this._size.getGuiValue();
+            if (sizeValue !== undefined) {
+                info.push({ name: 'Size Value', value: sizeValue });
             }
         }
         if (this._import !== undefined) {

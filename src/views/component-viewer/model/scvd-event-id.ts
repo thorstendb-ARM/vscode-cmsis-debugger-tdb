@@ -53,12 +53,11 @@ export class ScvdEventId extends ScvdBase {
         const id = this._id;
         if(id !== undefined ) {
             id.configure();
-            id.evaluate();
-            const value = this._id.getValue();
-            if( value !== undefined ) {
-                this._messageNumber = value & 0xFF;
-                this._componentNumber = (value >> 8) & 0xFF;
-                this._level = (value >> 16) & 0x3;
+            const constValue = id.expressionAst?.constValue;
+            if(typeof constValue === 'number') {
+                this._messageNumber = constValue & 0xFF;
+                this._componentNumber = (constValue >> 8) & 0xFF;
+                this._level = (constValue >> 16) & 0x3;
             }
         }
 

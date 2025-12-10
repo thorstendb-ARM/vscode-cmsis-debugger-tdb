@@ -18,6 +18,7 @@ import { ScvdBase } from '../model/scvd-base';
 import { ScvdComponentViewer } from '../model/scvd-comonent-viewer';
 import { ScvdGuiInterface } from '../model/scvd-gui-interface';
 import { ExecutionContext } from '../scvd-eval-context';
+import { ScvdGuiTree } from '../scvd-gui-tree';
 import { StatementBase } from './statement-base';
 import { StatementCalc } from './statement-calc';
 import { StatementItem } from './statement-item';
@@ -154,12 +155,12 @@ export class StatementEngine {
         return true;
     }
 
-    public async executeAll(): Promise<void> {
+    public async executeAll(guiTree: ScvdGuiTree): Promise<void> {
         // Execute all statements in the statement tree.
         // This is a placeholder implementation.
         if (this._statementTree) {
             console.log('Executing statements in the statement tree...');
-            await this._statementTree.executeStatement(this.executionContext);
+            await this._statementTree.executeStatement(this.executionContext, guiTree);
         }
     }
 

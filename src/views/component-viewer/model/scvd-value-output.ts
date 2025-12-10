@@ -53,12 +53,16 @@ export class ScvdValueOutput extends ScvdBase {
 
     public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
         const info: ExplorerInfo[] = [];
-        const value = this.getValue();
+        const value = this.getImmediateValue();
         if (value !== undefined) {
             info.push({ name: 'Value', value: this.getGuiValue() ?? '' });
         }
         info.push(...itemInfo);
         return super.getExplorerInfo(info);
+    }
+
+    protected getImmediateValue(): string | number | undefined {
+        return this.expression?.getResultString();
     }
 
     public getExplorerDisplayName(): string {

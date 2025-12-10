@@ -137,8 +137,12 @@ export class ScvdList extends ScvdBase {
         }
     }
 
-    public getConditionResult(): boolean {
-        return this._cond?.result ?? super.getConditionResult();
+    public async getConditionResult(): Promise<boolean> {
+        if(this._cond) {
+            const cond = await this._cond.getResult();
+            return cond;
+        }
+        return super.getConditionResult();
     }
 
     public applyInit(): boolean {

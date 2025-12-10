@@ -17,6 +17,7 @@
 import { ScvdBase } from '../model/scvd-base';
 import { ScvdReadList } from '../model/scvd-readlist';
 import { ExecutionContext } from '../scvd-eval-context';
+import { ScvdGuiTree } from '../scvd-gui-tree';
 import { StatementBase } from './statement-base';
 
 
@@ -26,7 +27,7 @@ export class StatementReadList extends StatementBase {
         super(item, parent);
     }
 
-    protected async onExecute(executionContext: ExecutionContext): Promise<void> {
+    protected async onExecute(executionContext: ExecutionContext, _guiTree: ScvdGuiTree): Promise<void> {
         const mustRead = this.scvdItem.mustRead;
         if(mustRead === false) {
             console.log(`${this.line} Skipping "read" as already initialized: ${this.scvdItem.name}`);
@@ -84,7 +85,7 @@ export class StatementReadList extends StatementBase {
         }
 
         // Add offset to base address. If no symbol defined, offset is used as base address
-        const offset = scvdReadList.offset?.getValue(); // Offset is attr: size plus var symbols!
+        const offset = scvdReadList.offset ? await scvdReadList.offset.getValue() : undefined; // Offset is attr: size plus var symbols!
         if(offset !== undefined) {
             baseAddress = baseAddress
                 ? baseAddress + offset
@@ -113,7 +114,7 @@ export class StatementReadList extends StatementBase {
             const nextMember = typeItem.getMember(next);
             if(nextMember !== undefined) {
                 nextTargetSize = nextMember.getTargetSize();
-                nextOffset = nextMember.getMemberOffset();
+                nextOffset = await nextMember.getMemberOffset();
                 if(nextTargetSize === undefined || nextOffset === undefined) {
                     console.error(`${this.line}: Executing "readlist": ${scvdReadList.name}, symbol: ${symbol?.name}, could not determine size/offset of next member: ${next} in type: ${typeItem.getExplorerDisplayName()}`);
                     return;
@@ -127,7 +128,7 @@ export class StatementReadList extends StatementBase {
         console.log(`${this.line}: Executing target readlist: ${scvdReadList.name}, symbol: ${symbol?.name}, address: ${baseAddress}, size: ${readBytes} bytes`);
 
         // ---- fetch count of items to read. count is always 1..1024 ----
-        const count = scvdReadList.getCount();  // Number of list items to read, default is 1. Limited to 1..1024 in ScvdExpression.
+        const count = await scvdReadList.getCount();  // Number of list items to read, default is 1. Limited to 1..1024 in ScvdExpression.
 
         // ---- calculate next address ----
         let nextPtrAddr: number | undefined = baseAddress;

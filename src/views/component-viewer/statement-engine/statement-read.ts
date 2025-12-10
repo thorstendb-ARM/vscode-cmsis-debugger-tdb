@@ -17,6 +17,7 @@
 import { ScvdBase } from '../model/scvd-base';
 import { ScvdRead } from '../model/scvd-read';
 import { ExecutionContext } from '../scvd-eval-context';
+import { ScvdGuiTree } from '../scvd-gui-tree';
 import { StatementBase } from './statement-base';
 
 
@@ -26,7 +27,7 @@ export class StatementRead extends StatementBase {
         super(item, parent);
     }
 
-    protected async onExecute(executionContext: ExecutionContext): Promise<void> {
+    protected async onExecute(executionContext: ExecutionContext, _guiTree: ScvdGuiTree): Promise<void> {
         const mustRead = this.scvdItem.mustRead;
         if(mustRead === false) {
             console.log(`${this.line} Skipping "read" as already initialized: ${this.scvdItem.name}`);
@@ -50,7 +51,8 @@ export class StatementRead extends StatementBase {
             return;
         }
         const virtualSize = scvdRead.getVirtualSize() ?? targetSize;
-        const numOfElements = scvdRead.size?.getValue() ?? 1;
+        const sizeValue = scvdRead.size ? await scvdRead.size.getValue() : undefined;
+        const numOfElements = sizeValue ?? 1;
         const readBytes = numOfElements * targetSize; // Is an Expressions representing the array size or the number of values to read from target. The maximum array size is limited to 512. Default value is 1.
         const fullVirtualStrideSize = virtualSize * numOfElements;
         let baseAddress: number | undefined = undefined;
@@ -66,7 +68,7 @@ export class StatementRead extends StatementBase {
             baseAddress = symAddr;
         }
 
-        const offset = scvdRead.offset?.getValue();
+        const offset = scvdRead.offset ? await scvdRead.offset.getValue() : undefined;
         if(offset !== undefined) {
             baseAddress = baseAddress
                 ? baseAddress + offset
