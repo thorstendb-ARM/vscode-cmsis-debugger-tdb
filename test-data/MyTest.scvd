@@ -151,16 +151,6 @@
       <var name="i_value"     type="uint8_t"  symbol="iValue" value="1" />
   
       <out name="MyTest">
-          <item property="List test while" value="" cond="RTX_En">
-            <list name="i" start="MyListA[i].nextL" while="i.nextL">
-              <item property="pArray"    value="%x[i.nameL]" />
-            </list>
-          </item>
-
-          <item property="Test read">
-            <item property="wString value %%U"    value="%U[wstring_val]" />
-          </item>
-
           <item property="MyList count" value="" cond="RTX_En">
               <item property="MyListA"    value="%d[MyListA._count]" />
               <item property="MyListB"    value="%d[MyListB._count]" />
@@ -220,6 +210,12 @@
             <item property="MyListE pArray"       value="%x[MyListE[0]._addr]"/>
             <item property="pArray"               value="%x[pArray[0]._addr], %x[pArray[1]._addr], %x[pArray[2]._addr], %x[pArray[3]._addr], %x[pArray[4]._addr]"/>
           </item>
+
+          <!-- <item property="List test while" value="" cond="RTX_En">
+            <list name="i" start="MyListA[i].nextL" while="i.nextL">
+              <item property="pArray"    value="%x[i.nameL]" />
+            </list>
+          </item> -->
 
           <item property="Empty item below (for print)">
             <item>

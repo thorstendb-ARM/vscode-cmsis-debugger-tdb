@@ -16,7 +16,6 @@ import { ScvdComponentViewer } from './model/scvd-comonent-viewer';
 import { StatementEngine } from './statement-engine/statement-engine';
 import { ScvdEvalContext } from './scvd-eval-context';
 import { GDBTargetDebugSession } from '../../debug-session';
-import { ScvdGuiInterface } from './model/scvd-gui-interface';
 import { ScvdGuiTree } from './scvd-gui-tree';
 
 
@@ -36,7 +35,7 @@ export class ComponentViewerInstance {
     private _memUsageLast: number = 0;
     private _timeUsageLast: number = 0;
     private _statementEngine: StatementEngine | undefined;
-    private _guiTree: ScvdGuiInterface | undefined;
+    private _guiTree: ScvdGuiTree | undefined;
 
     public constructor(
     ) {
@@ -54,8 +53,8 @@ export class ComponentViewerInstance {
         return result.join('\n');
     }
 
-    public getGuiTree(): ScvdGuiInterface[] | undefined {
-        return this._guiTree?.getGuiChildren();
+    public getGuiTree(): ScvdGuiTree[] | undefined {
+        return this._guiTree?.children;
     }
 
     public getStats(text: string): string {
@@ -80,7 +79,7 @@ export class ComponentViewerInstance {
 
         return `${text}, Time: ${timeUsage} ms, Mem: ${memUsage}, Mem Increase: ${memIncrease} MB, (Total: ${memCurrent} MB)`;
     }
-    
+
     public async readModel(filename: URI, debugSession: GDBTargetDebugSession): Promise<void> {
         const stats: string[] = [];
 
@@ -129,12 +128,21 @@ export class ComponentViewerInstance {
         this.statementEngine = new StatementEngine(this.model, executionContext);
         this.statementEngine.initialize();
         stats.push(this.getStats('  statementEngine.initialize'));
-        const guiTree = new ScvdGuiTree(undefined);
-        await this.statementEngine.executeAll(guiTree);
-        this._guiTree = guiTree;
-        stats.push(this.getStats('  statementEngine.executeAll'));
+        this._guiTree = new ScvdGuiTree(undefined);
 
         console.log('ComponentViewerInstance readModel stats:\n' + stats.join('\n  '));
+    }
+
+    public async update(): Promise<void> {
+        const stats: string[] = [];
+        stats.push(this.getStats('  start'));
+        if(this._statementEngine === undefined || this._guiTree === undefined) {
+            return;
+        }
+        this._guiTree.clear();
+        await this._statementEngine.executeAll(this._guiTree);
+        stats.push(this.getStats('end'));
+        console.log('ComponentViewerInstance update stats:\n' + stats.join('\n  '));
     }
 
     private async readFileToBuffer(filePath: URI): Promise<Buffer> {
@@ -176,10 +184,6 @@ export class ComponentViewerInstance {
     public updateModel(activeSession: GDBTargetDebugSession): void {
         // TODO: Update values in the model by re-evaluating necessary statements
         console.log(activeSession);
-    }
-
-    public getGuiOut(): ScvdGuiInterface[] | undefined {
-        return this.getGuiTree();
     }
 
     public async executeStatements(guiTree: ScvdGuiTree): Promise<void> {

@@ -104,6 +104,9 @@ export class StatementListOut extends StatementBase {
                 When using attribute while, iteration does not start if start==0.
              */
             if(whileExpr !== undefined) {
+                if(loopValue === 0) {
+                    break;
+                }
                 const whileValue = await whileExpr.getValue();
                 if(whileValue === 0 || whileValue === undefined) {   // break on read error too
                     break;

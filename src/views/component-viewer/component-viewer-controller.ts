@@ -89,7 +89,7 @@ export class ComponentViewerController {
             const instance = new ComponentViewerInstance();
             try {
                 // use a mocked GDBTargetDebugSession
-            await instance.readModel(URI.file(path.join(context.extensionPath, scvdFile)), createMockDebugSession());
+                await instance.readModel(URI.file(path.join(context.extensionPath, scvdFile)), createMockDebugSession());
             } catch (error) {
                 console.error('Error reading mock SCVD file:', scvdFile, error);
                 continue;
@@ -127,7 +127,8 @@ export class ComponentViewerController {
         await this.buildMockInstancesArray(context);
         // Add all mock models to the tree view
         for (const instance of this.instances) {
-            this.componentViewerTreeDataProvider?.addGuiOut(instance.getGuiOut());
+            await instance.update();
+            this.componentViewerTreeDataProvider?.addGuiOut(instance.getGuiTree());
         }
     }
 
@@ -138,7 +139,7 @@ export class ComponentViewerController {
         if (this.instances.length > 0) {
             // Add all models from cbuild-run to the tree view
             for (const instance of this.instances) {
-                this.componentViewerTreeDataProvider?.addGuiOut(instance.getGuiOut());
+                this.componentViewerTreeDataProvider?.addGuiOut(instance.getGuiTree());
             }
             this.componentViewerTreeDataProvider?.showModelData();
             return;

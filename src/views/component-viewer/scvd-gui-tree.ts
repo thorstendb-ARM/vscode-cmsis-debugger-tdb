@@ -32,6 +32,10 @@ export class ScvdGuiTree implements ScvdGuiInterface {
         return this.classname + '_' + this._nodeId.toString();
     }
 
+    public clear(): void {
+        this._children = [];
+    }
+
     private set name(value: string | undefined) {
         this._name = value;
     }
