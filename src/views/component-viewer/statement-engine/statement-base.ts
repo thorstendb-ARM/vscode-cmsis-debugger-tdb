@@ -16,7 +16,6 @@
 
 import { ScvdBase } from '../model/scvd-base';
 import { ExecutionContext } from '../scvd-eval-context';
-import { ScvdGuiInterface } from '../model/scvd-gui-interface';
 import { ScvdGuiTree } from '../scvd-gui-tree';
 
 
@@ -40,7 +39,6 @@ export class StatementBase {
     private _children: StatementBase[] = [];
     private _scvdItem: ScvdBase;
     private _loopVar: LoopVariable | undefined;
-    private _origLoopVar: LoopVariable | undefined;
 
     constructor(
         item: ScvdBase, parent: StatementBase | undefined
@@ -83,13 +81,6 @@ export class StatementBase {
         this._loopVar = loopVar;
     }
 
-    private get currentLoopVar(): LoopVariable | undefined {
-        return this._origLoopVar;
-    }
-    private set currentLoopVar(loopVar: LoopVariable | undefined) {
-        this._origLoopVar = loopVar;
-    }
-
     /**
     * Stable sort by `line`, then recurse into children.
     * Uses index tiebreak to guarantee same-line insertion order.
@@ -110,7 +101,7 @@ export class StatementBase {
     public async executeStatement(executionContext: ExecutionContext, guiTree: ScvdGuiTree): Promise<void> {
         const conditionResult = await this.scvdItem.getConditionResult();
         if (conditionResult === false) {
-            console.log(`  Skipping ${this.scvdItem.getExplorerDisplayName()} for condition result: ${conditionResult}`);
+            console.log(`  Skipping ${this.scvdItem.getDisplayLabel()} for condition result: ${conditionResult}`);
             return;
         }
 
@@ -121,71 +112,8 @@ export class StatementBase {
         }
     }
 
-    protected restoreLoopVariable(restoreCurrent: boolean = false): void {
-        if(this.loopVar?.executionContext === undefined) {
-            return;
-        }
-        const val = this.loopVar.executionContext.memoryHost.getVariable(this.loopVar.name, this.loopVar.size, this.loopVar.offset);
-        if(!restoreCurrent) {
-            if(val !== undefined) {
-                this.currentLoopVar = {
-                    ...this.loopVar,
-                    value: val,
-                };
-            }
-        }
-
-        const loopVar = restoreCurrent ? this.currentLoopVar : this.loopVar;    // restore original if undefined
-        if(val === loopVar?.value) {
-            return; // no change
-        }
-        const executionContext = loopVar?.executionContext;
-        if(executionContext !== undefined && loopVar !== undefined) {
-            executionContext.memoryHost.setVariable(loopVar.name, loopVar.size, loopVar.value, loopVar.offset);
-        }
-    }
-
     /** Override in subclasses to perform work for this node. */
     protected async onExecute(_executionContext: ExecutionContext, _guiTree: ScvdGuiTree): Promise<void> {
         console.log(`${this.line}: ${this.scvdItem.constructor.name}`);
     }
-
-    // ------------  GUI Interface Begin ------------
-    public getGuiEntry(): { name: string | undefined, value: string | undefined } {
-        return { name: this.scvdItem.getGuiName(), value: this.scvdItem.getGuiValue() };
-    }
-
-    public getGuiChildren(): ScvdGuiInterface[] {
-        return this.children;
-    }
-
-    public hasGuiChildren(): boolean {
-        return this.children.length > 0;
-    }
-
-    public getGuiName(): string | undefined {
-        return '<name> from StatementBase';
-        this.restoreLoopVariable();
-        const value = this.scvdItem.getGuiName();
-        this.restoreLoopVariable(true);
-        return value;
-    }
-
-    public getGuiValue(): string | undefined {
-        this.restoreLoopVariable();
-        const value = this.scvdItem.getGuiValue();
-        this.restoreLoopVariable(true);
-        return value;
-    }
-
-    public getGuiConditionResult(): boolean {
-        return true;    // use getConditionResult() later
-    }
-
-    public getGuiLineInfo(): string {
-        return this.scvdItem.getLineInfoStr();
-    }
-
-    // ------------  GUI Interface End ------------
-
 }

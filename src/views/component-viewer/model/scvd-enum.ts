@@ -17,7 +17,7 @@
 // https://arm-software.github.io/CMSIS-View/main/elem_member.html#elem_enum
 
 import { ScvdExpression } from './scvd-expression';
-import { ExplorerInfo, Json, ScvdBase } from './scvd-base';
+import { Json, ScvdBase } from './scvd-base';
 import { getStringFromJson } from './scvd-utils';
 
 export class ScvdEnum extends ScvdBase {
@@ -53,14 +53,5 @@ export class ScvdEnum extends ScvdBase {
         }
     }
 
-    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
-        const info: ExplorerInfo[] = [];
-        if (this._value !== undefined) {
-            info.push({ name: 'Value', value: this._value.expression ?? '' });
-            info.push({ name: 'Result', value: this._value.getGuiValue() ?? 'undefined' });
-        }
-        info.push(...itemInfo);
-        return super.getExplorerInfo(info);
-    }
 
 }

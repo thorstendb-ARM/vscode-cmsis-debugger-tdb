@@ -16,7 +16,7 @@
 
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
-import { ExplorerInfo, ScvdBase } from './scvd-base';
+import { ScvdBase } from './scvd-base';
 
 export class ScvdEndian extends ScvdBase {
     private _endian: string;
@@ -53,10 +53,4 @@ export class ScvdEndian extends ScvdBase {
         return value; // No conversion needed for little-endian
     }
 
-    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
-        const info: ExplorerInfo[] = [];
-        info.push({ name: 'Endian', value: this._endian });
-        info.push(...itemInfo);
-        return super.getExplorerInfo(info);
-    }
 }

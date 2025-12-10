@@ -17,7 +17,7 @@
 // https://arm-software.github.io/CMSIS-View/main/elem_calc.html
 
 import { ScvdExpression } from './scvd-expression';
-import { ExplorerInfo, Json, ScvdBase } from './scvd-base';
+import { Json, ScvdBase } from './scvd-base';
 import { ScvdCondition } from './scvd-condition';
 import { getStringFromJson, getTextBodyFromJson } from './scvd-utils';
 
@@ -81,13 +81,5 @@ export class ScvdCalc extends ScvdBase {
         return undefined;
     }
 
-    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
-        const info: ExplorerInfo[] = [];
-        info.push(...itemInfo);
-        return super.getExplorerInfo(info);
-    }
 
-    public getExplorerDisplayName(): string {
-        return this.getExplorerDisplayEntry() ?? super.getExplorerDisplayName();
-    }
 }

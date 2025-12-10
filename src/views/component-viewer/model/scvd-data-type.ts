@@ -15,7 +15,7 @@
  */
 
 import { ResolveSymbolCb, ResolveType } from '../resolver';
-import { ExplorerInfo, ScvdBase } from './scvd-base';
+import { ScvdBase } from './scvd-base';
 import { ScvdTypedef } from './scvd-typedef';
 
 // https://arm-software.github.io/CMSIS-View/main/data_type.html#scalar_data_type
@@ -81,22 +81,7 @@ export class ScvdDataType extends ScvdBase {
         return this._type?.getVirtualSize();
     }
 
-    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
-        const info: ExplorerInfo[] = [];
 
-        if (this._type !== undefined) {
-            info.push({ name: 'Type', value: this._type.getExplorerDisplayName() });
-            info.push({ name: 'Size', value: this.getTypeSize()?.toString() ?? '' });
-        } else {
-            info.push({ name: 'Type', value: 'undefined' });
-        }
-        info.push(...itemInfo);
-        return super.getExplorerInfo(info);
-    }
-
-    public getExplorerDisplayName(): string {
-        return this.getExplorerDisplayEntry() ?? this._type?.getExplorerDisplayName() ?? 'data type';
-    }
 
 }
 
@@ -152,19 +137,7 @@ export class ScvdScalarDataType extends ScvdBase {
     }
 
 
-    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
-        const info: ExplorerInfo[] = [];
-        if (this._type !== undefined) {
-            info.push({ name: 'Type', value: this._type });
-            info.push({ name: 'Size', value: this.getTypeSize()?.toString() ?? '' });
-        }
-        info.push(...itemInfo);
-        return super.getExplorerInfo(info);
-    }
 
-    public getExplorerDisplayName(): string {
-        return this.getExplorerDisplayEntry() ?? this._type ?? 'unknown scalar type';
-    }
 }
 
 export class ScvdComplexDataType extends ScvdBase{
@@ -235,25 +208,6 @@ export class ScvdComplexDataType extends ScvdBase{
     }
 
 
-    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
-        const info: ExplorerInfo[] = [];
-        if (this._typeName !== undefined) {
-            info.push({ name: 'TypeName', value: this._typeName });
-        }
-        if( this._type !== undefined) {
-            info.push({ name: 'Resolved Type', value: this._type.getExplorerDisplayName() });
-        } else {
-            info.push({ name: 'Resolved Type', value: 'not resolved' });
-        }
-        if( this.isPointer) {
-            info.push({ name: 'Pointer', value: 'true' });
-        }
-        info.push(...itemInfo);
-        return super.getExplorerInfo(info);
-    }
 
-    public getExplorerDisplayName(): string {
-        return this.getExplorerDisplayEntry() ?? this._typeName ?? 'unknown complex type';
-    }
 
 }

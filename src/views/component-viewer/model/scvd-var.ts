@@ -18,7 +18,7 @@
 
 import { ScvdDataType } from './scvd-data-type';
 import { ScvdExpression } from './scvd-expression';
-import { ExplorerInfo, Json, ScvdBase } from './scvd-base';
+import { Json, ScvdBase } from './scvd-base';
 import { getStringFromJson } from './scvd-utils';
 import { NumberType, NumberTypeInput } from './number-type';
 
@@ -165,30 +165,7 @@ export class ScvdVar extends ScvdBase {
         return undefined;
     }
 
-    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
-        const info: ExplorerInfo[] = [];
-        if (this._type !== undefined && this._type.type !== undefined) {
-            info.push({ name: 'Type', value: this._type.type.getExplorerDisplayName() });
-        }
-        if (this._value !== undefined && this._value.expression !== undefined) {
-            info.push({ name: 'Value', value: this._value.expression });
-        }
-        info.push(...itemInfo);
-        return super.getExplorerInfo(info);
-    }
 
-    public getExplorerDisplayName(): string {
-        const dispEntry = this.getExplorerDisplayEntry();
-        if(dispEntry !== undefined) {
-            return dispEntry;
-        }
-        const propertyName = super.getExplorerDisplayName();
-        const valueStr = this.value?.getResultString();
-        if(valueStr !== undefined && valueStr.length > 0) {
-            return `${propertyName} = ${valueStr}`;
-        }
-        return propertyName;
-    }
 
     protected getImmediateValue(): number | string | undefined {
         return this._value?.getCachedValue();

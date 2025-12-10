@@ -20,7 +20,7 @@
 import { parseExpression, ParseResult } from '../parser';
 import {  evaluateParseResult, EvaluateResult } from '../evaluator';
 
-import { ExplorerInfo, ScvdBase } from './scvd-base';
+import { ScvdBase } from './scvd-base';
 import { ExecutionContext } from '../scvd-eval-context';
 
 
@@ -227,41 +227,7 @@ export class ScvdExpression extends ScvdBase {
     }
 
 
-    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
-        const info: ExplorerInfo[] = [];
-        if(this.scvdVarName) {
-            info.push({ name: 'Var', value: this.scvdVarName });
-        }
-        if (this.expression) {
-            info.push({ name: 'Expression', value: this.expression });
-        }
-        info.push({ name: 'Result', value: this.getResultString() ?? 'undefined' });
-        if (this._result !== undefined) {
-            info.push({ name: 'Value', value: this.getGuiValue() ?? 'undefined' });
-        }
-        info.push(...itemInfo);
-        return super.getExplorerInfo(info);
-    }
 
-    public getExplorerDisplayName(): string {
-        const dispEntry = this.getExplorerDisplayEntry();
-        if(dispEntry !== undefined) {
-            return dispEntry;
-        }
-        const scvdVarName = this.scvdVarName ?? '';
-        const expression = this.expression ?? '';
-        const resultStr = this.getResultString();
-        /*const firstIdx = [expression.indexOf('='), expression.indexOf('(')]
-            .filter(i => i !== -1)
-            .reduce((min, i) => (min === -1 || i < min ? i : min), -1);
-        if (firstIdx !== -1) {
-            const exprStr = expression.substring(0, firstIdx).trim();
-            if (exprStr) {
-                return scvdVarName + ': ' + exprStr;
-            }
-        }*/
-        return scvdVarName + ': ' + ((resultStr !== '') ? resultStr : expression);
-    }
 
     protected getImmediateValue(): number | string | undefined {
         return this._result;

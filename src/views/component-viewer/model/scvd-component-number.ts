@@ -16,7 +16,7 @@
 
 // https://arm-software.github.io/CMSIS-View/main/er_theory.html
 
-import { ExplorerInfo, ScvdBase } from './scvd-base';
+import { ScvdBase } from './scvd-base';
 
 export class ScvdComponentNumber extends ScvdBase {
     private _componentNumber: number | undefined;
@@ -79,23 +79,5 @@ export class ScvdComponentNumber extends ScvdBase {
     }
 
 
-    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
-        const info: ExplorerInfo[] = [];
-        if(this._componentNumber !== undefined) {
-            info.push({ name: 'Component Range', value: this.getComponentRange(this._componentNumber) ?? 'undefined' });
-        }
-        info.push(...itemInfo);
-        return super.getExplorerInfo(info);
-    }
 
-    public getExplorerDisplayName(): string {
-        const dispEntry = this.getExplorerDisplayEntry();
-        if(dispEntry !== undefined) {
-            return dispEntry;
-        }
-        if(this._componentNumber === undefined) {
-            return super.getExplorerDisplayName();
-        }
-        return this.getComponentRange(this._componentNumber) ?? 'undefined';
-    }
 }

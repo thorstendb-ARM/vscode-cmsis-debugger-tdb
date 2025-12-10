@@ -30,7 +30,7 @@ export class StatementListOut extends StatementBase {
     public async executeStatement(executionContext: ExecutionContext, guiTree: ScvdGuiTree): Promise<void> {
         const conditionResult = await this.scvdItem.getConditionResult();
         if (conditionResult === false) {
-            console.log(`  Skipping ${this.scvdItem.getExplorerDisplayName()} for condition result: ${conditionResult}`);
+            console.log(`  Skipping ${this.scvdItem.getDisplayLabel()} for condition result: ${conditionResult}`);
             return;
         }
 
@@ -113,13 +113,9 @@ export class StatementListOut extends StatementBase {
                 }
             }
 
-            const childGuiTree = new ScvdGuiTree(guiTree);
-            childGuiTree.setGuiName(`${scvdList.name} [${loopValue}]`);
-            childGuiTree.setGuiValue(`${loopValue}`);
-
             for (const child of this.children) {  // executed in list
                 const loopVar: LoopVariable = { name: name, value: loopValue, size: varTargetSize, offset: 0, executionContext: executionContext };
-                await child.executeStatement(loopVar.executionContext, childGuiTree);
+                await child.executeStatement(loopVar.executionContext, guiTree);
             }
 
             if(whileExpr !== undefined) {

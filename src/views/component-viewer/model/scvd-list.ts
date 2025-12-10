@@ -18,7 +18,7 @@
 
 import { ScvdCalc } from './scvd-calc';
 import { ScvdExpression } from './scvd-expression';
-import { ExplorerInfo, Json, ScvdBase } from './scvd-base';
+import { Json, ScvdBase } from './scvd-base';
 import { ScvdRead } from './scvd-read';
 import { ScvdReadList } from './scvd-readlist';
 import { ScvdVar } from './scvd-var';
@@ -205,9 +205,4 @@ export class ScvdList extends ScvdBase {
     }
 
 
-    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
-        const info: ExplorerInfo[] = [];
-        info.push(...itemInfo);
-        return super.getExplorerInfo(info);
-    }
 }

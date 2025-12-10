@@ -16,7 +16,7 @@
 
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
-import { ExplorerInfo, Json, ScvdBase } from './scvd-base';
+import { Json, ScvdBase } from './scvd-base';
 import { ScvdItem } from './scvd-item';
 import { ScvdList } from './scvd-list';
 import { getArrayFromJson, getStringFromJson } from './scvd-utils';
@@ -93,15 +93,8 @@ export class ScvdListOut extends ScvdList {
     //     return this.item.length > 0 || this.listOut.length > 0;
     // }
 
-    public getGuiName(): string | undefined {
-        //return 'List';
+    public async getGuiName(): Promise<string | undefined> {
         return undefined;
     }
 
-    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
-        const info: ExplorerInfo[] = [];
-
-        info.push(...itemInfo);
-        return super.getExplorerInfo(info);
-    }
 }

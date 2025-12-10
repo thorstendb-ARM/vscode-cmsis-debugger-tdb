@@ -18,7 +18,7 @@
 // https://arm-software.github.io/CMSIS-View/main/elem_events.html
 
 import { NumberType, NumberTypeInput } from './number-type';
-import { ExplorerInfo, Json, ScvdBase } from './scvd-base';
+import { Json, ScvdBase } from './scvd-base';
 import { ScvdEventState } from './scvd-event-state';
 import { getArrayFromJson, getStringFromJson } from './scvd-utils';
 
@@ -88,18 +88,4 @@ export class ScvdComponent extends ScvdBase {
         return newState;
     }
 
-    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
-        const info: ExplorerInfo[] = [];
-        if (this.brief) {
-            info.push({ name: 'Brief', value: this.brief });
-        }
-        if (this.no) {
-            info.push({ name: 'No', value: this.no.toString() });
-        }
-        if (this.prefix) {
-            info.push({ name: 'Prefix', value: this.prefix });
-        }
-        info.push(...itemInfo);
-        return super.getExplorerInfo(info);
-    }
 }

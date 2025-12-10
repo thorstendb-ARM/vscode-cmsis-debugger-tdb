@@ -18,7 +18,7 @@
 
 import { NumberType, NumberTypeInput } from './number-type';
 import { ScvdExpression } from './scvd-expression';
-import { ExplorerInfo, Json, ScvdBase } from './scvd-base';
+import { Json, ScvdBase } from './scvd-base';
 import { ScvdTypedef } from './scvd-typedef';
 import { ScvdRead } from './scvd-read';
 import { getStringFromJson } from './scvd-utils';
@@ -158,21 +158,4 @@ export class ScvdReadList extends ScvdRead {
         return this._init;
     }
 
-    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
-        const info: ExplorerInfo[] = [];
-        if (this._next) {
-            info.push({ name: 'Next', value: this._next });
-        }
-        if (this._init) {
-            info.push({ name: 'Init', value: this._init.toString() });
-        }
-        if (this._based) {
-            info.push({ name: 'Based', value: this._based.toString() });
-        }
-        if (this._nextObj) {
-            info.push({ name: 'NextObj', value: this._nextObj.name ?? '' });
-        }
-        info.push(...itemInfo);
-        return super.getExplorerInfo(info);
-    }
 }

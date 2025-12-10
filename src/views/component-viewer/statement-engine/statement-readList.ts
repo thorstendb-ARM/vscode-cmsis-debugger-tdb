@@ -56,7 +56,7 @@ export class StatementReadList extends StatementBase {
         // ---- fetch type size ----
         const targetSize = scvdReadList.getTargetSize();
         if(targetSize === undefined) {
-            console.error(`${this.line} Executing "readlist": ${scvdReadList.name}, type: ${scvdReadList.getExplorerDisplayName()}, could not determine target size`);
+            console.error(`${this.line} Executing "readlist": ${scvdReadList.name}, type: ${scvdReadList.getDisplayLabel()}, could not determine target size`);
             return;
         }
         const virtualSize = scvdReadList.getVirtualSize() ?? targetSize;    // if type has <var> members, include their size in the variable allocation
@@ -116,7 +116,7 @@ export class StatementReadList extends StatementBase {
                 nextTargetSize = nextMember.getTargetSize();
                 nextOffset = await nextMember.getMemberOffset();
                 if(nextTargetSize === undefined || nextOffset === undefined) {
-                    console.error(`${this.line}: Executing "readlist": ${scvdReadList.name}, symbol: ${symbol?.name}, could not determine size/offset of next member: ${next} in type: ${typeItem.getExplorerDisplayName()}`);
+                    console.error(`${this.line}: Executing "readlist": ${scvdReadList.name}, symbol: ${symbol?.name}, could not determine size/offset of next member: ${next} in type: ${typeItem.getDisplayLabel()}`);
                     return;
                 }
                 if(nextTargetSize > 4) {

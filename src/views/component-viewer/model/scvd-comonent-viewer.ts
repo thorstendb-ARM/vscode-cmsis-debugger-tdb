@@ -18,7 +18,7 @@
 
 import { ScvdComponentIdentifier } from './scvd-component-identifier';
 import { ScvdEvents } from './scvd-events';
-import { ExplorerInfo, Json, ScvdBase } from './scvd-base';
+import { Json, ScvdBase } from './scvd-base';
 import { ScvdObjects } from './scvd-object';
 import { ScvdTypedefs } from './scvd-typedef';
 import { /*getArrayFromJson,*/ getObjectFromJson } from './scvd-utils';
@@ -156,10 +156,5 @@ export class ScvdComponentViewer extends ScvdBase {
         return true;
     }
 
-    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
-        const info: ExplorerInfo[] = [];
-        info.push(...itemInfo);
-        return super.getExplorerInfo(info);
-    }
 
 }

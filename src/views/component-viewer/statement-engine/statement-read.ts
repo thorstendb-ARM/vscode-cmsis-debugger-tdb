@@ -47,7 +47,7 @@ export class StatementRead extends StatementBase {
 
         const targetSize = scvdRead.getTargetSize(); // use size specified in SCVD
         if(targetSize === undefined) {
-            console.error(`${this.line} Executing "read": ${scvdRead.name}, type: ${scvdRead.getExplorerDisplayName()}, could not determine target size`);
+            console.error(`${this.line} Executing "read": ${scvdRead.name}, type: ${scvdRead.getDisplayLabel()}, could not determine target size`);
             return;
         }
         const virtualSize = scvdRead.getVirtualSize() ?? targetSize;

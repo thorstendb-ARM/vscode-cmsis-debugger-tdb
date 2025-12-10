@@ -29,15 +29,17 @@ export class StatementItem extends StatementBase {
     public async executeStatement(executionContext: ExecutionContext, guiTree: ScvdGuiTree): Promise<void> {
         const conditionResult = await this.scvdItem.getConditionResult();
         if (conditionResult === false) {
-            console.log(`  Skipping ${this.scvdItem.getExplorerDisplayName()} for condition result: ${conditionResult}`);
+            console.log(`  Skipping ${this.scvdItem.getDisplayLabel()} for condition result: ${conditionResult}`);
             return;
         }
 
-        await this.onExecute(executionContext, guiTree);
         const childGuiTree = new ScvdGuiTree(guiTree);
+        await this.onExecute(executionContext, childGuiTree);
 
-        for (const child of this.children) {
-            await child.executeStatement(executionContext, childGuiTree);
+        if(this.children.length > 0) {
+            for (const child of this.children) {
+                await child.executeStatement(executionContext, childGuiTree);
+            }
         }
     }
 
@@ -45,7 +47,7 @@ export class StatementItem extends StatementBase {
         console.log(`${this.line}: ${this.scvdItem.constructor.name}`);
 
         const guiName = await this.scvdItem.getGuiName();
-        const guiValue = await this.scvdItem.getValue();
+        const guiValue = await this.scvdItem.getGuiValue();
         guiTree.setGuiName(guiName);
         guiTree.setGuiValue(guiValue);
     }

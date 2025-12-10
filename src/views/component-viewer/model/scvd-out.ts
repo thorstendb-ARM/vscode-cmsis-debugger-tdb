@@ -18,7 +18,7 @@
 
 import { ScvdDataType } from './scvd-data-type';
 import { ScvdExpression } from './scvd-expression';
-import { ExplorerInfo, Json, ScvdBase } from './scvd-base';
+import { Json, ScvdBase } from './scvd-base';
 import { ScvdCondition } from './scvd-condition';
 import { getArrayFromJson, getStringFromJson } from './scvd-utils';
 import { ScvdItem } from './scvd-item';
@@ -128,9 +128,4 @@ export class ScvdOut extends ScvdBase {
     //     return this.item.length > 0 || this.list.length > 0;
     // }
 
-    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
-        const info: ExplorerInfo[] = [];
-        info.push(...itemInfo);
-        return super.getExplorerInfo(info);
-    }
 }

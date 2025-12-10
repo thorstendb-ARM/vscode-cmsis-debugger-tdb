@@ -15,6 +15,8 @@
  */
 
 import { ScvdBase } from '../model/scvd-base';
+import { ExecutionContext } from '../scvd-eval-context';
+import { ScvdGuiTree } from '../scvd-gui-tree';
 import { StatementBase } from './statement-base';
 
 
@@ -24,4 +26,29 @@ export class StatementOut extends StatementBase {
         super(item, parent);
     }
 
+    public async executeStatement(executionContext: ExecutionContext, guiTree: ScvdGuiTree): Promise<void> {
+        const conditionResult = await this.scvdItem.getConditionResult();
+        if (conditionResult === false) {
+            console.log(`  Skipping ${this.scvdItem.getDisplayLabel()} for condition result: ${conditionResult}`);
+            return;
+        }
+
+        const childGuiTree = new ScvdGuiTree(guiTree);
+        await this.onExecute(executionContext, childGuiTree);
+
+        if(this.children.length > 0) {
+            for (const child of this.children) {
+                await child.executeStatement(executionContext, childGuiTree);
+            }
+        }
+    }
+
+    protected async onExecute(_executionContext: ExecutionContext, guiTree: ScvdGuiTree): Promise<void> {
+        console.log(`${this.line}: ${this.scvdItem.constructor.name}`);
+
+        const guiName = await this.scvdItem.getGuiName();
+        //const guiValue = await this.scvdItem.getGuiValue();
+        guiTree.setGuiName(guiName);
+        //guiTree.setGuiValue(guiValue);
+    }
 }

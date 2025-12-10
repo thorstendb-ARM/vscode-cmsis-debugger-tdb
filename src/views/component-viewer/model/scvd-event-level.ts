@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { ExplorerInfo, ScvdBase } from './scvd-base';
+import { ScvdBase } from './scvd-base';
 
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
@@ -67,24 +67,6 @@ export class ScvdEventLevel extends ScvdBase {
         return this._level !== undefined ? this._level <= level : true;
     }
 
-    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
-        const info: ExplorerInfo[] = [];
-        if(this._level !== undefined) {
-            info.push({ name: 'Level', value: EventLevelReverseMap.get(this._level) ?? 'undefined' });
-        }
-        info.push(...itemInfo);
-        return super.getExplorerInfo(info);
-    }
 
-    public getExplorerDisplayName(): string {
-        const dispEntry = this.getExplorerDisplayEntry();
-        if(dispEntry !== undefined) {
-            return dispEntry;
-        }
-        if(this._level === undefined) {
-            return super.getExplorerDisplayName();
-        }
-        return EventLevelReverseMap.get(this._level) ?? 'undefined';
-    }
 
 }

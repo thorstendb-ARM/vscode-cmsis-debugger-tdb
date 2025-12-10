@@ -16,7 +16,7 @@
 
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
-import { ExplorerInfo, ScvdBase } from './scvd-base';
+import { ScvdBase } from './scvd-base';
 import { ScvdPrintExpression } from './scvd-print-expression';
 
 export class ScvdValueOutput extends ScvdBase {
@@ -45,27 +45,18 @@ export class ScvdValueOutput extends ScvdBase {
         this._expression.expression = value;
     }
 
-    public getGuiValue(): string | undefined {
+    public async getGuiValue(): Promise<string | undefined> {
         const expression = this.expression;
-        const propertyName = expression?.getResultString();
-        return propertyName;
+        if(expression === undefined) {
+            return undefined;
+        }
+        await expression.evaluate();
+        return expression.getResultString();
     }
 
-    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
-        const info: ExplorerInfo[] = [];
-        const value = this.getImmediateValue();
-        if (value !== undefined) {
-            info.push({ name: 'Value', value: this.getGuiValue() ?? '' });
-        }
-        info.push(...itemInfo);
-        return super.getExplorerInfo(info);
-    }
 
     protected getImmediateValue(): string | number | undefined {
         return this.expression?.getResultString();
     }
 
-    public getExplorerDisplayName(): string {
-        return this.getExplorerDisplayEntry() ?? this.getGuiValue() ?? this.expression?.expression ?? super.getExplorerDisplayName();
-    }
 }

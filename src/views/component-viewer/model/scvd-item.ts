@@ -16,7 +16,7 @@
 
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
-import { ExplorerInfo, Json, ScvdBase } from './scvd-base';
+import { Json, ScvdBase } from './scvd-base';
 import { ScvdPrint } from './scvd-print';
 import { ScvdValueOutput } from './scvd-value-output';
 import { ScvdCondition } from './scvd-condition';
@@ -171,8 +171,11 @@ export class ScvdItem extends ScvdBase {
         return item;
     }
 
-    public getGuiName(): string | undefined {
-        return this.property?.getGuiValue();
+    public async getGuiName(): Promise<string | undefined> {
+        if(this.property === undefined) {
+            return undefined;
+        }
+        return await this.property.getGuiValue();
     }
 
     // public getGuiChildren(): ScvdGuiInterface[] {
@@ -187,30 +190,12 @@ export class ScvdItem extends ScvdBase {
         return this.item.length > 0 || this.listOut.length > 0 || this.print.length > 0;
     }
 
-    public getGuiValue(): string | undefined {
-        return this.value?.getGuiValue();
+    public async getGuiValue(): Promise<string | undefined> {
+        if(this.value === undefined) {
+            return undefined;
+        }
+        return await this.value.getGuiValue();
     }
 
-    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
-        const info: ExplorerInfo[] = [];
 
-        if(this.value !== undefined) {
-            info.push({ name: 'Value', value: this.value?.getGuiValue() ?? this.value.getExplorerDisplayName() });
-        }
-        info.push(...itemInfo);
-        return super.getExplorerInfo(info);
-    }
-
-    public getExplorerDisplayName(): string {
-        const dispEntry = this.getExplorerDisplayEntry();
-        if(dispEntry !== undefined) {
-            return dispEntry;
-        }
-        const propertyName = this.getGuiName() ?? this.property?.getExplorerDisplayName();
-        const valueStr = this.value?.getGuiValue() ?? this.value?.getExplorerDisplayName();
-        if(propertyName != undefined && valueStr !== undefined && valueStr.length > 0 && propertyName != valueStr) {
-            return `${propertyName} = ${valueStr}`;
-        }
-        return propertyName ?? super.getExplorerDisplayName();
-    }
 }

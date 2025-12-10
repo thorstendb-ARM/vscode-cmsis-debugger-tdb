@@ -4,9 +4,6 @@ import { ComponentViewerInstance } from './component-viewer-instance';
 import { URI } from 'vscode-uri';
 import path from 'path';
 import { ComponentViewerTreeDataProvider } from './component-viewer-tree-view';
-// Erase later, for Thorsten's debugging purposes
-import { SidebarDebugView } from './sidebar-debug-view';
-// End of erase later
 
 const scvdMockTestFiles: Map<string, boolean> = new Map<string, boolean>([
     ['test-data/MyTest.scvd',           true],
@@ -46,7 +43,6 @@ export class ComponentViewerController {
     private activeSession: GDBTargetDebugSession | undefined;
     private instances: ComponentViewerInstance[] = [];
     private componentViewerTreeDataProvider: ComponentViewerTreeDataProvider | undefined;
-    private treeDataProvider: SidebarDebugView | undefined;
     private _context: vscode.ExtensionContext;
     private mockFlag: boolean = true;
     // Check if mocks shall be used from configuration
@@ -58,14 +54,9 @@ export class ComponentViewerController {
 
     public async activate(tracker: GDBTargetDebugTracker): Promise<void> {
         /* Create Tree Viewer */
-        // Shall be removed later, only for Thorsten's debugging purposes
-        this.treeDataProvider = new SidebarDebugView();
-        const providerDisposable = vscode.window.registerTreeDataProvider('cmsis-scvd-explorer', this.treeDataProvider);
-        // End of shall be removed later
         this.componentViewerTreeDataProvider = new ComponentViewerTreeDataProvider();
         const treeProviderDisposable = vscode.window.registerTreeDataProvider('cmsis-debugger.componentViewer', this.componentViewerTreeDataProvider);
         this._context.subscriptions.push(
-            providerDisposable, // Shall be removed later
             treeProviderDisposable);
         // Subscribe to vscode event for changes in mocks configuration in the settings.json
         vscode.workspace.onDidChangeConfiguration(async (event) => {
@@ -106,10 +97,6 @@ export class ComponentViewerController {
             mockedInstances.push(instance);
         }
         this.instances = mockedInstances;
-        /*const sidebarModel = this.instances[0].model; // Shall be removed later
-        if(sidebarModel !== undefined) {
-            this.treeDataProvider?.setModel(sidebarModel); // Shall be removed later
-        }*/
     }
 
     protected async readScvdFiles(session?: GDBTargetDebugSession): Promise<void> {

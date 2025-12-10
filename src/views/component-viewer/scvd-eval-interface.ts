@@ -69,7 +69,7 @@ export class ScvdEvalInterface implements DataHost {
         if (size !== undefined) {
             return size;
         }
-        console.error(`ScvdEvalInterface.getByteWidth: size undefined for ${ref.getExplorerDisplayName()}`);
+        console.error(`ScvdEvalInterface.getByteWidth: size undefined for ${ref.getDisplayLabel()}`);
         return undefined;
     }
 
@@ -89,13 +89,13 @@ export class ScvdEvalInterface implements DataHost {
         if (size !== undefined) {
             return size;
         }
-        console.error(`ScvdEvalInterface.getElementStride: size/stride undefined for ${ref.getExplorerDisplayName()}`);
+        console.error(`ScvdEvalInterface.getElementStride: size/stride undefined for ${ref.getDisplayLabel()}`);
         return 0;
     }
 
     async getMemberOffset(_base: ScvdBase, member: ScvdBase): Promise<number> {
         const offset = await member.getMemberOffset() ?? 0;
-        console.log(`getMemberOffset: base=${_base.getExplorerDisplayName()} member=${member.getExplorerDisplayName()} => ${offset}`);
+        console.log(`getMemberOffset: base=${_base.getDisplayLabel()} member=${member.getDisplayLabel()} => ${offset}`);
         return offset;
     }
 
@@ -105,7 +105,7 @@ export class ScvdEvalInterface implements DataHost {
             const value = this.memHost.readValue(container);
             return value;
         } catch (e) {
-            console.error(`ScvdEvalInterface.readValue: exception for container with base=${container.base.getExplorerDisplayName()}: ${e}`);
+            console.error(`ScvdEvalInterface.readValue: exception for container with base=${container.base.getDisplayLabel()}: ${e}`);
             return undefined;
         }
     }
@@ -115,7 +115,7 @@ export class ScvdEvalInterface implements DataHost {
             this.memHost.writeValue(container, value);
             return value;
         } catch (e) {
-            console.error(`ScvdEvalInterface.writeValue: exception for container with base=${container.base.getExplorerDisplayName()}: ${e}`);
+            console.error(`ScvdEvalInterface.writeValue: exception for container with base=${container.base.getDisplayLabel()}: ${e}`);
             return undefined;
         }
     }

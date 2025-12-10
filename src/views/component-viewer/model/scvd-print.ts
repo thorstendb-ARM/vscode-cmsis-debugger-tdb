@@ -18,7 +18,7 @@
 
 import { ScvdValueOutput } from './scvd-value-output';
 import { ScvdCondition } from './scvd-condition';
-import { ExplorerInfo, Json, ScvdBase } from './scvd-base';
+import { Json, ScvdBase } from './scvd-base';
 import { getStringFromJson } from './scvd-utils';
 
 export class ScvdPrint extends ScvdBase {
@@ -105,22 +105,20 @@ export class ScvdPrint extends ScvdBase {
     }
 
     // Main Display functions
-    public getGuiName(): string | undefined {
-        return this.property?.getGuiName();
+    public async getGuiName(): Promise<string | undefined> {
+        if(this.property === undefined) {
+            return undefined;
+        }
+        return await this.property.getGuiName();
     }
 
-    public getGuiValue(): string | undefined {
-        return this.value?.getGuiValue();
+    public async getGuiValue(): Promise<string | undefined> {
+        if(this.value === undefined) {
+            return undefined;
+        }
+        return await this.value.getGuiValue();
     }
 
-    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
-        const info: ExplorerInfo[] = [];
-        info.push(...itemInfo);
-        return super.getExplorerInfo(info);
-    }
 
-    public getExplorerDisplayName(): string {
-        return this.getExplorerDisplayEntry() ?? this.property?.getExplorerDisplayName() ?? super.getExplorerDisplayName();
-    }
 
 }

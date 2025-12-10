@@ -17,7 +17,7 @@
 // https://arm-software.github.io/CMSIS-View/main/elem_typedefs.html
 
 import { ScvdExpression } from './scvd-expression';
-import { ExplorerInfo, Json, ScvdBase } from './scvd-base';
+import { Json, ScvdBase } from './scvd-base';
 import { ScvdMember } from './scvd-member';
 import { ScvdSymbol } from './scvd-symbol';
 import { ScvdVar } from './scvd-var';
@@ -67,12 +67,6 @@ export class ScvdTypedefs extends ScvdBase {
         }
     }
 
-    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
-        const info: ExplorerInfo[] = [];
-
-        info.push(...itemInfo);
-        return super.getExplorerInfo(info);
-    }
 }
 
 /*
@@ -243,7 +237,7 @@ export class ScvdTypedef extends ScvdBase {
                     }
                 } else {
                     member.offset = currentNextOffset.toString();  // set current offset
-                    console.error(`ScvdTypedef.calculateOffsets: no offset defined for member: ${member.name} in typedef: ${this.getExplorerDisplayName()}`);
+                    console.error(`ScvdTypedef.calculateOffsets: no offset defined for member: ${member.name} in typedef: ${this.getDisplayLabel()}`);
                 }
                 member.offset?.configure();
             }
@@ -259,7 +253,7 @@ export class ScvdTypedef extends ScvdBase {
             this.targetSize = size;
 
             if(currentNextOffset > size) {
-                console.error(`ScvdTypedef.calculateOffsets: typedef size (${size}) smaller than members size (${currentNextOffset}) for ${this.getExplorerDisplayName()}`);
+                console.error(`ScvdTypedef.calculateOffsets: typedef size (${size}) smaller than members size (${currentNextOffset}) for ${this.getDisplayLabel()}`);
             } else if(currentNextOffset < size) {   // adjust to typedef size if padding is included
                 currentNextOffset = size;
             }
@@ -278,29 +272,5 @@ export class ScvdTypedef extends ScvdBase {
         this.virtualSize = currentNextOffset;
     }
 
-    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
-        const info: ExplorerInfo[] = [];
-        if (this._size !== undefined) {
-            info.push({ name: 'Size', value: this._size.expression ?? '' });
-            const sizeValue = this._size.getGuiValue();
-            if (sizeValue !== undefined) {
-                info.push({ name: 'Size Value', value: sizeValue });
-            }
-        }
-        if (this._import !== undefined) {
-            info.push({ name: 'Import', value: this._import.name ?? '' });
-        }
-        if (this._member.length > 0) {
-            info.push({ name: 'Members', value: this._member.length.toString() });
-        }
-        if (this._var.length > 0) {
-            info.push({ name: 'Vars', value: this._var.length.toString() });
-        }
-        info.push(...itemInfo);
-        return super.getExplorerInfo(info);
-    }
 
-    public getExplorerDisplayName(): string {
-        return this.getExplorerDisplayEntry() ?? super.getExplorerDisplayName();
-    }
 }

@@ -36,7 +36,7 @@ export class ComponentViewerInstance {
     private _memUsageLast: number = 0;
     private _timeUsageLast: number = 0;
     private _statementEngine: StatementEngine | undefined;
-    private _guiTree: ScvdGuiInterface[] | undefined;
+    private _guiTree: ScvdGuiInterface | undefined;
 
     public constructor(
     ) {
@@ -55,7 +55,7 @@ export class ComponentViewerInstance {
     }
 
     public getGuiTree(): ScvdGuiInterface[] | undefined {
-        return this._guiTree;
+        return this._guiTree?.getGuiChildren();
     }
 
     public getStats(text: string): string {
@@ -131,10 +131,8 @@ export class ComponentViewerInstance {
         stats.push(this.getStats('  statementEngine.initialize'));
         const guiTree = new ScvdGuiTree(undefined);
         await this.statementEngine.executeAll(guiTree);
+        this._guiTree = guiTree;
         stats.push(this.getStats('  statementEngine.executeAll'));
-
-        //this.model.debugAll();
-        //stats.push(this.getStats('  model.debugAll'));
 
         console.log('ComponentViewerInstance readModel stats:\n' + stats.join('\n  '));
     }

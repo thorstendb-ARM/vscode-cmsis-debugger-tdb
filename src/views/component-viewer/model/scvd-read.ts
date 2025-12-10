@@ -17,7 +17,7 @@
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
 import { NumberType, NumberTypeInput } from './number-type';
-import { ExplorerInfo, Json, ScvdBase } from './scvd-base';
+import { Json, ScvdBase } from './scvd-base';
 import { ScvdEndian } from './scvd-endian';
 import { ScvdExpression } from './scvd-expression';
 import { ScvdCondition } from './scvd-condition';
@@ -158,15 +158,4 @@ export class ScvdRead extends ScvdBase {
         return this.type?.getMember(property);
     }
 
-    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
-        const info: ExplorerInfo[] = [];
-        if (this.symbol) {
-            info.push({ name: 'Symbol', value: this.symbol.getExplorerDisplayName() });
-        }
-        if (this.const) {
-            info.push({ name: 'Const', value: this.const.toString() });
-        }
-        info.push(...itemInfo);
-        return super.getExplorerInfo(info);
-    }
 }

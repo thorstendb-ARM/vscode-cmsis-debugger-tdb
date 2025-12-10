@@ -24,12 +24,6 @@ export type Json = Record<string, any>;
 
 let g_idNext: number = 1;
 
-export type ExplorerInfo = {
-    name: string;
-    value: string;
-    icon?: string;
-};
-
 type AnyScvdCtor = abstract new (...args: any[]) => ScvdBase;
 
 export abstract class ScvdBase {
@@ -323,40 +317,40 @@ export abstract class ScvdBase {
     }
 
     public writeAt(byteOffset: number, widthBits: number, value: number | string | bigint): number | string | bigint | undefined {
-        console.error(`WriteAt not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}, offset=${byteOffset}, width=${widthBits}, value=${value}`);
+        console.error(`WriteAt not implemented: item=${this.classname}: ${this.getDisplayLabel()}, offset=${byteOffset}, width=${widthBits}, value=${value}`);
         return undefined;
     }
 
     public readAt(byteOffset: number, widthBits: number): number | bigint | string | undefined {
-        console.error(`ReadAt not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}, offset=${byteOffset}, width=${widthBits}`);
+        console.error(`ReadAt not implemented: item=${this.classname}: ${this.getDisplayLabel()}, offset=${byteOffset}, width=${widthBits}`);
         return undefined;
     }
 
     public getTargetSize(): number | undefined {
-        console.error(`GetTargetSize not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
+        console.error(`GetTargetSize not implemented: item=${this.classname}: ${this.getDisplayLabel()}`);
         return undefined;
     }
     public getTypeSize(): number | undefined {
-        console.error(`GetTypeSize not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
+        console.error(`GetTypeSize not implemented: item=${this.classname}: ${this.getDisplayLabel()}`);
         return undefined;
     }
     public getVirtualSize(): number | undefined {
-        console.error(`GetVirtualSize not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
+        console.error(`GetVirtualSize not implemented: item=${this.classname}: ${this.getDisplayLabel()}`);
         return undefined;
     }
     public getIsPointer(): boolean {
-        console.error(`GetIsPointer not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
+        console.error(`GetIsPointer not implemented: item=${this.classname}: ${this.getDisplayLabel()}`);
         return false;
     }
 
     // member’s byte offset
     public async getMemberOffset(): Promise<number | undefined> {
-        console.error(`GetMemberOffset not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
+        console.error(`GetMemberOffset not implemented: item=${this.classname}: ${this.getDisplayLabel()}`);
         return undefined;
     }
 
     public getElementBitWidth(): number | undefined {
-        console.error(`GetElementBitWidth not implemented: item=${this.classname}: ${this.getExplorerDisplayName()}`);
+        console.error(`GetElementBitWidth not implemented: item=${this.classname}: ${this.getDisplayLabel()}`);
         return undefined;
     }
 
@@ -366,23 +360,11 @@ export abstract class ScvdBase {
     }
 
     // ------------  GUI Interface Begin ------------
-    public getGuiEntry(): { name: string | undefined, value: string | undefined } {
-        return { name: this.getGuiName(), value: this.getGuiValue() };
-    }
-
-    // public getGuiChildren(): ScvdGuiInterface[] {
-    //     return undefined;
-    // }
-
-    // public hasGuiChildren(): boolean {
-    //     return false;
-    // }
-
-    public getGuiName(): string | undefined {
+    public async getGuiName(): Promise<string | undefined> {
         return this.name;
     }
 
-    public getGuiValue(): string | undefined {
+    public async getGuiValue(): Promise<string | undefined> {
         const val = this.getImmediateValue();
         if (val !== undefined) {
             if(typeof val === 'number') {
@@ -409,38 +391,15 @@ export abstract class ScvdBase {
     // ------------  GUI Interface End ------------
 
 
-    // ---------- Explorer Info ------------
-    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
-        const info: ExplorerInfo[] = [];
-        if (this.tag) {
-            info.push({ name: 'Tag', value: this.tag });
-        }
-        info.push({ name: 'Line Number', value: this.getLineNoStr() });
-        if (this.name) {
-            info.push({ name: 'Name', value: this.name });
-        }
-        if (this.info) {
-            info.push({ name: 'Info', value: this.info });
-        }
-        info.push(...itemInfo);
-        return info;
-    }
-
-    public getExplorerDisplayName(): string {
-        const displayName = this.name ?? this.info ?? '';
-        if(displayName.length > 0) {
+    public getDisplayLabel(): string {
+        const displayName = this.name ?? this.info;
+        if(displayName && displayName.length > 0) {
             return displayName;
         }
-        return `Line: ${this.getLineNoStr()}`;
-    }
-
-    public getExplorerDescription(): string {
-        return `(${this.constructor?.name ?? ''})`;
-    }
-
-    public getExplorerDisplayEntry(): string | undefined {
-        const { name, value } = this.getGuiEntry();
-        return (name && value) ? `${name}: ${value}` : undefined;
+        if(this.tag) {
+            return `${this.tag} (line ${this.getLineNoStr()})`;
+        }
+        return `${this.classname} (line ${this.getLineNoStr()})`;
     }
 
 }

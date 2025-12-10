@@ -17,7 +17,7 @@
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
 import { ExecutionContext } from '../scvd-eval-context';
-import { ExplorerInfo, ScvdBase } from './scvd-base';
+import { ScvdBase } from './scvd-base';
 import { MemberInfo } from '../scvd-debug-target';
 
 export class ScvdSymbol extends ScvdBase {
@@ -84,24 +84,5 @@ export class ScvdSymbol extends ScvdBase {
         this._executionContext = executionContext;
     }
 
-    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
-        const info: ExplorerInfo[] = [];
-        if (this._symbol !== undefined) {
-            info.push({ name: 'Symbol', value: this._symbol });
-        }
-        info.push(...itemInfo);
-        return super.getExplorerInfo(info);
-    }
 
-    public getExplorerDisplayName(): string {
-        const dispEntry = this.getExplorerDisplayEntry();
-        if(dispEntry !== undefined) {
-            return dispEntry;
-        }
-        let name = 'Symbol';
-        if (this._symbol !== undefined) {
-            name += `: ${this._symbol}`;
-        }
-        return name;
-    }
 }

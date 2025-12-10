@@ -18,7 +18,7 @@
 
 import { ResolveSymbolCb } from '../resolver';
 import { NumberType, NumberTypeInput } from './number-type';
-import { ExplorerInfo, Json, ScvdBase } from './scvd-base';
+import { Json, ScvdBase } from './scvd-base';
 import { ScvdEventId } from './scvd-event-id';
 import { ScvdEventLevel } from './scvd-event-level';
 import { ScvdEventState } from './scvd-event-state';
@@ -184,23 +184,6 @@ export class ScvdEvent extends ScvdBase {
         this._stateName = value;
     }
 
-    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
-        const info: ExplorerInfo[] = [];
-        if (this.doc) {
-            info.push({ name: 'Doc', value: this.doc });
-        }
-        if (this.handle) {
-            info.push({ name: 'Handle', value: this.handle.toString() });
-        }
-        if (this.stateName) {
-            info.push({ name: 'State', value: this.stateName });
-        }
-        info.push(...itemInfo);
-        return super.getExplorerInfo(info);
-    }
 
-    public getExplorerDisplayName(): string {
-        return this.getExplorerDisplayEntry() ?? this.id?.id.getExplorerDisplayName() ?? super.getExplorerDisplayName();
-    }
 
 }

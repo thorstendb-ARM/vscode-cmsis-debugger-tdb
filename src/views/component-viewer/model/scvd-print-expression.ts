@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { ExplorerInfo, ScvdBase } from './scvd-base';
+import { ScvdBase } from './scvd-base';
 import { ScvdExpression } from './scvd-expression';
 
 // https://arm-software.github.io/CMSIS-View/main/scvd_expression.html
@@ -47,14 +47,6 @@ export class ScvdPrintExpression extends ScvdExpression {
 
 
 
-    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
-        const info: ExplorerInfo[] = [];
-        info.push(...itemInfo);
-        return super.getExplorerInfo(info);
-    }
 
-    public getExplorerDisplayName(): string {
-        return this.getExplorerDisplayEntry() ?? super.getExplorerDisplayName();
-    }
 
 }

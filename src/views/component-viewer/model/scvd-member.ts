@@ -20,7 +20,7 @@ import { NumberType, NumberTypeInput } from './number-type';
 import { ScvdDataType } from './scvd-data-type';
 import { ScvdEnum } from './scvd-enum';
 import { ScvdExpression } from './scvd-expression';
-import { ExplorerInfo, Json, ScvdBase } from './scvd-base';
+import { Json, ScvdBase } from './scvd-base';
 import { getArrayFromJson, getStringFromJson } from './scvd-utils';
 
 // Offset to base address in [Bytes]. Use the uVision debug dialog Symbols to find the offset. You can use Expressions.
@@ -155,12 +155,4 @@ export class ScvdMember extends ScvdBase {
     }
 
 
-    public getExplorerInfo(itemInfo: ExplorerInfo[] = []): ExplorerInfo[] {
-        const info: ExplorerInfo[] = [];
-        if (this._size) {
-            info.push({ name: 'Size', value: this._size.toString() });
-        }
-        info.push(...itemInfo);
-        return super.getExplorerInfo(info);
-    }
 }
