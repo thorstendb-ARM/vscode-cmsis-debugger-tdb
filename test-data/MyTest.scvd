@@ -151,6 +151,12 @@
       <var name="i_value"     type="uint8_t"  symbol="iValue" value="1" />
   
       <out name="MyTest">
+          <item property="List test while" value="" cond="RTX_En">
+            <list name="i" start="MyListA[i].nextL" while="i.nextL">
+              <item property="pArray"    value="%x[i.nameL]" />
+            </list>
+          </item>
+
           <item property="Test read">
             <item property="wString value %%U"    value="%U[wstring_val]" />
           </item>
@@ -166,12 +172,6 @@
           <item property="List test limit" value="" cond="RTX_En">
             <list name="i" start="0" limit="pArray._count">
               <item property="pArray"    value="%x[pArray[i]]" />
-            </list>
-          </item>
-
-          <item property="List test while" value="" cond="RTX_En">
-            <list name="i" start="0" while="MyListA[i].nextL">
-              <item property="pArray"    value="%x[MyListA[i].nameL]" />
             </list>
           </item>
 

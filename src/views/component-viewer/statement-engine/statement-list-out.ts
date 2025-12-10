@@ -100,8 +100,10 @@ export class StatementListOut extends StatementBase {
         while (maximumCount-- > 0) {
             executionContext.memoryHost.writeNumber(name, 0, loopValue, varTargetSize);    // update loop variable in memory
 
+            /* while: Specifies the next value for iterations.
+                When using attribute while, iteration does not start if start==0.
+             */
             if(whileExpr !== undefined) {
-                whileExpr.invalidate();
                 const whileValue = await whileExpr.getValue();
                 if(whileValue === 0 || whileValue === undefined) {   // break on read error too
                     break;
