@@ -215,6 +215,14 @@
             <item property="pArray"               value="%x[pArray[0]._addr], %x[pArray[1]._addr], %x[pArray[2]._addr], %x[pArray[3]._addr], %x[pArray[4]._addr]"/>
           </item>
 
+          <item property="Empty item below (for print)">
+            <item>
+              <item property="R0"    value="%x[R0]"/>
+              <item property="i"     value="%x[i]"/>
+            </item>
+          </item>
+
+
           <item property="Vars">
             <item property="R0"    value="%x[R0]"/>
             <item property="i"     value="%x[i]"/>

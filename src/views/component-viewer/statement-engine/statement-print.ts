@@ -20,7 +20,7 @@ import { ScvdGuiTree } from '../scvd-gui-tree';
 import { StatementBase } from './statement-base';
 
 
-export class StatementItem extends StatementBase {
+export class StatementPrint extends StatementBase {
 
     constructor(item: ScvdBase, parent: StatementBase | undefined) {
         super(item, parent);
@@ -33,12 +33,8 @@ export class StatementItem extends StatementBase {
             return;
         }
 
-        const guiName = await this.scvdItem.getGuiName();
-        const childGuiTree = (guiName?.length) ? new ScvdGuiTree(guiTree) : guiTree;
-
-        if(guiName?.length) {   // else nothing to execute
-            await this.onExecute(executionContext, childGuiTree);
-        }
+        const childGuiTree = new ScvdGuiTree(guiTree);
+        await this.onExecute(executionContext, childGuiTree);
 
         if(this.children.length > 0) {
             for (const child of this.children) {

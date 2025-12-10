@@ -19,14 +19,6 @@ import { ExecutionContext } from '../scvd-eval-context';
 import { ScvdGuiTree } from '../scvd-gui-tree';
 
 
-export interface LoopVariable {
-    name: string;
-    value: number;
-    size: number;
-    offset: number;
-    executionContext: ExecutionContext;
-}
-
 /**
  * Base statement node using an **array** for children.
  * - Children are appended as added.
@@ -38,7 +30,6 @@ export class StatementBase {
     private _parent: StatementBase | undefined;
     private _children: StatementBase[] = [];
     private _scvdItem: ScvdBase;
-    private _loopVar: LoopVariable | undefined;
 
     constructor(
         item: ScvdBase, parent: StatementBase | undefined
@@ -72,13 +63,6 @@ export class StatementBase {
     public get line(): number {
         const lineNo = Number(this.scvdItem.lineNo);
         return isNaN(lineNo) ? 0 : lineNo;
-    }
-
-    public get loopVar(): LoopVariable | undefined {
-        return this._loopVar;
-    }
-    public set loopVar(loopVar: LoopVariable | undefined) {
-        this._loopVar = loopVar;
     }
 
     /**

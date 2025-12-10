@@ -18,7 +18,7 @@ import { ScvdBase } from '../model/scvd-base';
 import { ScvdListOut } from '../model/scvd-list-out';
 import { ExecutionContext } from '../scvd-eval-context';
 import { ScvdGuiTree } from '../scvd-gui-tree';
-import { LoopVariable, StatementBase } from './statement-base';
+import { StatementBase } from './statement-base';
 
 
 export class StatementListOut extends StatementBase {
@@ -114,8 +114,7 @@ export class StatementListOut extends StatementBase {
             }
 
             for (const child of this.children) {  // executed in list
-                const loopVar: LoopVariable = { name: name, value: loopValue, size: varTargetSize, offset: 0, executionContext: executionContext };
-                await child.executeStatement(loopVar.executionContext, guiTree);
+                await child.executeStatement(executionContext, guiTree);
             }
 
             if(whileExpr !== undefined) {
