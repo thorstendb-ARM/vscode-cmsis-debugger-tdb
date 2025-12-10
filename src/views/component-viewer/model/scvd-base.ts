@@ -368,7 +368,7 @@ export abstract class ScvdBase {
     }
 
     public async getGuiValue(): Promise<string | undefined> {
-        const val = this.getImmediateValue();
+        const val = await this.getValue();
         if (val !== undefined) {
             if(typeof val === 'number') {
                 return val.toString();
@@ -376,10 +376,6 @@ export abstract class ScvdBase {
                 return val;
             }
         }
-        return undefined;
-    }
-
-    protected getImmediateValue(): string | number | undefined {
         return undefined;
     }
 

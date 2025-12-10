@@ -11,6 +11,7 @@ import { Cm81MRegisterCache } from './cache/register-cache';
 import { ScvdDebugTarget } from './scvd-debug-target';
 import { FormatSegment } from './parser';
 import { ScvdFormatSpecifier } from './model/scvd-format-specifier';
+import { ScvdMember } from './model/scvd-member';
 
 export class ScvdEvalInterface implements DataHost {
     private _registerCache: Cm81MRegisterCache;
@@ -202,7 +203,8 @@ export class ScvdEvalInterface implements DataHost {
         return undefined;
     }
 
-    formatPrintf(spec: FormatSegment['spec'], value: any, _container: RefContainer): string | undefined {
+    async formatPrintf(spec: FormatSegment['spec'], value: any, container: RefContainer): Promise<string | undefined> {
+        const base = container.current;
 
         switch (spec) {
             case 'd': {
@@ -221,7 +223,10 @@ export class ScvdEvalInterface implements DataHost {
                 return this.formatSpecifier.format_C(value);
             }
             case 'E': {
-                return this.formatSpecifier.format_E(value);
+                const memberItem = base?.castToDerived(ScvdMember);
+                const enumItem = await memberItem?.getEnum(value);
+                const enumStr = await enumItem?.getGuiName();
+                return this.formatSpecifier.format_E(enumStr ?? value);
             }
             case 'I': {
                 return this.formatSpecifier.format_I(value);

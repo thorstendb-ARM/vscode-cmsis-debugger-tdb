@@ -116,12 +116,14 @@ export class ScvdMember extends ScvdBase {
         return this._enum;
     }
 
-    public getEnum(index: number): ScvdEnum | undefined {
-        const enumItem = this._enum.find((item) => {
-            const val = item.value?.getCachedValue();
-            return typeof val === 'number' && val === index;
-        });
-        return enumItem;
+    public async getEnum(value: number): Promise<ScvdEnum | undefined> {
+        for (const item of this._enum) {
+            const enumVal = await item.value?.getValue();
+            if (typeof enumVal === 'number' && enumVal === value) {
+                return item;
+            }
+        }
+        return undefined;
     }
 
     // search a member (member, var) in typedef

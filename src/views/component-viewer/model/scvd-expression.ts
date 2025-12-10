@@ -226,15 +226,4 @@ export class ScvdExpression extends ScvdBase {
         return undefined;
     }
 
-
-
-
-    protected getImmediateValue(): number | string | undefined {
-        return this._result;
-    }
-
-    public getCachedValue(): number | string | undefined {
-        return this._result;
-    }
-
 }

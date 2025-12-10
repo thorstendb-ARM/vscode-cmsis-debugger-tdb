@@ -46,6 +46,14 @@
         <var    name="nameS"   type="int8_t"   size="20"  />
     </typedef>
 
+    <typedef name="Color"    size="4"      info="enum color">
+      <member name="val"     type="uint32_t"   offset="0">
+        <enum name="red (alert)"         value="1"     info="alert color"     />
+        <enum name="yellow (attention)"  value="2"     info="attention color" />
+        <enum name="green (working)"     value="3"     info="working color"   />
+      </member>
+    </typedef>
+
   </typedefs>
 
   <objects>
@@ -125,6 +133,10 @@
         V_Patch =  os_Info.version % 10000;
       </calc>
 
+      <var name="light1" type="Color" value="1"/>
+      <var name="light2" type="Color" value="2"/>
+      <var name="light3" type="Color" value="3"/>
+
       <read name="os_Config" type="osRtxConfig_t" symbol="osRtxConfig" const="1"/>
 
       <!-- Read the linked list starting with ValueA: -->
@@ -151,6 +163,12 @@
       <var name="i_value"     type="uint8_t"  symbol="iValue" value="1" />
   
       <out name="MyTest">
+          <item property="Color" >
+            <item property="Enum format %%E"  value="light1=%E[light1.val]" />
+            <item property="Enum format %%E"  value="light2=%E[light2.val]" />
+            <item property="Enum format %%E"  value="light3=%E[light3.val]" />
+          </item>
+
           <item property="MyList count" value="" cond="RTX_En">
               <item property="MyListA"    value="%d[MyListA._count]" />
               <item property="MyListB"    value="%d[MyListB._count]" />

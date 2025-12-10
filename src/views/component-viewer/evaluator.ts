@@ -107,7 +107,7 @@ export interface DataHost {
     spec: FormatSegment['spec'],
     value: any,
     container: RefContainer
-  ): string | undefined;
+  ): MaybePromise<string | undefined>;
 }
 
 
@@ -612,14 +612,14 @@ export async function evalNode(node: ASTNode, ctx: EvalContext): Promise<any> {
                 if (seg.kind === 'TextSegment') out += (seg as TextSegment).text;
                 else {
                     const fs = seg as FormatSegment;
-                    out += formatValue(fs.spec, await evalNode(fs.value as any, ctx), ctx);
+                    out += await formatValue(fs.spec, await evalNode(fs.value as any, ctx), ctx);
                 }
             }
             return out;
         }
 
         case 'TextSegment':    return (node as TextSegment).text;
-        case 'FormatSegment':  return formatValue((node as FormatSegment).spec, await evalNode((node as FormatSegment).value, ctx), ctx);
+        case 'FormatSegment':  return await formatValue((node as FormatSegment).spec, await evalNode((node as FormatSegment).value, ctx), ctx);
 
         case 'ErrorNode':      throw new Error('Cannot evaluate an ErrorNode.');
 
@@ -668,10 +668,14 @@ async function evalBinary(node: BinaryExpression, ctx: EvalContext): Promise<any
  * Printf helpers (callback-first, spec-agnostic with sensible fallbacks)
  * ============================================================================= */
 
-function formatValue(spec: FormatSegment['spec'], v: any, ctx?: EvalContext): string {
+async function formatValue(spec: FormatSegment['spec'], v: any, ctx?: EvalContext): Promise<string> {
     // New: host-provided override
-    const override = ctx?.data.formatPrintf?.(spec, v, ctx.container);
-    if (typeof override === 'string') return override;
+    if (ctx?.data.formatPrintf) {
+        const override = await ctx.data.formatPrintf(spec, v, ctx.container);
+        if (typeof override === 'string') {
+            return override;
+        }
+    }
 
     // Existing fallback behaviour
     switch (spec) {

@@ -164,11 +164,4 @@ export class ScvdVar extends ScvdBase {
         }
         return undefined;
     }
-
-
-
-    protected getImmediateValue(): number | string | undefined {
-        return this._value?.getCachedValue();
-    }
-
 }

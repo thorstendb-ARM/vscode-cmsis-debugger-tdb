@@ -104,8 +104,7 @@ export class ScvdFormatSpecifier {
     }
 
     public format_E(value: number | string): string {
-        // Placeholder: attempt symbolic enumerator resolution (not implemented)
-        return `SymbolicEnumeratorValue: ${this.format_d(value)}`;
+        return this.format_d(value);    // either string or number
     }
 
     public format_I(value: number | string): string {

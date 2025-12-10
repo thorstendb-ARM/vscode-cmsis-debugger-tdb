@@ -53,10 +53,4 @@ export class ScvdValueOutput extends ScvdBase {
         await expression.evaluate();
         return expression.getResultString();
     }
-
-
-    protected getImmediateValue(): string | number | undefined {
-        return this.expression?.getResultString();
-    }
-
 }
