@@ -44,7 +44,7 @@ export class StatementOut extends StatementBase {
     }
 
     protected async onExecute(_executionContext: ExecutionContext, guiTree: ScvdGuiTree): Promise<void> {
-        console.log(`${this.line}: ${this.scvdItem.constructor.name}`);
+        console.log(`${this.line}: Executing out: ${await this.scvdItem.getGuiName()}`);
 
         const guiName = await this.scvdItem.getGuiName();
         //const guiValue = await this.scvdItem.getGuiValue();

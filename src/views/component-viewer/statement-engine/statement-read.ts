@@ -28,6 +28,7 @@ export class StatementRead extends StatementBase {
     }
 
     protected async onExecute(executionContext: ExecutionContext, _guiTree: ScvdGuiTree): Promise<void> {
+        console.log(`${this.line}: Executing read: ${this.scvdItem.getDisplayLabel()}`);
         const mustRead = this.scvdItem.mustRead;
         if(mustRead === false) {
             console.log(`${this.line} Skipping "read" as already initialized: ${this.scvdItem.name}`);

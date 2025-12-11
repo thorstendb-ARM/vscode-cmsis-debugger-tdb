@@ -28,7 +28,7 @@ export class StatementVar extends StatementBase {
     }
 
     protected async onExecute(executionContext: ExecutionContext, _guiTree: ScvdGuiTree): Promise<void> {
-        console.log(`${this.line}: Executing "var": ${this.scvdItem.name}`);
+        console.log(`${this.line}: Executing var: ${await this.scvdItem.getGuiName()}`);
 
         const varItem = this.scvdItem.castToDerived(ScvdVar);
         if(varItem !== undefined) {

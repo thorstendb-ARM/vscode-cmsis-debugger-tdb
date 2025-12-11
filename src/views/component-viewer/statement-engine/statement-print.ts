@@ -49,6 +49,6 @@ export class StatementPrint extends StatementBase {
     }
 
     protected async onExecute(_executionContext: ExecutionContext, _guiTree: ScvdGuiTree): Promise<void> {
-        console.log(`${this.line}: ${this.scvdItem.constructor.name}`);
+        console.log(`${this.line}: Executing print: ${await this.scvdItem.getGuiName()}`);
     }
 }

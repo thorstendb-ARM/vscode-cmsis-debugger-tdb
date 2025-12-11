@@ -98,6 +98,6 @@ export class StatementBase {
 
     /** Override in subclasses to perform work for this node. */
     protected async onExecute(_executionContext: ExecutionContext, _guiTree: ScvdGuiTree): Promise<void> {
-        console.log(`${this.line}: ${this.scvdItem.constructor.name}`);
+        console.log(`${this.line}: Executing base: ${await this.scvdItem.getGuiName()}`);
     }
 }
