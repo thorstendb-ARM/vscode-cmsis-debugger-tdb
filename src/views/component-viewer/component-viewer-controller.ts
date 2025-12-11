@@ -131,6 +131,7 @@ export class ComponentViewerController {
             this.componentViewerTreeDataProvider?.addGuiOut(instance.getGuiTree());
         }
     }
+
     private loadingCounter: number = 0;
     private async loadCbuildRunInstances(session: GDBTargetDebugSession) : Promise<void> {
         this.loadingCounter++;
@@ -185,7 +186,7 @@ export class ComponentViewerController {
             this.activeSession = undefined;
         }
         // Update component viewer instance(s)
-        await this.updateInstances();
+        //await this.updateInstances();
     }
 
     private async handleOnWillStopSession(session: GDBTargetDebugSession): Promise<void> {
@@ -194,7 +195,7 @@ export class ComponentViewerController {
             this.activeSession = undefined;
         }
         // Update component viewer instance(s)
-        await this.updateInstances();
+        //await this.updateInstances();
     }
 
     private async handleOnConnected(session: GDBTargetDebugSession): Promise<void> {
@@ -216,7 +217,7 @@ export class ComponentViewerController {
         session.refreshTimer.onRefresh(async (refreshSession) => {
             if (this.activeSession?.session.id === refreshSession.session.id) {
                 // Update component viewer instance(s)
-                await this.updateInstances();
+                //await this.updateInstances();
             }
         });
     }
@@ -232,16 +233,23 @@ export class ComponentViewerController {
         // Update debug session
         this.activeSession = session;
         // Update component viewer instance(s)
-        await this.updateInstances();
+        //await this.updateInstances();
     }
     private instanceUpdateCounter: number = 0;
+    private updateSymaphorFlag: boolean = false;
     private async updateInstances(): Promise<void> {
+        if (this.updateSymaphorFlag) {
+            return;
+        }
+        this.updateSymaphorFlag = true;
         this.instanceUpdateCounter = 0;
         if (!this.activeSession) {
             await this.componentViewerTreeDataProvider?.deleteModels();
+            this.updateSymaphorFlag = false;
             return; 
         }
         if (this.instances.length === 0) {
+            this.updateSymaphorFlag = false;
             return;
         }
         await this.componentViewerTreeDataProvider?.deleteModels();
@@ -252,6 +260,6 @@ export class ComponentViewerController {
             await this.componentViewerTreeDataProvider?.addGuiOut(instance.getGuiTree());
         }
         await this.componentViewerTreeDataProvider?.showModelData();
+        this.updateSymaphorFlag = false;
     }
-
 }
