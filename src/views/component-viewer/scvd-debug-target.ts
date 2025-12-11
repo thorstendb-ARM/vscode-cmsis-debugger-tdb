@@ -56,12 +56,15 @@ export class ScvdDebugTarget {
             return this.mock.getMockSymbolInfo(symbol);
         } else {
             const symbolName = symbol;
-            const symbolAddressStr = await this.targetAccess.evaluateSymbolAddress(`&${symbol}`);
-            const symbolInfo : SymbolInfo = {
-                name: symbolName,
-                address: parseInt(symbolAddressStr as unknown as string, 16)
-            };
-            return symbolInfo;
+            const symbolAddressStr = await this.targetAccess.evaluateSymbolAddress(symbol);
+            if(symbolAddressStr !== undefined) {
+                const symbolInfo : SymbolInfo = {
+                    name: symbolName,
+                    address: parseInt(symbolAddressStr as unknown as string, 16)
+                };
+                return symbolInfo;
+            }
+            return undefined;
         }
     }
 

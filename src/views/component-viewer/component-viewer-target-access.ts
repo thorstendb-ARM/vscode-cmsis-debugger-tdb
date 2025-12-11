@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { DebugProtocol } from '@vscode/debugprotocol';
 import { GDBTargetDebugSession } from '../../debug-session';
 import { logger } from '../../logger';
-import { createMockDebugSession} from './component-viewer-controller';
+import { createMockDebugSession } from './component-viewer-controller';
 
 
 export class ComponentViewerTargetAccess {
@@ -23,7 +23,7 @@ export class ComponentViewerTargetAccess {
         }
     }
 
-    public async evaluateSymbolAddress(address: string, context = 'hover'): Promise<string> {
+    public async evaluateSymbolAddress(address: string, context = 'hover'): Promise<string | undefined> {
         try {
             const frameId = (vscode.debug.activeStackItem as vscode.DebugStackFrame)?.frameId ?? 0;
             const args: DebugProtocol.EvaluateArguments = {
@@ -36,7 +36,8 @@ export class ComponentViewerTargetAccess {
         } catch (error: unknown) {
             const errorMessage = (error as Error)?.message;
             logger.debug(`Session '${this._activeSession?.session.name}': Failed to evaluate address '${address}' - '${errorMessage}'`);
-            return errorMessage === 'custom request failed' ? 'No active session' : errorMessage;
+            //return errorMessage === 'custom request failed' ? 'No active session' : errorMessage;
+            return undefined;
         }
     }
 
