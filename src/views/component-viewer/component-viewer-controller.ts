@@ -131,17 +131,20 @@ export class ComponentViewerController {
             this.componentViewerTreeDataProvider?.addGuiOut(instance.getGuiTree());
         }
     }
-
+    private loadingCounter: number = 0;
     private async loadCbuildRunInstances(session: GDBTargetDebugSession) : Promise<void> {
+        this.loadingCounter++;
+        console.log(`Loading SCVD files from cbuild-run, attempt #${this.loadingCounter}`);
         // Try to read SCVD files from cbuild-run file first
         await this.readScvdFiles(session);
         // Are there any SCVD files found in cbuild-run?
         if (this.instances.length > 0) {
             // Add all models from cbuild-run to the tree view
             for (const instance of this.instances) {
-                this.componentViewerTreeDataProvider?.addGuiOut(instance.getGuiTree());
+                await instance.update();
+                await this.componentViewerTreeDataProvider?.addGuiOut(instance.getGuiTree());
             }
-            this.componentViewerTreeDataProvider?.showModelData();
+            await this.componentViewerTreeDataProvider?.showModelData();
             return;
         }
     }
@@ -162,14 +165,27 @@ export class ComponentViewerController {
         const onDidChangeActiveDebugSessionDisposable = tracker.onDidChangeActiveDebugSession(async (session) => {
             await this.handleOnDidChangeActiveDebugSession(session);
         });
+        const onStopped = tracker.onStopped(async (session) => {
+            await this.handleOnStopped(session.session);
+        });
         // clear all disposables on extension deactivation
         context.subscriptions.push(
             onWillStopSessionDisposable,
             //onWillStartSessionDisposable,
             onConnectedDisposable,
             onDidChangeActiveStackItemDisposable,
-            onDidChangeActiveDebugSessionDisposable
+            onDidChangeActiveDebugSessionDisposable,
+            onStopped
         );
+    }
+
+    private async handleOnStopped(session: GDBTargetDebugSession): Promise<void> {
+        // Clear active session if it is NOT the one being stopped
+        if (this.activeSession?.session.id !== session.session.id) {
+            this.activeSession = undefined;
+        }
+        // Update component viewer instance(s)
+        await this.updateInstances();
     }
 
     private async handleOnWillStopSession(session: GDBTargetDebugSession): Promise<void> {
@@ -178,7 +194,7 @@ export class ComponentViewerController {
             this.activeSession = undefined;
         }
         // Update component viewer instance(s)
-        this.updateInstances();
+        await this.updateInstances();
     }
 
     private async handleOnConnected(session: GDBTargetDebugSession): Promise<void> {
@@ -192,15 +208,15 @@ export class ComponentViewerController {
             this.instances = [];
             await this.componentViewerTreeDataProvider?.deleteModels();
         }
-        // Load SCVD files from cbuild-run
-        this.loadCbuildRunInstances(session);
         // Update debug session
         this.activeSession = session;
+        // Load SCVD files from cbuild-run
+        await this.loadCbuildRunInstances(session);
         // Subscribe to refresh events of the started session
         session.refreshTimer.onRefresh(async (refreshSession) => {
             if (this.activeSession?.session.id === refreshSession.session.id) {
                 // Update component viewer instance(s)
-                this.updateInstances();
+                await this.updateInstances();
             }
         });
     }
@@ -208,7 +224,7 @@ export class ComponentViewerController {
     private async handleOnDidChangeActiveStackItem(stackTraceItem: SessionStackItem): Promise<void> {
         if ((stackTraceItem.item as vscode.DebugStackFrame).frameId !== undefined) {
             // Update instance(s) with new stack frame info
-            this.updateInstances();
+            await this.updateInstances();
         }
     }
 
@@ -216,16 +232,26 @@ export class ComponentViewerController {
         // Update debug session
         this.activeSession = session;
         // Update component viewer instance(s)
-        this.updateInstances();
+        await this.updateInstances();
     }
-
+    private instanceUpdateCounter: number = 0;
     private async updateInstances(): Promise<void> {
+        this.instanceUpdateCounter = 0;
         if (!this.activeSession) {
+            await this.componentViewerTreeDataProvider?.deleteModels();
+            return; 
+        }
+        if (this.instances.length === 0) {
             return;
         }
+        await this.componentViewerTreeDataProvider?.deleteModels();
         for (const instance of this.instances) {
-            instance.updateModel(this.activeSession);
+            this.instanceUpdateCounter++;
+            console.log(`Updating Component Viewer Instance #${this.instanceUpdateCounter}`);
+            await instance.update();
+            await this.componentViewerTreeDataProvider?.addGuiOut(instance.getGuiTree());
         }
+        await this.componentViewerTreeDataProvider?.showModelData();
     }
 
 }

@@ -93,28 +93,28 @@ export class ComponentViewerTreeDataProvider implements vscode.TreeDataProvider<
         this.refresh();
     }
     */
-    private refresh(): void {
+    private async refresh(): Promise<void> {
         this._onDidChangeTreeData.fire();
     }
 
-    public addGuiOut(guiOut: ScvdGuiInterface[] | undefined) {
+    public async addGuiOut(guiOut: ScvdGuiInterface[] | undefined) {
         if(guiOut !== undefined) {
             guiOut.forEach(item => this._scvdModel.scvdGuiOut.push(item));
         }
     }
 
-    public showModelData() {
-        this.addRootObject();
-        this.refresh();
+    public async showModelData() {
+        await this.addRootObject();
+        await this.refresh();
     }
 
     public async deleteModels() {
         this._scvdModel.scvdGuiOut = [];
         this._objectOutRoots = [];
-        this.refresh();
+        await this.refresh();
     }
 
-    private addRootObject(): void {
+    private async addRootObject(): Promise<void> {
         if(this._scvdModel?.scvdGuiOut.length === 0) {
             return;
         }
