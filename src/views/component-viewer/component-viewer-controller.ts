@@ -141,11 +141,11 @@ export class ComponentViewerController {
         // Are there any SCVD files found in cbuild-run?
         if (this.instances.length > 0) {
             // Add all models from cbuild-run to the tree view
-            for (const instance of this.instances) {
+            /*for (const instance of this.instances) {
                 await instance.update();
                 await this.componentViewerTreeDataProvider?.addGuiOut(instance.getGuiTree());
             }
-            await this.componentViewerTreeDataProvider?.showModelData();
+            await this.componentViewerTreeDataProvider?.showModelData();*/
             return;
         }
     }
@@ -246,7 +246,7 @@ export class ComponentViewerController {
         if (!this.activeSession) {
             await this.componentViewerTreeDataProvider?.deleteModels();
             this.updateSymaphorFlag = false;
-            return; 
+            return;
         }
         if (this.instances.length === 0) {
             this.updateSymaphorFlag = false;

@@ -33,15 +33,21 @@ export class StatementItem extends StatementBase {
             return;
         }
 
-        const guiName = await this.scvdItem.getGuiName();
-        const childGuiTree = (guiName?.length) ? new ScvdGuiTree(guiTree) : guiTree;
-
-        if(guiName?.length) {   // else nothing to execute
-            const guiValue = await this.scvdItem.getGuiValue();
-            childGuiTree.setGuiName(guiName);
-            childGuiTree.setGuiValue(guiValue);
-            await this.onExecute(executionContext, childGuiTree);
+        let guiName = await this.scvdItem.getGuiName();
+        if(!guiName || guiName.length === 0) {
+            console.log(`${this.line}: Item with empty gui-name`);
         }
+        guiName = await this.scvdItem.getGuiName() ?? 'item';
+
+        //const childGuiTree = (guiName?.length) ? new ScvdGuiTree(guiTree) : guiTree;
+        const childGuiTree = new ScvdGuiTree(guiTree);
+
+        //if(guiName?.length) {   // else nothing to execute
+        const guiValue = await this.scvdItem.getGuiValue();
+        childGuiTree.setGuiName(guiName);
+        childGuiTree.setGuiValue(guiValue);
+        await this.onExecute(executionContext, childGuiTree);
+        //}
 
         if(this.children.length > 0) {
             for (const child of this.children) {

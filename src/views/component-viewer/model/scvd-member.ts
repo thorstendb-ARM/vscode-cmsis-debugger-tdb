@@ -156,5 +156,7 @@ export class ScvdMember extends ScvdBase {
         return false;
     }
 
-
+    public getValueType(): string | undefined {
+        return this.type?.getValueType();
+    }
 }

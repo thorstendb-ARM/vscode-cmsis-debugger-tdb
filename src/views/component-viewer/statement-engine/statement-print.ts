@@ -28,10 +28,10 @@ export class StatementPrint extends StatementBase {
 
     public async executeStatement(executionContext: ExecutionContext, guiTree: ScvdGuiTree): Promise<void> {
         const conditionResult = await this.scvdItem.getConditionResult();
-        if (conditionResult === false) {
+        /*if (conditionResult === false) {
             console.log(`  Skipping ${this.scvdItem.getDisplayLabel()} for condition result: ${conditionResult}`);
             return;
-        }
+        }*/
 
         const childGuiTree = new ScvdGuiTree(guiTree);
         const guiName = await this.scvdItem.getGuiName();

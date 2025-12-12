@@ -691,7 +691,7 @@
 
       <!-- Read main OS information and configuration structures -->
       <read name="os_Info"   type="osRtxInfo_t"   symbol="osRtxInfo"/>
-      <read name="os_Config" type="osRtxConfig_t" symbol="osRtxConfig" const="1"/>
+      <read name="os_Config" type="osRtxConfig_t" symbol="osRtxConfig" const="0"/>
 
       <calc>
         os_Config.stack_check  = (os_Config.flags >> 1) &amp; 1;

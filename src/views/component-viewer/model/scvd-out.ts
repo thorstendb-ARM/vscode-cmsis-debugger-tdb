@@ -117,6 +117,10 @@ export class ScvdOut extends ScvdBase {
         return list;
     }
 
+    public getValueType(): string | undefined {
+        return this.type?.getValueType();
+    }
+
     // public getGuiChildren(): ScvdGuiInterface[] | undefined {
     //     const guiItems = this.item
     //         .filter(x => x.getGuiConditionResult())    // filter

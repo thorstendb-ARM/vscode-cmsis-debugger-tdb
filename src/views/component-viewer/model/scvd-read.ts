@@ -161,4 +161,8 @@ export class ScvdRead extends ScvdBase {
         return this.type?.getMember(property);
     }
 
+    public getValueType(): string | undefined {
+        return this.type?.getValueType();
+    }
+
 }

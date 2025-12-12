@@ -4,7 +4,7 @@
 //  - optional auto-declare unknown globals on write
 //  - module-level helpers to add/read globals without host reference
 
-import { DataHost, RefContainer } from './evaluator';
+import { DataHost, RefContainer, ScalarType } from './evaluator';
 import { ScvdBase } from './model/scvd-base';
 import { CachedMemoryHost } from './cache/cache';
 import { Cm81MRegisterCache } from './cache/register-cache';
@@ -100,6 +100,15 @@ export class ScvdEvalInterface implements DataHost {
         const offset = await member.getMemberOffset() ?? 0;
         console.log(`getMemberOffset: base=${_base.getDisplayLabel()} member=${member.getDisplayLabel()} => ${offset}`);
         return offset;
+    }
+
+    async getValueType(container: RefContainer): Promise<string | ScalarType | undefined> {
+        const base = container.current;
+        const type = base?.getValueType();
+        if (type !== undefined) {
+            return type;
+        }
+        return undefined;
     }
 
     /* ---------------- Read/Write via caches ---------------- */

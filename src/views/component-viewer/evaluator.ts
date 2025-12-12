@@ -31,90 +31,117 @@ export type EvaluateResult = number | string | undefined;
 
 type MaybePromise<T> = T | Promise<T>;
 
+/* =============================================================================
+ * Type model for host-provided scalar types
+ * ============================================================================= */
+
+export type ScalarKind = 'int' | 'uint' | 'float';
+
+export interface ScalarType {
+    kind: ScalarKind;
+    bits?: number;
+    /** Optional human-readable typename, e.g. "uint32_t" */
+    name?: string;
+}
+
 /** Container context carried during evaluation. */
 export interface RefContainer {
-  /** Root model where identifier lookups begin. */
-  base: ScvdBase;
+    /** Root model where identifier lookups begin. */
+    base: ScvdBase;
 
-  /** Top-level anchor for the final read (e.g., TCB). */
-  anchor?: ScvdBase | undefined;
+    /** Top-level anchor for the final read (e.g., TCB). */
+    anchor?: ScvdBase | undefined;
 
-  /** Accumulated byte offset from the anchor. */
-  offsetBytes?: number | undefined;
+    /** Accumulated byte offset from the anchor. */
+    offsetBytes?: number | undefined;
 
-  /** Final read width in bytes. */
-  widthBytes?: number | undefined;
+    /** Final read width in bytes. */
+    widthBytes?: number | undefined;
 
-  /** Current ref resolved by the last resolution step (for chaining). */
-  current?: ScvdBase | undefined;
+    /** Current ref resolved by the last resolution step (for chaining). */
+    current?: ScvdBase | undefined;
 
-  /** Most recent resolved member reference (child). */
-  member?: ScvdBase | undefined;
+    /** Most recent resolved member reference (child). */
+    member?: ScvdBase | undefined;
 
-  /** Most recent numeric index for array access (e.g., arr[3]). */
-  index?: number | undefined;
+    /** Most recent numeric index for array access (e.g., arr[3]). */
+    index?: number | undefined;
+
+    /**
+     * Scalar type of the current value (if known).
+     * Always present but may be undefined.
+     */
+    valueType: ScalarType | undefined;
 }
 
 /** Host contract used by the evaluator (implemented by ScvdEvalInterface). */
 export interface DataHost {
-  // Resolution APIs — must set container.current to the resolved ref on success
-  getSymbolRef(container: RefContainer, name: string, forWrite?: boolean): MaybePromise<ScvdBase | undefined>;
-  getMemberRef(container: RefContainer, property: string, forWrite?: boolean): MaybePromise<ScvdBase | undefined>;
+    // Resolution APIs — must set container.current to the resolved ref on success
+    getSymbolRef(container: RefContainer, name: string, forWrite?: boolean): MaybePromise<ScvdBase | undefined>;
+    getMemberRef(container: RefContainer, property: string, forWrite?: boolean): MaybePromise<ScvdBase | undefined>;
 
-  // Value access acts on container.{anchor,offsetBytes,widthBytes}
-  readValue(container: RefContainer): MaybePromise<any>;                  // may return undefined -> error
-  writeValue(container: RefContainer, value: any): MaybePromise<any>;     // may return undefined -> error
+    // Value access acts on container.{anchor,offsetBytes,widthBytes}
+    readValue(container: RefContainer): MaybePromise<any>;                  // may return undefined -> error
+    writeValue(container: RefContainer, value: any): MaybePromise<any>;     // may return undefined -> error
 
-  // Optional: advanced lookups / intrinsics use the whole container context
-  resolveColonPath?(container: RefContainer, parts: string[]): MaybePromise<any>; // undefined => not found
-  stats?(): { symbols?: number; bytesUsed?: number };
-  evalIntrinsic?(name: string, container: RefContainer, args: any[]): MaybePromise<any>; // undefined => not handled
+    // Optional: advanced lookups / intrinsics use the whole container context
+    resolveColonPath?(container: RefContainer, parts: string[]): MaybePromise<any>; // undefined => not found
+    stats?(): { symbols?: number; bytesUsed?: number };
+    evalIntrinsic?(name: string, container: RefContainer, args: any[]): MaybePromise<any>; // undefined => not handled
 
-  // Optional metadata (lets evaluator accumulate offsets itself)
-  /** Bytes per element (including any padding/alignment inside the array layout). */
-  getElementStride?(ref: ScvdBase): MaybePromise<number>;                       // bytes per element
+    // Optional metadata (lets evaluator accumulate offsets itself)
+    /** Bytes per element (including any padding/alignment inside the array layout). */
+    getElementStride?(ref: ScvdBase): MaybePromise<number>;                       // bytes per element
 
-  /** Member offset in bytes from base. */
-  getMemberOffset?(base: ScvdBase, member: ScvdBase): MaybePromise<number>;     // bytes
+    /** Member offset in bytes from base. */
+    getMemberOffset?(base: ScvdBase, member: ScvdBase): MaybePromise<number>;     // bytes
 
-  /** Optional: provide an element model (prototype/type) for array-ish refs. */
-  getElementRef?(ref: ScvdBase): MaybePromise<ScvdBase | undefined>;
+    /** Optional: provide an element model (prototype/type) for array-ish refs. */
+    getElementRef?(ref: ScvdBase): MaybePromise<ScvdBase | undefined>;
 
-  // Optional named intrinsics
-  // Note: __GetRegVal(reg) is special-cased (no container); others use the evalIntrinsic convention
-  __GetRegVal?(reg: string): MaybePromise<number | undefined>;
-  __FindSymbol?(symbol: string): MaybePromise<number | undefined>;
-  __CalcMemUsed?(args: number[]): MaybePromise<number | undefined>;
+    // Optional named intrinsics
+    // Note: __GetRegVal(reg) is special-cased (no container); others use the evalIntrinsic convention
+    __GetRegVal?(reg: string): MaybePromise<number | undefined>;
+    __FindSymbol?(symbol: string): MaybePromise<number | undefined>;
+    __CalcMemUsed?(args: number[]): MaybePromise<number | undefined>;
 
-  /** sizeof-like intrinsic – semantics are host-defined (usually bytes). */
-  __size_of?(symbol: string): MaybePromise<number | undefined>;
+    /** sizeof-like intrinsic – semantics are host-defined (usually bytes). */
+    __size_of?(symbol: string): MaybePromise<number | undefined>;
 
-  __Symbol_exists?(symbol: string): MaybePromise<number | undefined>;
-  __Offset_of?(container: RefContainer, typedefMember: string): MaybePromise<number | undefined>;
+    __Symbol_exists?(symbol: string): MaybePromise<number | undefined>;
+    __Offset_of?(container: RefContainer, typedefMember: string): MaybePromise<number | undefined>;
 
-  // Additional named intrinsics
-  // __Running is special-cased (no container) and returns 1 or 0 for use in expressions
-  __Running?(): MaybePromise<number | undefined>;
+    // Additional named intrinsics
+    // __Running is special-cased (no container) and returns 1 or 0 for use in expressions
+    __Running?(): MaybePromise<number | undefined>;
 
-  // Pseudo-member evaluators used as obj._count / obj._addr; must return numbers
-  _count?(container: RefContainer): MaybePromise<number | undefined>;
-  _addr?(container: RefContainer): MaybePromise<number | undefined>;    // added as var because arrays can have different base addresses
+    // Pseudo-member evaluators used as obj._count / obj._addr; must return numbers
+    _count?(container: RefContainer): MaybePromise<number | undefined>;
+    _addr?(container: RefContainer): MaybePromise<number | undefined>;    // added as var because arrays can have different base addresses
 
-  // Optional printf formatting hook used by % specifiers in PrintfExpression.
-  // If it returns a string, the evaluator uses it. If it returns undefined,
-  // the evaluator falls back to its built-in formatting.
-  formatPrintf?(
-    spec: FormatSegment['spec'],
-    value: any,
-    container: RefContainer
-  ): MaybePromise<string | undefined>;
+    // Optional printf formatting hook used by % specifiers in PrintfExpression.
+    // If it returns a string, the evaluator uses it. If it returns undefined,
+    // the evaluator falls back to its built-in formatting.
+    formatPrintf?(
+        spec: FormatSegment['spec'],
+        value: any,
+        container: RefContainer
+    ): MaybePromise<string | undefined>;
+
+    /**
+     * Optional: return the scalar type of the value designated by `container`.
+     *
+     * You can return either:
+     *   - a C-like typename string, e.g. "uint32_t", "int16_t", "float"
+     *   - a normalized ScalarType
+     */
+    getValueType?(container: RefContainer): MaybePromise<string | ScalarType | undefined>;
 }
 
-
 export interface EvalContextInit {
-  data: DataHost;
-  /** Starting container for symbol resolution (root model). */
-  container: ScvdBase;
+    data: DataHost;
+    /** Starting container for symbol resolution (root model). */
+    container: ScvdBase;
 }
 
 export class EvalContext {
@@ -124,7 +151,10 @@ export class EvalContext {
 
     constructor(init: EvalContextInit) {
         this.data = init.data;
-        this.container = { base: init.container };
+        this.container = {
+            base: init.container,
+            valueType: undefined,
+        };
     }
 }
 
@@ -160,8 +190,12 @@ function addVals(a: any, b: any): any {
     if (typeof a === 'bigint' || typeof b === 'bigint') return toBigInt(a) + toBigInt(b);
     return asNumber(a) + asNumber(b);
 }
-function subVals(a: any, b: any): any { return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) - toBigInt(b)) : (asNumber(a) - asNumber(b)); }
-function mulVals(a: any, b: any): any { return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) * toBigInt(b)) : (asNumber(a) * asNumber(b)); }
+function subVals(a: any, b: any): any {
+    return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) - toBigInt(b)) : (asNumber(a) - asNumber(b));
+}
+function mulVals(a: any, b: any): any {
+    return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) * toBigInt(b)) : (asNumber(a) * asNumber(b));
+}
 function divVals(a: any, b: any): any {
     if (typeof a === 'bigint' || typeof b === 'bigint') {
         const bb = toBigInt(b); if (bb === BigInt(0)) throw new Error('Division by zero');
@@ -177,11 +211,31 @@ function modVals(a: any, b: any): any {
     }
     return (asNumber(a) | 0) % (asNumber(b) | 0);
 }
-function andVals(a: any, b: any): any { return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) & toBigInt(b)) : (((asNumber(a)|0) & (asNumber(b)|0)) >>> 0); }
-function xorVals(a: any, b: any): any { return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) ^ toBigInt(b)) : (((asNumber(a)|0) ^ (asNumber(b)|0)) >>> 0); }
-function orVals (a: any, b: any): any { return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) | toBigInt(b)) : (((asNumber(a)|0) | (asNumber(b)|0)) >>> 0); }
-function shlVals(a: any, b: any): any { return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) << toBigInt(b)) : (((asNumber(a)|0) << (asNumber(b)&31)) >>> 0); }
-function sarVals(a: any, b: any): any { return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) >> toBigInt(b)) : (((asNumber(a)|0) >> (asNumber(b)&31)) >>> 0); }
+function andVals(a: any, b: any): any {
+    return (typeof a === 'bigint' || typeof b === 'bigint')
+        ? (toBigInt(a) & toBigInt(b))
+        : (((asNumber(a) | 0) & (asNumber(b) | 0)) >>> 0);
+}
+function xorVals(a: any, b: any): any {
+    return (typeof a === 'bigint' || typeof b === 'bigint')
+        ? (toBigInt(a) ^ toBigInt(b))
+        : (((asNumber(a) | 0) ^ (asNumber(b) | 0)) >>> 0);
+}
+function orVals(a: any, b: any): any {
+    return (typeof a === 'bigint' || typeof b === 'bigint')
+        ? (toBigInt(a) | toBigInt(b))
+        : (((asNumber(a) | 0) | (asNumber(b) | 0)) >>> 0);
+}
+function shlVals(a: any, b: any): any {
+    return (typeof a === 'bigint' || typeof b === 'bigint')
+        ? (toBigInt(a) << toBigInt(b))
+        : (((asNumber(a) | 0) << (asNumber(b) & 31)) >>> 0);
+}
+function sarVals(a: any, b: any): any {
+    return (typeof a === 'bigint' || typeof b === 'bigint')
+        ? (toBigInt(a) >> toBigInt(b))
+        : (((asNumber(a) | 0) >> (asNumber(b) & 31)) >>> 0);
+}
 function shrVals(a: any, b: any): any {
     if (typeof a === 'bigint' || typeof b === 'bigint') {
         const aa = toBigInt(a) & U64_MASK; const bb = toBigInt(b);
@@ -194,11 +248,146 @@ function eqVals(a: any, b: any): boolean {
     if (typeof a === 'bigint' || typeof b === 'bigint') return toBigInt(a) === toBigInt(b);
     return asNumber(a) == asNumber(b);
 }
-function ltVals(a: any, b: any): boolean { return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) <  toBigInt(b)) : (asNumber(a) <  asNumber(b)); }
-function lteVals(a: any, b: any): boolean { return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) <= toBigInt(b)) : (asNumber(a) <= asNumber(b)); }
-function gtVals(a: any, b: any): boolean { return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) >  toBigInt(b)) : (asNumber(a) >  asNumber(b)); }
-function gteVals(a: any, b: any): boolean { return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) >= toBigInt(b)) : (asNumber(a) >= asNumber(b)); }
+function ltVals(a: any, b: any): boolean {
+    return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) < toBigInt(b)) : (asNumber(a) < asNumber(b));
+}
+function lteVals(a: any, b: any): boolean {
+    return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) <= toBigInt(b)) : (asNumber(a) <= asNumber(b));
+}
+function gtVals(a: any, b: any): boolean {
+    return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) > toBigInt(b)) : (asNumber(a) > asNumber(b));
+}
+function gteVals(a: any, b: any): boolean {
+    return (typeof a === 'bigint' || typeof b === 'bigint') ? (toBigInt(a) >= toBigInt(b)) : (asNumber(a) >= asNumber(b));
+}
 
+/* =============================================================================
+ * Type helpers and typed arithmetic decisions
+ * ============================================================================= */
+
+type MergedKind = ScalarKind | 'unknown';
+
+function normalizeScalarTypeFromName(name: string): ScalarType {
+    const trimmed = name.trim();
+    const lower = trimmed.toLowerCase();
+
+    let kind: ScalarKind = 'int';
+    if (lower.includes('uint') || lower.includes('unsigned')) {
+        kind = 'uint';
+    } else if (lower.includes('float') || lower.includes('double')) {
+        kind = 'float';
+    }
+
+    const out: ScalarType = { kind, name: trimmed };
+
+    const m = lower.match(/(8|16|32|64)/);
+    if (m) {
+        out.bits = parseInt(m[1], 10);
+    }
+
+    return out;
+}
+
+function normalizeScalarType(t: string | ScalarType | undefined): ScalarType | undefined {
+    if (!t) return undefined;
+    if (typeof t === 'string') return normalizeScalarTypeFromName(t);
+    if (!t.name && (t as any).typename) {
+        t.name = (t as any).typename;
+    }
+    return t;
+}
+
+async function getScalarTypeForContainer(ctx: EvalContext, container: RefContainer): Promise<ScalarType | undefined> {
+    const hostAny = ctx.data as any;
+    const fn = hostAny.getValueType as ((c: RefContainer) => MaybePromise<string | ScalarType | undefined>) | undefined;
+    if (typeof fn !== 'function') return undefined;
+    const raw = await fn.call(ctx.data, container);
+    return normalizeScalarType(raw);
+}
+
+function mergeKinds(a?: ScalarType, b?: ScalarType): MergedKind {
+    const ka = a?.kind;
+    const kb = b?.kind;
+    if (ka === 'float' || kb === 'float') return 'float';
+    if (ka === 'uint' || kb === 'uint') return 'uint';
+    if (ka === 'int' || kb === 'int') return 'int';
+    return 'unknown';
+}
+
+function integerDiv(a: number, b: number, unsigned: boolean): number {
+    if (b === 0) throw new Error('Division by zero');
+    if (unsigned) {
+        const na = a >>> 0;
+        const nb = b >>> 0;
+        if (nb === 0) throw new Error('Division by zero');
+        return Math.trunc(na / nb) >>> 0;
+    } else {
+        const na = a | 0;
+        const nb = b | 0;
+        if (nb === 0) throw new Error('Division by zero');
+        return (na / nb) | 0;
+    }
+}
+
+function integerMod(a: number, b: number, unsigned: boolean): number {
+    if (b === 0) throw new Error('Division by zero');
+    if (unsigned) {
+        const na = a >>> 0;
+        const nb = b >>> 0;
+        if (nb === 0) throw new Error('Division by zero');
+        return (na % nb) >>> 0;
+    } else {
+        const na = a | 0;
+        const nb = b | 0;
+        if (nb === 0) throw new Error('Division by zero');
+        return na % nb;
+    }
+}
+
+/**
+ * Decide whether to prefer integer semantics for a/b based on:
+ *   - an explicit merged kind from type info, OR
+ *   - a fallback heuristic: both operands are integer-valued numbers.
+ */
+function prefersInteger(kind: MergedKind | undefined, a: any, b: any): { use: boolean; unsigned: boolean } {
+    if (kind === 'int') return { use: true, unsigned: false };
+    if (kind === 'uint') return { use: true, unsigned: true };
+
+    // Fallback when host doesn't provide types:
+    const na = asNumber(a);
+    const nb = asNumber(b);
+    if (Number.isInteger(na) && Number.isInteger(nb)) {
+        // Default to signed if we only know "integer-ish"
+        return { use: true, unsigned: false };
+    }
+    return { use: false, unsigned: false };
+}
+
+function divValsWithKind(a: any, b: any, kind: MergedKind | undefined): any {
+    // BigInt path unchanged
+    if (typeof a === 'bigint' || typeof b === 'bigint') {
+        return divVals(a, b);
+    }
+
+    const pref = prefersInteger(kind, a, b);
+    if (pref.use) {
+        return integerDiv(asNumber(a), asNumber(b), pref.unsigned);
+    }
+    // Fallback to original floating semantics
+    return divVals(a, b);
+}
+
+function modValsWithKind(a: any, b: any, kind: MergedKind | undefined): any {
+    if (typeof a === 'bigint' || typeof b === 'bigint') {
+        return modVals(a, b);
+    }
+
+    const pref = prefersInteger(kind, a, b);
+    if (pref.use) {
+        return integerMod(asNumber(a), asNumber(b), pref.unsigned);
+    }
+    return modVals(a, b);
+}
 
 // Intrinsics that expect identifier *names* instead of evaluated values.
 const NAME_ARG_INTRINSICS = new Set<string>([
@@ -249,6 +438,7 @@ async function withIsolatedContainer<T>(ctx: EvalContext, fn: () => MaybePromise
         current: c.current,
         member: c.member,
         index: c.index,
+        valueType: c.valueType,
     };
     try {
         return await fn();
@@ -259,6 +449,7 @@ async function withIsolatedContainer<T>(ctx: EvalContext, fn: () => MaybePromise
         c.current = saved.current;
         c.member = saved.member;
         c.index = saved.index;
+        c.valueType = saved.valueType;
     }
 }
 
@@ -266,7 +457,11 @@ async function withIsolatedContainer<T>(ctx: EvalContext, fn: () => MaybePromise
  * Strict ref/value utilities (single-root + contextual hints)
  * ============================================================================= */
 
-type LValue = { get(): Promise<any>; set(v: any): Promise<any> };
+type LValue = {
+    get(): Promise<any>;
+    set(v: any): Promise<any>;
+    type: ScalarType | undefined;
+};
 
 /** Accumulate a byte offset into the container (anchor-relative). */
 function addByteOffset(ctx: EvalContext, bytes: number) {
@@ -289,6 +484,7 @@ async function mustRef(node: ASTNode, ctx: EvalContext, forWrite = false): Promi
             // Reset last-context hints for a plain identifier
             ctx.container.member = undefined;
             ctx.container.index = undefined;
+            ctx.container.valueType = undefined;
             // Set the current target for subsequent resolution
             ctx.container.current = ref;
 
@@ -355,6 +551,7 @@ async function mustRef(node: ASTNode, ctx: EvalContext, forWrite = false): Promi
                 // Finalize hints
                 ctx.container.member = child;
                 ctx.container.current = child;
+                ctx.container.valueType = undefined; // will be resolved on read/write via getValueType
                 return child;
             }
 
@@ -381,6 +578,7 @@ async function mustRef(node: ASTNode, ctx: EvalContext, forWrite = false): Promi
 
             ctx.container.member = child;
             ctx.container.current = child;
+            ctx.container.valueType = undefined;
             return child;
         }
 
@@ -398,6 +596,7 @@ async function mustRef(node: ASTNode, ctx: EvalContext, forWrite = false): Promi
 
             const arrayRef = ctx.container.current ?? baseRef;
             ctx.container.member = undefined;
+            ctx.container.valueType = undefined;
 
             const strideBytes = ctx.data.getElementStride ? await ctx.data.getElementStride(arrayRef) : 0;
             if (typeof strideBytes === 'number' && strideBytes !== 0) {
@@ -450,8 +649,12 @@ async function lref(node: ASTNode, ctx: EvalContext): Promise<LValue> {
         current: ctx.container.current,
         member: ctx.container.member,
         index: ctx.container.index,
+        valueType: ctx.container.valueType,
     };
-    return {
+
+    const valueType = await getScalarTypeForContainer(ctx, target);
+
+    const lv: LValue = {
         async get(): Promise<any> {
             await mustRef(node, ctx, false);
             return await mustRead(ctx);
@@ -460,8 +663,11 @@ async function lref(node: ASTNode, ctx: EvalContext): Promise<LValue> {
             const out = await ctx.data.writeValue(target, v); // use frozen target
             if (out === undefined) throw new Error('Write returned undefined');
             return out;
-        }
+        },
+        type: valueType,
     };
+
+    return lv;
 }
 
 /* =============================================================================
@@ -480,6 +686,30 @@ const VALUE_INTRINSICS = new Set<string>([
     '__FindSymbol',
 ]);
 
+async function evalOperandWithType(node: ASTNode, ctx: EvalContext): Promise<{ value: any; type: ScalarType | undefined }> {
+    let capturedType: ScalarType | undefined;
+
+    const value = await withIsolatedContainer(ctx, async () => {
+        const v = await evalNode(node, ctx);
+
+        const snapshot: RefContainer = {
+            base: ctx.container.base,
+            anchor: ctx.container.anchor,
+            offsetBytes: ctx.container.offsetBytes,
+            widthBytes: ctx.container.widthBytes,
+            current: ctx.container.current,
+            member: ctx.container.member,
+            index: ctx.container.index,
+            valueType: ctx.container.valueType,
+        };
+
+        capturedType = await getScalarTypeForContainer(ctx, snapshot);
+        return v;
+    });
+
+    return { value, type: capturedType };
+}
+
 export async function evalNode(node: ASTNode, ctx: EvalContext): Promise<any> {
     switch (node.kind) {
         case 'NumberLiteral':  return (node as NumberLiteral).value;
@@ -497,6 +727,7 @@ export async function evalNode(node: ASTNode, ctx: EvalContext): Promise<any> {
                 const baseRef = await mustRef(ma.object, ctx, false);
                 ctx.container.member = baseRef;
                 ctx.container.current = baseRef;
+                ctx.container.valueType = undefined;
                 const host = ctx.data as any;
                 const fn = host[ma.property] as ((container: RefContainer) => MaybePromise<any>) | undefined;
                 if (typeof fn !== 'function') throw new Error(`Missing pseudo-member ${ma.property}`);
@@ -562,20 +793,24 @@ export async function evalNode(node: ASTNode, ctx: EvalContext): Promise<any> {
                 const value = await withIsolatedContainer(ctx, () => evalNode(a.right, ctx));
                 return await ref.set(value);
             }
-            const L = await evalNode(a.left, ctx);
+
+            // Use the LValue to read current LHS value (and we already captured its type in lref)
+            const L = await ref.get();
             const R = await evalNode(a.right, ctx);
+            const lhsKind: MergedKind = ref.type ? ref.type.kind : 'unknown';
+
             let out: any;
             switch (a.operator) {
-                case '+=': out = addVals(L, R); break;
-                case '-=': out = subVals(L, R); break;
-                case '*=': out = mulVals(L, R); break;
-                case '/=': out = divVals(L, R); break;
-                case '%=': out = modVals(L, R); break;
+                case '+=':  out = addVals(L, R); break;
+                case '-=':  out = subVals(L, R); break;
+                case '*=':  out = mulVals(L, R); break;
+                case '/=':  out = divValsWithKind(L, R, lhsKind); break;
+                case '%=':  out = modValsWithKind(L, R, lhsKind); break;
                 case '<<=': out = shlVals(L, R); break;
                 case '>>=': out = sarVals(L, R); break;
-                case '&=': out = andVals(L, R); break;
-                case '^=': out = xorVals(L, R); break;
-                case '|=': out = orVals(L, R); break;
+                case '&=':  out = andVals(L, R); break;
+                case '^=':  out = xorVals(L, R); break;
+                case '|=':  out = orVals(L, R); break;
                 default: throw new Error(`Unsupported assignment operator ${a.operator}`);
             }
             return await ref.set(out);
@@ -639,27 +874,28 @@ async function evalBinary(node: BinaryExpression, ctx: EvalContext): Promise<any
         return truthy(lv) ? lv : await evalNode(right, ctx);
     }
 
-    const a = await evalNode(left, ctx);
-    const b = await evalNode(right, ctx);
+    const { value: a, type: typeA } = await evalOperandWithType(left, ctx);
+    const { value: b, type: typeB } = await evalOperandWithType(right, ctx);
+    const mergedKind = mergeKinds(typeA, typeB);
 
     switch (operator) {
-        case '+': return addVals(a, b);
-        case '-': return subVals(a, b);
-        case '*': return mulVals(a, b);
-        case '/': return divVals(a, b);
-        case '%': return modVals(a, b);
-        case '<<': return shlVals(a, b);
-        case '>>': return sarVals(a, b);
+        case '+':   return addVals(a, b);
+        case '-':   return subVals(a, b);
+        case '*':   return mulVals(a, b);
+        case '/':   return divValsWithKind(a, b, mergedKind);
+        case '%':   return modValsWithKind(a, b, mergedKind);
+        case '<<':  return shlVals(a, b);
+        case '>>':  return sarVals(a, b);
         case '>>>': return shrVals(a, b);
-        case '&': return andVals(a, b);
-        case '^': return xorVals(a, b);
-        case '|': return orVals(a, b);
-        case '==': return eqVals(a, b);
-        case '!=': return !eqVals(a, b);
-        case '<': return ltVals(a, b);
-        case '<=': return lteVals(a, b);
-        case '>': return gtVals(a, b);
-        case '>=': return gteVals(a, b);
+        case '&':   return andVals(a, b);
+        case '^':   return xorVals(a, b);
+        case '|':   return orVals(a, b);
+        case '==':  return eqVals(a, b);
+        case '!=':  return !eqVals(a, b);
+        case '<':   return ltVals(a, b);
+        case '<=':  return lteVals(a, b);
+        case '>':   return gtVals(a, b);
+        case '>=':  return gteVals(a, b);
         default: throw new Error(`Unsupported binary operator ${operator}`);
     }
 }
@@ -794,5 +1030,6 @@ export async function evaluateParseResult(pr: ParseResult, ctx: EvalContext, con
         ctx.container.current = saved.current;
         ctx.container.member = saved.member;
         ctx.container.index = saved.index;
+        ctx.container.valueType = saved.valueType;
     }
 }

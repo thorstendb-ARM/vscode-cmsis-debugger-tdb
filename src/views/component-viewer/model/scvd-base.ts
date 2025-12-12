@@ -357,6 +357,11 @@ export abstract class ScvdBase {
         return undefined;
     }
 
+    public getValueType(): string | undefined {
+        console.error(`GetValueType not implemented: item=${this.classname}: ${this.getDisplayLabel()}`);
+        return undefined;
+    }
+
     // base implementation assumes not a pointer ref
     public isPointerRef(): boolean {
         return false;

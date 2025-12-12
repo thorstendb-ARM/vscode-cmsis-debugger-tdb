@@ -25,6 +25,7 @@ import { StatementList } from './statement-list';
 import { StatementListOut } from './statement-list-out';
 import { StatementObject } from './statement-object';
 import { StatementOut } from './statement-out';
+import { StatementPrint } from './statement-print';
 import { StatementRead } from './statement-read';
 import { StatementReadList } from './statement-readList';
 import { StatementVar } from './statement-var';
@@ -86,6 +87,9 @@ export class StatementEngine {
             case 'ScvdItem':
                 // Item-specific logic.
                 return new StatementItem(item, parent);
+            case 'ScvdPrint':
+                // Print-specific logic.
+                return new StatementPrint(item, parent);
             default:
                 // Generic logic for other item types.
                 return undefined;

@@ -164,4 +164,9 @@ export class ScvdVar extends ScvdBase {
         }
         return undefined;
     }
+
+    public getValueType(): string | undefined {
+        return this.type?.getValueType();
+    }
+
 }

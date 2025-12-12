@@ -92,6 +92,32 @@ export class ScvdDebugTarget {
         return symbolInfo.address;
     }
 
+    /**
+ * Decode a (possibly unpadded) base64 string from GDB into bytes.
+ */
+    public decodeGdbData(data: string): Uint8Array {
+        // Fix missing padding: base64 length must be a multiple of 4
+        const padLength = (4 - (data.length % 4)) % 4;
+        const padded = data + '='.repeat(padLength);
+
+        // Node.js or environments with Buffer
+        if (typeof Buffer !== 'undefined') {
+            return Uint8Array.from(Buffer.from(padded, 'base64'));
+        }
+
+        // Browser / Deno / modern runtimes with atob
+        if (typeof atob === 'function') {
+            const binary = atob(padded);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+                bytes[i] = binary.charCodeAt(i) & 0xff;
+            }
+            return bytes;
+        }
+
+        throw new Error('No base64 decoder available in this environment');
+    }
+
     public async readMemory(address: number, size: number): Promise<Uint8Array | undefined> {
         // If the session is a mock session, return mock data. If it's not a mock session, use the target access to get real data
         if(this.activeSession.session.id.startsWith('mock-session-')) {
@@ -102,10 +128,11 @@ export class ScvdDebugTarget {
                 return undefined;
             }
             // Convert String data to Uint8Array
-            const byteArray: Uint8Array = new Uint8Array(size);
-            for(let i = 0; i < size; i++) {
+            const byteArray = this.decodeGdbData(dataAsString);
+
+            /*for(let i = 0; i < size; i++) {
                 byteArray[i] = dataAsString.charCodeAt(i);
-            }
+            }*/
             return byteArray;
         }
     }

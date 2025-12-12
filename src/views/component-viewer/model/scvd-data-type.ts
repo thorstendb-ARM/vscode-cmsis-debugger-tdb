@@ -81,8 +81,22 @@ export class ScvdDataType extends ScvdBase {
         return this._type?.getVirtualSize();
     }
 
+    public getValueType(): string | undefined {
+        const isPointer = this.getIsPointer();
+        if(isPointer) {
+            return 'uint32_t';
+        }
 
-
+        const type = this._type;
+        if(type !== undefined) {
+            const scalarType = type.castToDerived(ScvdScalarDataType);
+            const typeStr = scalarType?.type;
+            if (typeStr !== undefined) {
+                return typeStr;
+            }
+        }
+        return undefined;
+    }
 }
 
 
