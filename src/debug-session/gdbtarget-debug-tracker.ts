@@ -19,6 +19,7 @@ import { DebugProtocol } from '@vscode/debugprotocol';
 import { GDB_TARGET_DEBUGGER_TYPE } from './constants';
 import { GDBTargetDebugSession } from './gdbtarget-debug-session';
 import { GDBTargetConfiguration } from '../debug-configuration';
+import { hasManagedConfigEnding } from '../debug-configuration/managed-config-utils';
 
 export interface SessionEvent<T extends DebugProtocol.Event> {
     session: GDBTargetDebugSession;
@@ -27,6 +28,11 @@ export interface SessionEvent<T extends DebugProtocol.Event> {
 
 export type ContinuedEvent = SessionEvent<DebugProtocol.ContinuedEvent>;
 export type StoppedEvent = SessionEvent<DebugProtocol.StoppedEvent>;
+
+export interface SessionCapabilities {
+    session: GDBTargetDebugSession;
+    capabilities: DebugProtocol.Capabilities;
+}
 
 export interface SessionStackTrace {
     session: GDBTargetDebugSession;
@@ -41,6 +47,8 @@ export interface SessionStackItem {
     session: GDBTargetDebugSession;
     item: StackItem;
 }
+
+type stopTypes = 'disconnect' | 'terminate';
 
 export class GDBTargetDebugTracker {
     private sessions: Map<string, GDBTargetDebugSession> = new Map();
@@ -142,6 +150,9 @@ export class GDBTargetDebugTracker {
             return;
         }
         switch (response.command) {
+            case 'initialize':
+                this.handleInitializeResponse(gdbTargetSession, response);
+                break;
             case 'launch':
             case 'attach':
                 this.handleLaunchAttachResponse(gdbTargetSession, response);
@@ -149,6 +160,12 @@ export class GDBTargetDebugTracker {
             case 'stackTrace':
                 this.handleStackTraceResponse(gdbTargetSession, response as DebugProtocol.StackTraceResponse);
                 break;
+        }
+    }
+
+    private handleInitializeResponse(gdbTargetSession: GDBTargetDebugSession, response: DebugProtocol.InitializeResponse): void {
+        if (response.success && response.body) {
+            gdbTargetSession.setCapabilities(response.body);
         }
     }
 
@@ -197,8 +214,48 @@ export class GDBTargetDebugTracker {
                 case 'stepOut':
                     gdbTargetSession.refreshTimer.start();
                     break;
+                case 'disconnect':
+                case 'terminate':
+                    // In theory, this part also needs to handle 'restart' requests.
+                    // But in reality the CDT GDB Adapter currently does not support customized
+                    // 'restart' (which is different from the custom reset).
+                    this.verifySafeDisconnect(gdbTargetSession, request.command);
+                    break;
             }
         }
+    }
+
+    private verifySafeDisconnect(session: GDBTargetDebugSession, type: stopTypes): void {
+        if (type === 'disconnect' && session.canTerminate()) {
+            // Only handle terminate request in this case
+            return;
+        }
+        if (type === 'terminate' && !session.canTerminate()) {
+            // Something went wrong before, notification would imply wrong root cause, hence skip
+            return;
+        }
+        const sessionCbuildRunPath = session.getCbuildRunPath();
+        if (session.session.name.endsWith('(attach)') || !hasManagedConfigEnding(session.session.name) || !sessionCbuildRunPath) {
+            // Not managed, no *.cbuild-run.yml, or an attach session, the latter can be safely terminated
+            return;
+        }
+        // Look out for other managed attach sessions
+        const managedSessions = Array.from(this.sessions.values()).filter(s => s !== session && s.session.name.endsWith('(attach)') && s.getCbuildRunPath());
+        if (!managedSessions.length) {
+            return;
+        }
+        // Configs for multiple CPUs of same device typically don't share same base name.
+        // Assumption: Sessions for the same SoC that are managed by CMSIS Solution extension
+        // are driven by the same *.cbuild-run.yml file.
+        const matchingAttachSession = managedSessions.find(s => s.getCbuildRunPath() === sessionCbuildRunPath);
+        if (!matchingAttachSession) {
+            return;
+        }
+        // Disconnect might be unsafe, prompt user but don't wait for response to modal dialog
+        vscode.window.showInformationMessage(
+            `Stopping '${session.session.name}' might shut down debug server for '${matchingAttachSession.session.name}'. You may need to close and restart that session.`,
+            { modal: true },
+        );
     }
 
     private handleLaunchAttachRequest(gdbTargetSession: GDBTargetDebugSession, request: DebugProtocol.Request): void {

@@ -20,6 +20,9 @@ import { logger } from '../logger';
 import { CbuildRunReader } from '../cbuild-run';
 import { PeriodicRefreshTimer } from './periodic-refresh-timer';
 import { OutputEventFilter } from './output-event-filter';
+import { URI } from 'vscode-uri';
+import { GDBTargetConfiguration } from '../debug-configuration';
+import path from 'path';
 
 /**
  * GDBTargetDebugSession - Wrapper class to provide session state/details
@@ -27,6 +30,7 @@ import { OutputEventFilter } from './output-event-filter';
 export class GDBTargetDebugSession {
     public readonly refreshTimer: PeriodicRefreshTimer<GDBTargetDebugSession>;
     public readonly canAccessWhileRunning: boolean;
+    private capabilities: DebugProtocol.Capabilities | undefined;
     private _cbuildRun: CbuildRunReader|undefined;
     private _cbuildRunParsePromise: Promise<void>|undefined;
     private outputEventFilter = new OutputEventFilter();
@@ -35,6 +39,15 @@ export class GDBTargetDebugSession {
         this.refreshTimer = new PeriodicRefreshTimer(this);
         this.canAccessWhileRunning = this.session.configuration.type === 'gdbtarget' && this.session.configuration['auxiliaryGdb'] === true;
         this.refreshTimer.enabled = this.canAccessWhileRunning;
+    }
+
+    /**
+     * Store capabilities for a session.
+     *
+     * @param capabilities Capabilities received from initialize response.
+     */
+    public setCapabilities(capabilities: DebugProtocol.Capabilities): void {
+        this.capabilities = capabilities;
     }
 
     /**
@@ -55,6 +68,14 @@ export class GDBTargetDebugSession {
         }
     }
 
+    public getCbuildRunPath(): string | undefined {
+        const cbuildRunFile = (this.session.configuration as GDBTargetConfiguration)?.cmsis?.cbuildRunFile;
+        if (!cbuildRunFile) {
+            return undefined;
+        }
+        return path.normalize(URI.file(path.resolve(cbuildRunFile)).fsPath);
+    }
+
     public async getCbuildRun(): Promise<CbuildRunReader|undefined> {
         if (!this._cbuildRun) {
             return;
@@ -72,6 +93,17 @@ export class GDBTargetDebugSession {
         this._cbuildRunParsePromise = this._cbuildRun.parse(filePath);
         await this._cbuildRunParsePromise;
         this._cbuildRunParsePromise = undefined;
+    }
+
+    /**
+     * Check if first stop attempt for session is done by 'terminate' request.
+     * Notes:
+     *   'terminate' is in DAP terms softer than 'disconnect'
+     *   'attach' sessions are always stopped with 'disconnect'
+     * @returns true if first stop is by 'terminate' request, false otherwise
+     */
+    public canTerminate(): boolean {
+        return this.session.configuration.request === 'launch' && this.capabilities?.supportsTerminateRequest === true;
     }
 
     /** Function returns string only in case of failure */
