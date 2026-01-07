@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import { NumberType, NumFormat } from './number-type';
+
 // https://arm-software.github.io/CMSIS-View/main/elem_component_viewer.html
 
 
@@ -79,28 +81,23 @@ export class ScvdFormatSpecifier {
         return '0x' + (n >>> 0).toString(16);
     }
 
-    public resolveSymbol(_addr: number): string | undefined {
-        // TODO: implement symbol resolution
-        return `Symbol: 0x${_addr.toString(16)}`;
-    }
-
-    public format_address_like(value: number | string, fallbackHex: boolean): string {
-        const n = Number(value);
-        if (Number.isFinite(n)) {
-            const sym = this.resolveSymbol(n);
-            if (sym) return sym;
-            if (fallbackHex) return '0x' + n.toString(16);
-            return n.toString(10);
+    public format_address_like(value: number | string): string {
+        if( typeof value === 'string') {
+            return value;
         }
-        return `${value}`;
+        if(typeof value === 'number') {
+            const num = new NumberType(value, NumFormat.hexadecimal, 32);
+            return num.getDisplayText();
+        }
+        return '<undefined>';
     }
 
     public format_C(value: number | string): string {
-        return this.format_address_like(value, true);
+        return this.format_address_like(value);
     }
 
     public format_S(value: number | string): string {
-        return this.format_address_like(value, true);
+        return this.format_address_like(value);
     }
 
     public format_E(value: number | string): string {

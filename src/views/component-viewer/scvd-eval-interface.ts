@@ -96,9 +96,9 @@ export class ScvdEvalInterface implements DataHost {
         return 0;
     }
 
-    async getMemberOffset(_base: ScvdBase, member: ScvdBase): Promise<number> {
-        const offset = await member.getMemberOffset() ?? 0;
-        console.log(`getMemberOffset: base=${_base.getDisplayLabel()} member=${member.getDisplayLabel()} => ${offset}`);
+    async getMemberOffset(_base: ScvdBase, member: ScvdBase): Promise<number | undefined> {
+        const offset = await member.getMemberOffset();
+        console.log(`${member.getLineNoStr()}: getMemberOffset: parent=${member.parent?.getDisplayLabel()} member=${member.getDisplayLabel()} offset=${offset}`);
         return offset;
     }
 

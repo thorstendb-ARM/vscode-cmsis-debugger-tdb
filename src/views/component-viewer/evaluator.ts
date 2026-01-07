@@ -94,7 +94,7 @@ export interface DataHost {
     getElementStride?(ref: ScvdBase): MaybePromise<number>;                       // bytes per element
 
     /** Member offset in bytes from base. */
-    getMemberOffset?(base: ScvdBase, member: ScvdBase): MaybePromise<number>;     // bytes
+    getMemberOffset?(base: ScvdBase, member: ScvdBase): MaybePromise<number | undefined>;     // bytes
 
     /** Optional: provide an element model (prototype/type) for array-ish refs. */
     getElementRef?(ref: ScvdBase): MaybePromise<ScvdBase | undefined>;
@@ -534,8 +534,8 @@ async function mustRef(node: ASTNode, ctx: EvalContext, forWrite = false): Promi
                 if (!child) throw new Error(`Missing member '${ma.property}'`);
 
                 // Accumulate member byte offset
-                const memberOffsetBytes = ctx.data.getMemberOffset ? await ctx.data.getMemberOffset(baseForMember, child) : 0;
-                if (typeof memberOffsetBytes === 'number' && memberOffsetBytes !== 0) {
+                const memberOffsetBytes = ctx.data.getMemberOffset ? await ctx.data.getMemberOffset(baseForMember, child) : undefined;
+                if (typeof memberOffsetBytes === 'number') {
                     addByteOffset(ctx, memberOffsetBytes);
                 }
 
@@ -562,8 +562,8 @@ async function mustRef(node: ASTNode, ctx: EvalContext, forWrite = false): Promi
             const child = await ctx.data.getMemberRef(ctx.container, ma.property, forWrite);
             if (!child) throw new Error(`Missing member '${ma.property}'`);
 
-            const memberOffsetBytes = ctx.data.getMemberOffset ? await ctx.data.getMemberOffset(baseRef, child) : 0;
-            if (typeof memberOffsetBytes === 'number' && memberOffsetBytes !== 0) {
+            const memberOffsetBytes = ctx.data.getMemberOffset ? await ctx.data.getMemberOffset(baseRef, child) : undefined;
+            if (typeof memberOffsetBytes === 'number') {
                 addByteOffset(ctx, memberOffsetBytes);
             }
 

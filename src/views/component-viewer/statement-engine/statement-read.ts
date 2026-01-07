@@ -31,7 +31,7 @@ export class StatementRead extends StatementBase {
         console.log(`${this.line}: Executing read: ${this.scvdItem.getDisplayLabel()}`);
         const mustRead = this.scvdItem.mustRead;
         if(mustRead === false) {
-            console.log(`${this.line} Skipping "read" as already initialized: ${this.scvdItem.name}`);
+            console.log(`${this.scvdItem.getLineNoStr()}: Skipping "read" as already initialized: ${this.scvdItem.name}`);
             return;
         }
 

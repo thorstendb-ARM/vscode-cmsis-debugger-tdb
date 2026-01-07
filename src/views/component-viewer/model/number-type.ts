@@ -47,7 +47,7 @@ export class NumberType {
         numOfDisplayBits: 1
     };
 
-    constructor(val?: NumberTypeInput, numFormat?: NumFormat) {
+    constructor(val?: NumberTypeInput, numFormat?: NumFormat, numOfDisplayBits?: number) {
 
         if (typeof val === 'number') {
             this._value.value = val;
@@ -57,6 +57,9 @@ export class NumberType {
                 this._value.numFormat = NumFormat.decimal;
             }
             this._value.displayFormat = this._value.numFormat;
+            if( numOfDisplayBits !== undefined) {
+                this._value.numOfDisplayBits = numOfDisplayBits;
+            }
         } else if (val instanceof NumberType) {
             this._value = { value: val.value, numFormat: val.format, displayFormat: val.displayFormat, numOfDigits: val._value.numOfDigits, numOfDisplayBits: val._value.numOfDisplayBits };
         } else if (typeof val === 'string') {

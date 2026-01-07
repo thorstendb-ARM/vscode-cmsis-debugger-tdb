@@ -134,6 +134,9 @@ export class StatementEngine {
     public async executeAll(guiTree: ScvdGuiTree): Promise<void> {
         // Execute all statements in the statement tree.
         // This is a placeholder implementation.
+
+        this._executionContext.memoryHost.clear();
+
         if (this._statementTree) {
             console.log('Executing statements in the statement tree...');
             await this._statementTree.executeStatement(this.executionContext, guiTree);
