@@ -34,11 +34,7 @@ export class StatementItem extends StatementBase {
             return;
         }
 
-        let guiName = await this.scvdItem.getGuiName();
-        if(!guiName || guiName.length === 0) {
-            console.log(`${this.line}: Item with empty gui-name`);
-        }
-        guiName = await this.scvdItem.getGuiName() ?? 'item';
+        const guiName = await this.scvdItem.getGuiName();
 
         //const childGuiTree = (guiName?.length) ? new ScvdGuiTree(guiTree) : guiTree;
         const childGuiTree = new ScvdGuiTree(guiTree);
@@ -53,6 +49,31 @@ export class StatementItem extends StatementBase {
         if(this.children.length > 0) {
             for (const child of this.children) {
                 await child.executeStatement(executionContext, childGuiTree);
+            }
+        }
+
+        if(guiName === undefined) {
+            const guiChildren = [...childGuiTree.children];  // copy to keep iteration safe during detach
+            let printFound = false;
+            for(const guiChild of guiChildren) {
+                if(guiChild.isPrint) {
+                    const guiNamePrint = guiChild.getGuiName();
+                    const guiValuePrint = guiChild.getGuiValue();
+                    childGuiTree.setGuiName(guiNamePrint);
+                    childGuiTree.setGuiValue(guiValuePrint);
+                    printFound = true;
+                    break;  // use first found
+                }
+            }
+
+            for(const guiChild of guiChildren) {
+                if(guiChild.isPrint) {
+                    guiChild.detach();  // remove temporary print nodes
+                }
+            }
+
+            if(!printFound && childGuiTree.children.length === 0) {
+                childGuiTree.detach();  // drop empty items that never produced a GUI name/value
             }
         }
     }

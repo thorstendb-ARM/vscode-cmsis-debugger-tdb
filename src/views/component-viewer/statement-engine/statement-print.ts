@@ -38,6 +38,7 @@ export class StatementPrint extends StatementBase {
         const guiValue = await this.scvdItem.getGuiValue();
         childGuiTree.setGuiName(guiName);
         childGuiTree.setGuiValue(guiValue);
+        childGuiTree.isPrint = true;
 
         await this.onExecute(executionContext, childGuiTree);
 

@@ -228,10 +228,23 @@ export class ScvdEvalInterface implements DataHost {
             case 'x': {
                 return this.formatSpecifier.format_x(value);
             }
-            case 'C': {
-                return this.formatSpecifier.format_C(value);
+            case 'C': { // Address value as symbolic name with file context, if fails in hexadecimal format
+                const addr = typeof value === 'number' ? value : undefined;
+                if(addr === undefined) {
+                    return 'invalid address';
+                }
+                const name = await this.debugTarget.findSymbolNameAtAddress(addr);
+                return this.formatSpecifier.format_C(name ?? addr);
             }
-            case 'E': {
+            case 'S': { // Address value as symbolic name, if fails in hexadecimal format
+                const addr = typeof value === 'number' ? value : undefined;
+                if(addr === undefined) {
+                    return 'invalid address';
+                }
+                const name = await this.debugTarget.findSymbolNameAtAddress(addr);
+                return this.formatSpecifier.format_S(name ?? addr);
+            }
+            case 'E': { // Symbolic enumerator value, if fails in decimal format
                 const memberItem = base?.castToDerived(ScvdMember);
                 const enumItem = await memberItem?.getEnum(value);
                 const enumStr = await enumItem?.getGuiName();
@@ -257,9 +270,6 @@ export class ScvdEvalInterface implements DataHost {
             }
             case 'M': {
                 return this.formatSpecifier.format_M(value);
-            }
-            case 'S': {
-                return this.formatSpecifier.format_S(value);
             }
             case 'T': {
                 return this.formatSpecifier.format_T(value);

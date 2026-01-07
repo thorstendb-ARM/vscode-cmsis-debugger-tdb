@@ -68,6 +68,15 @@ export class ScvdDebugTarget {
         }
     }
 
+    public async findSymbolNameAtAddress(address: number): Promise<string | undefined> {
+        // TODO For real sessions, this functionality is not implemented yet
+        if(this.activeSession.session.id.startsWith('mock-session-')) {
+            return Promise.resolve(undefined);
+        } else {
+            return await this.targetAccess.evaluateSymbolName(address.toString());
+        }
+    }
+
     public getNumArrayElements(symbol: string): number | undefined {
         if(symbol === undefined) {
             return undefined;

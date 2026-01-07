@@ -7,6 +7,7 @@ export class ScvdGuiTree implements ScvdGuiInterface {
     private _name: string | undefined;
     private _value: string | undefined;
     private _children: ScvdGuiTree[] = [];
+    private _isPrint: boolean = false;
     private static idCnt: number = 0;
 
     constructor(
@@ -36,6 +37,13 @@ export class ScvdGuiTree implements ScvdGuiInterface {
         this._children = [];
     }
 
+    public get isPrint(): boolean {
+        return this._isPrint;
+    }
+    public set isPrint(value: boolean) {
+        this._isPrint = value;
+    }
+
     private set name(value: string | undefined) {
         this._name = value;
     }
@@ -55,6 +63,13 @@ export class ScvdGuiTree implements ScvdGuiInterface {
         this._children.push(child);
     }
 
+    public detach(): void {
+        if(!this._parent) {
+            return;
+        }
+        this._parent._children = this._parent._children.filter(child => child !== this);
+        this._parent = undefined;
+    }
 
     public setGuiName(value: string | undefined) {
         this._name = value;
