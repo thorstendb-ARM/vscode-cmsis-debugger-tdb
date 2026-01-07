@@ -231,7 +231,7 @@ export class ScvdEvalInterface implements DataHost {
             case 'C': { // Address value as symbolic name with file context, if fails in hexadecimal format
                 const addr = typeof value === 'number' ? value : undefined;
                 if(addr === undefined) {
-                    return 'invalid address';
+                    return '';
                 }
                 const name = await this.debugTarget.findSymbolNameAtAddress(addr);
                 return this.formatSpecifier.format_C(name ?? addr);
@@ -239,7 +239,7 @@ export class ScvdEvalInterface implements DataHost {
             case 'S': { // Address value as symbolic name, if fails in hexadecimal format
                 const addr = typeof value === 'number' ? value : undefined;
                 if(addr === undefined) {
-                    return 'invalid address';
+                    return '';
                 }
                 const name = await this.debugTarget.findSymbolNameAtAddress(addr);
                 return this.formatSpecifier.format_S(name ?? addr);
@@ -266,7 +266,7 @@ export class ScvdEvalInterface implements DataHost {
                 } else if(value instanceof Uint8Array) {
                     return this.formatSpecifier.format_N(value);
                 }
-                return 'invalid address';
+                return '';
             }
             case 'M': {
                 return this.formatSpecifier.format_M(value);
@@ -284,7 +284,7 @@ export class ScvdEvalInterface implements DataHost {
                 } else if(value instanceof Uint8Array) {
                     return this.formatSpecifier.format_U(value);
                 }
-                return 'invalid address';
+                return '';
             }
             case '%': {
                 return this.formatSpecifier.format_percent();

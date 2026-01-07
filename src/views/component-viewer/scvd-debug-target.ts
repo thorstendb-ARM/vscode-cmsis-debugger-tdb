@@ -150,6 +150,9 @@ export class ScvdDebugTarget {
     }
 
     public readUint8ArrayStrFromPointer(address: number, bytesPerChar: number, maxLength: number): Promise<Uint8Array | undefined> {
+        if(address === 0) {
+            return Promise.resolve(undefined);
+        }
         return this.readMemory(address, maxLength * bytesPerChar);
     }
 
