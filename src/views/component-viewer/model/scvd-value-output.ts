@@ -45,6 +45,15 @@ export class ScvdValueOutput extends ScvdBase {
         this._expression.expression = value;
     }
 
+    public async getGuiName(): Promise<string | undefined> {
+        const expression = this.expression;
+        if(expression === undefined) {
+            return undefined;
+        }
+        await expression.evaluate();
+        return expression.getResultString();
+    }
+
     public async getGuiValue(): Promise<string | undefined> {
         const expression = this.expression;
         if(expression === undefined) {

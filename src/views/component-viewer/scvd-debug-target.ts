@@ -93,8 +93,8 @@ export class ScvdDebugTarget {
     }
 
     /**
- * Decode a (possibly unpadded) base64 string from GDB into bytes.
- */
+     * Decode a (possibly unpadded) base64 string from GDB into bytes.
+     */
     public decodeGdbData(data: string): Uint8Array {
         // Fix missing padding: base64 length must be a multiple of 4
         const padLength = (4 - (data.length % 4)) % 4;
@@ -133,27 +133,15 @@ export class ScvdDebugTarget {
             /*for(let i = 0; i < size; i++) {
                 byteArray[i] = dataAsString.charCodeAt(i);
             }*/
+            if(byteArray.length !== size) {
+                return byteArray;
+            }
             return byteArray;
         }
     }
 
-    public readUint8ArrayStrFromPointer(address: number, bytesPerChar: number, maxLength: number): Uint8Array | undefined {
-        return this.mock.getMockStringData(address, bytesPerChar, maxLength);
-    }
-
-
-
-    // -------------  Utility functions  -----------------
-    public convertMemoryToNumber(data: Uint8Array): number | undefined {
-        if(data === undefined || data.length === 0 || data.length > 4) {
-            return undefined;
-        }
-
-        let value = 0;
-        for(let i = 0; i < data.length; i++) {
-            value |= (data[i] << (i * 8)); // little-endian
-        }
-        return value;
+    public readUint8ArrayStrFromPointer(address: number, bytesPerChar: number, maxLength: number): Promise<Uint8Array | undefined> {
+        return this.readMemory(address, maxLength * bytesPerChar);
     }
 
     public calculateMemoryUsage(startAddress: number, size: number, FillPattern: number, MagicValue: number): number | undefined {

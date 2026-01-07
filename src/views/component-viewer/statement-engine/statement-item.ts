@@ -26,6 +26,7 @@ export class StatementItem extends StatementBase {
         super(item, parent);
     }
 
+    // TODO: add printChildren to guiTree, and take the furst to set name/value for the item parent
     public async executeStatement(executionContext: ExecutionContext, guiTree: ScvdGuiTree): Promise<void> {
         const conditionResult = await this.scvdItem.getConditionResult();
         if (conditionResult === false) {

@@ -53,7 +53,8 @@ export class ComponentViewerTargetAccess {
         } catch (error: unknown) {
             const errorMessage = (error as Error)?.message;
             logger.debug(`Session '${this._activeSession?.session.name}': Failed to read memory at address '${address}' - '${errorMessage}'`);
-            return errorMessage === 'custom request failed' ? 'No active session' : errorMessage;
+            //return errorMessage === 'custom request failed' ? 'No active session' : errorMessage;
+            return undefined;
         }
     }
 

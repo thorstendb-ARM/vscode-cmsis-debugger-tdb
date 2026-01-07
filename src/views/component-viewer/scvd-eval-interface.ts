@@ -195,7 +195,7 @@ export class ScvdEvalInterface implements DataHost {
         const base = container.current;
         const name = base?.name;
         if (name !== undefined) {
-            const count = this.memHost.getArrayElementCount(name);
+            const count = this.memHost.getArrayElementCount(name);  // this works only for <readlist>, must add for <read>
             return count;
         }
         return undefined;
@@ -246,7 +246,7 @@ export class ScvdEvalInterface implements DataHost {
             case 'N': {
                 if(typeof value === 'number' && Number.isInteger(value)) {
                     const bytesPerChar = 1;
-                    const data = this.debugTarget.readUint8ArrayStrFromPointer(value, bytesPerChar, 260-4);
+                    const data = await this.debugTarget.readUint8ArrayStrFromPointer(value, bytesPerChar, 260-4);
                     if(data !== undefined) {
                         return this.formatSpecifier.format_N(data);
                     }
@@ -267,7 +267,7 @@ export class ScvdEvalInterface implements DataHost {
             case 'U': {
                 if(typeof value === 'number' && Number.isInteger(value)) {
                     const bytesPerChar = 2;
-                    const data = this.debugTarget.readUint8ArrayStrFromPointer(value, bytesPerChar, 260-4);
+                    const data = await this.debugTarget.readUint8ArrayStrFromPointer(value, bytesPerChar, 260-4);
                     if(data !== undefined) {
                         return this.formatSpecifier.format_U(data);
                     }

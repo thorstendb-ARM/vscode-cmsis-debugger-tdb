@@ -44,9 +44,12 @@ export class ScvdPrintExpression extends ScvdExpression {
         return super.debug();
     }
 
+    public async getGuiName(): Promise<string | undefined> {
+        return this.getGuiName();
+    }
 
-
-
-
+    public async getGuiValue(): Promise<string | undefined> {
+        return this.getGuiValue();
+    }
 
 }
