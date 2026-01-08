@@ -27,7 +27,7 @@ jobs:
           egress-policy: audit
 
       - name: Checkout vscode-cmsis-debugger
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
 
       - name: Register Markdownlint Warning Matcher
         run: echo "::add-matcher::.github/markdownlint.json"
@@ -51,10 +51,10 @@ jobs:
         with:
           egress-policy: audit
 
-      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
 
       - name: Check Links
-        uses: tcort/github-action-markdown-link-check@a800ad5f1c35bf61987946fd31c15726a1c9f2ba # v1.1.0
+        uses: tcort/github-action-markdown-link-check@e7c7a18363c842693fadde5d41a3bd3573a7a225 # v1.1.2
         with:
           use-quiet-mode: 'no'
           use-verbose-mode: 'yes'

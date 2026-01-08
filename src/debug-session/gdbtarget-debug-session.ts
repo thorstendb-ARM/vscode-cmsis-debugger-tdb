@@ -19,20 +19,61 @@ import { DebugProtocol } from '@vscode/debugprotocol';
 import { logger } from '../logger';
 import { CbuildRunReader } from '../cbuild-run';
 import { PeriodicRefreshTimer } from './periodic-refresh-timer';
+import { OutputEventFilter } from './output-event-filter';
+import { URI } from 'vscode-uri';
+import { GDBTargetConfiguration } from '../debug-configuration';
+import path from 'path';
 
 /**
  * GDBTargetDebugSession - Wrapper class to provide session state/details
  */
 export class GDBTargetDebugSession {
     public readonly refreshTimer: PeriodicRefreshTimer<GDBTargetDebugSession>;
+    public readonly canAccessWhileRunning: boolean;
+    private capabilities: DebugProtocol.Capabilities | undefined;
     private _cbuildRun: CbuildRunReader|undefined;
     private _cbuildRunParsePromise: Promise<void>|undefined;
+    private outputEventFilter = new OutputEventFilter();
 
     constructor(public session: vscode.DebugSession) {
         this.refreshTimer = new PeriodicRefreshTimer(this);
-        if (this.session.configuration.type === 'gdbtarget') {
-            this.refreshTimer.enabled = this.session.configuration['auxiliaryGdb'] === true;
+        this.canAccessWhileRunning = this.session.configuration.type === 'gdbtarget' && this.session.configuration['auxiliaryGdb'] === true;
+        this.refreshTimer.enabled = this.canAccessWhileRunning;
+    }
+
+    /**
+     * Store capabilities for a session.
+     *
+     * @param capabilities Capabilities received from initialize response.
+     */
+    public setCapabilities(capabilities: DebugProtocol.Capabilities): void {
+        this.capabilities = capabilities;
+    }
+
+    /**
+     * Filters and renames specific output events, logs those events to 'Arm CMSIS Debugger' output channel.
+     *
+     * Renaming the events to 'cmsis-debugger-discarded' makes VS Code and loaded debug view
+     * extensions ignore them.
+     *
+     * @param event The output event to process in the filter.
+     */
+    public filterOutputEvent(event: DebugProtocol.OutputEvent): void {
+        if (this.outputEventFilter.filterOutputEvent(event)) {
+            // Log original event properties for potential diagnostics purposes.
+            logger.debug(`[Filtered output event]: category='${event.body.category}', seq='${event.seq}', session='${this.session.name}'`);
+            logger.debug(`\t'${event.body.output}'`);
+            event.event = 'cmsis-debugger-discarded'; // Discard the event by changing the event name
+            return;
         }
+    }
+
+    public getCbuildRunPath(): string | undefined {
+        const cbuildRunFile = (this.session.configuration as GDBTargetConfiguration)?.cmsis?.cbuildRunFile;
+        if (!cbuildRunFile) {
+            return undefined;
+        }
+        return path.normalize(URI.file(path.resolve(cbuildRunFile)).fsPath);
     }
 
     public async getCbuildRun(): Promise<CbuildRunReader|undefined> {
@@ -52,6 +93,17 @@ export class GDBTargetDebugSession {
         this._cbuildRunParsePromise = this._cbuildRun.parse(filePath);
         await this._cbuildRunParsePromise;
         this._cbuildRunParsePromise = undefined;
+    }
+
+    /**
+     * Check if first stop attempt for session is done by 'terminate' request.
+     * Notes:
+     *   'terminate' is in DAP terms softer than 'disconnect'
+     *   'attach' sessions are always stopped with 'disconnect'
+     * @returns true if first stop is by 'terminate' request, false otherwise
+     */
+    public canTerminate(): boolean {
+        return this.session.configuration.request === 'launch' && this.capabilities?.supportsTerminateRequest === true;
     }
 
     /** Function returns string only in case of failure */

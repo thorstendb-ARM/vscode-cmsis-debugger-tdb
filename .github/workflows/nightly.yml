@@ -1,26 +1,9 @@
-name: CI
+name: Nightly
 
 on:
-  push:
-    branches:
-      - main
-    paths-ignore:
-      - '**/*.md'
-      - '.github/workflows/markdown.yml'
-      - '.github/markdownlint.json'
-      - '.github/markdownlint.jsonc'
-  pull_request:
-    branches:
-      - main
-    paths-ignore:
-      - '**/*.md'
-      - '.github/workflows/markdown.yml'
-      - '.github/markdownlint.json'
-      - '.github/markdownlint.jsonc'
+  schedule:
+    - cron: '0 3 * * *'  # nightly at 03:00 UTC
   workflow_dispatch:
-  merge_group:
-  release:
-    types: [published]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -70,24 +53,10 @@ jobs:
       - name: Set version
         if: runner.os == 'Linux' && github.repository_owner == 'Open-CMSIS-Pack'
         run: |
-          case ${{ github.event_name }} in
-            release)
-              TAG="${{ github.event.release.tag_name }}"
-              yarn version --no-git-tag-version --new-version "${TAG#v}"
-              ;;
-            pull_request)
-              DESCRIBE=$(git describe --tags | grep -Eo 'v[0-9]+\.[0-9]+\.[0-9]+')
-              QUALIFIER=$(git describe --tags | grep -Eo '\-g[0-9a-f]+$')
-              yarn version -s --no-git-tag-version --new-version "${DESCRIBE#v}"
-              yarn version --no-git-tag-version --prepatch --preid "pr${{ github.event.number }}${QUALIFIER}"
-              ;;
-            *)
-              DESCRIBE=$(git describe --tags | grep -Eo 'v[0-9]+\.[0-9]+\.[0-9]+')
-              QUALIFIER=$(git describe --tags | grep -Eo '[0-9]+\-g[0-9a-f]+$')
-              yarn version -s --no-git-tag-version --new-version "${DESCRIBE#v}"
-              yarn version --no-git-tag-version --prepatch --preid "${{ github.ref_name }}${QUALIFIER}"
-              ;;
-          esac
+          DESCRIBE=$(git describe --tags | grep -Eo 'v[0-9]+\.[0-9]+\.[0-9]+')
+          QUALIFIER=$(git describe --tags | grep -Eo '[0-9]+\-g[0-9a-f]+$')
+          yarn version -s --no-git-tag-version --new-version "${DESCRIBE#v}"
+          yarn version --no-git-tag-version --prepatch --preid "${{ github.ref_name }}${QUALIFIER}"
           VERSION="$(jq -r ".version" < package.json)"
           sed -i "s/## Unreleased/## ${VERSION}/" CHANGELOG.md
           echo "Version is ${VERSION}"
@@ -129,17 +98,6 @@ jobs:
             ./dist
           retention-days: 1
 
-      - name: Commit changelog
-        if: false && github.event_name == 'release' && runner.os == 'Linux'
-        run: |
-          sed -i '3i ## Unreleased\n' CHANGELOG.md
-          git checkout main
-          git config user.name github-actions
-          git config user.email git@github.com
-          git add CHANGELOG.md
-          git commit -m "Update CHANGELOG.md after release [skip ci]"
-          git push
-
       - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         if: runner.os == 'Linux'
         with:
@@ -173,6 +131,7 @@ jobs:
           - darwin-arm64
     permissions:
       packages: read
+      actions: read # For fetching workflow artifacts with 'download-tools --nightly'
     steps:
       - name: Harden the runner (Audit all outbound calls)
         uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a # v2.13.1
@@ -196,10 +155,12 @@ jobs:
           name: dist
           path: .
 
-      - name: Download tools
+      - name: Download tools (Nightly Builds)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           yarn --frozen-lockfile --ignore-scripts --prefer-offline
-          yarn download-tools --target ${{ matrix.target }} --no-cache
+          yarn download-tools:nightly --target ${{ matrix.target }} --no-cache
 
       - name: Create vsix package
         run: |
@@ -211,49 +172,3 @@ jobs:
           name: vsix-package-${{ matrix.target }}
           path: ./*.vsix
           retention-days: 1
-
-  publish:
-    name: Publish release
-    runs-on: [ubuntu-latest]
-    if: github.event_name == 'release'
-    needs: package
-    permissions:
-      contents: write  # for softprops/action-gh-release to create a GitHub release
-    steps:
-      - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a # v2.13.1
-        with:
-          egress-policy: audit
-
-      - name: Download packages
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
-        with:
-          pattern: vsix-package-*
-
-      - name: Download coverage report
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
-        with:
-          pattern: test-coverage
-          path: test-coverage # Required for single-match patterns by actions/download-artifact >= v5
-
-      - name: Download test report
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
-        with:
-          pattern: test-report-linux
-          path: test-report-linux # Required for single-match patterns by actions/download-artifact >= v5
-
-      - name: Zip test report
-        run: zip -r test-report.zip *
-        working-directory: test-report-linux
-
-      - name: Zip test coverage
-        run: zip -r test-coverage.zip *
-        working-directory: test-coverage
-         
-      - name: Attach packages
-        uses: softprops/action-gh-release@5be0e66d93ac7ed76da52eca8bb058f665c3a5fe # v2.4.2
-        with:
-          files: |
-            **/*.vsix
-            test-coverage/test-coverage.zip
-            test-report-linux/test-report.zip
