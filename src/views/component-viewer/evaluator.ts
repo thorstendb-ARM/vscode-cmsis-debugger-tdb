@@ -164,6 +164,36 @@ export class EvalContext {
 
 const U64_MASK = (BigInt(1) << BigInt(64)) - BigInt(1);
 
+function snapshotContainer(container: RefContainer): RefContainer {
+    return {
+        base: container.base,
+        anchor: container.anchor,
+        offsetBytes: container.offsetBytes,
+        widthBytes: container.widthBytes,
+        current: container.current,
+        member: container.member,
+        index: container.index,
+        valueType: container.valueType,
+    };
+}
+
+function isReferenceNode(node: ASTNode): node is Identifier | MemberAccess | ArrayIndex {
+    return node.kind === 'Identifier' || node.kind === 'MemberAccess' || node.kind === 'ArrayIndex';
+}
+
+async function captureContainerForReference(node: ASTNode, ctx: EvalContext): Promise<RefContainer | undefined> {
+    if (!isReferenceNode(node)) {
+        return undefined;
+    }
+
+    let captured: RefContainer | undefined;
+    await withIsolatedContainer(ctx, async () => {
+        await mustRef(node, ctx, false);
+        captured = snapshotContainer(ctx.container);
+    });
+    return captured;
+}
+
 function truthy(x: any): boolean { return !!x; }
 
 function asNumber(x: any): number {
@@ -430,16 +460,7 @@ async function evalArgsForIntrinsic(name: string, rawArgs: ASTNode[], ctx: EvalC
 
 async function withIsolatedContainer<T>(ctx: EvalContext, fn: () => MaybePromise<T>): Promise<T> {
     const c = ctx.container;
-    const saved: RefContainer = {
-        base: c.base,
-        anchor: c.anchor,
-        offsetBytes: c.offsetBytes,
-        widthBytes: c.widthBytes,
-        current: c.current,
-        member: c.member,
-        index: c.index,
-        valueType: c.valueType,
-    };
+    const saved = snapshotContainer(c);
     try {
         return await fn();
     } finally {
@@ -641,16 +662,7 @@ async function lref(node: ASTNode, ctx: EvalContext): Promise<LValue> {
     await mustRef(node, ctx, true);
 
     // Snapshot the LHS write target so RHS evaluation can't clobber it
-    const target: RefContainer = {
-        base: ctx.container.base,
-        anchor: ctx.container.anchor,
-        offsetBytes: ctx.container.offsetBytes,
-        widthBytes: ctx.container.widthBytes,
-        current: ctx.container.current,
-        member: ctx.container.member,
-        index: ctx.container.index,
-        valueType: ctx.container.valueType,
-    };
+    const target = snapshotContainer(ctx.container);
 
     const valueType = await getScalarTypeForContainer(ctx, target);
 
@@ -692,16 +704,7 @@ async function evalOperandWithType(node: ASTNode, ctx: EvalContext): Promise<{ v
     const value = await withIsolatedContainer(ctx, async () => {
         const v = await evalNode(node, ctx);
 
-        const snapshot: RefContainer = {
-            base: ctx.container.base,
-            anchor: ctx.container.anchor,
-            offsetBytes: ctx.container.offsetBytes,
-            widthBytes: ctx.container.widthBytes,
-            current: ctx.container.current,
-            member: ctx.container.member,
-            index: ctx.container.index,
-            valueType: ctx.container.valueType,
-        };
+        const snapshot = snapshotContainer(ctx.container);
 
         capturedType = await getScalarTypeForContainer(ctx, snapshot);
         return v;
@@ -847,14 +850,19 @@ export async function evalNode(node: ASTNode, ctx: EvalContext): Promise<any> {
                 if (seg.kind === 'TextSegment') out += (seg as TextSegment).text;
                 else {
                     const fs = seg as FormatSegment;
-                    out += await formatValue(fs.spec, await evalNode(fs.value as any, ctx), ctx);
+                    const { value, container } = await evaluateFormatSegmentValue(fs, ctx);
+                    out += await formatValue(fs.spec, value, ctx, container);
                 }
             }
             return out;
         }
 
         case 'TextSegment':    return (node as TextSegment).text;
-        case 'FormatSegment':  return await formatValue((node as FormatSegment).spec, await evalNode((node as FormatSegment).value, ctx), ctx);
+        case 'FormatSegment': {
+            const seg = node as FormatSegment;
+            const { value, container } = await evaluateFormatSegmentValue(seg, ctx);
+            return await formatValue(seg.spec, value, ctx, container);
+        }
 
         case 'ErrorNode':      throw new Error('Cannot evaluate an ErrorNode.');
 
@@ -904,10 +912,23 @@ async function evalBinary(node: BinaryExpression, ctx: EvalContext): Promise<any
  * Printf helpers (callback-first, spec-agnostic with sensible fallbacks)
  * ============================================================================= */
 
-async function formatValue(spec: FormatSegment['spec'], v: any, ctx?: EvalContext): Promise<string> {
+async function evaluateFormatSegmentValue(segment: FormatSegment, ctx: EvalContext): Promise<{ value: any; container: RefContainer | undefined }> {
+    const value = await evalNode(segment.value, ctx);
+    let containerSnapshot = snapshotContainer(ctx.container);
+    if (!containerSnapshot.current) {
+        const recovered = await captureContainerForReference(segment.value, ctx);
+        if (recovered) {
+            containerSnapshot = recovered;
+        }
+    }
+    return { value, container: containerSnapshot };
+}
+
+async function formatValue(spec: FormatSegment['spec'], v: any, ctx?: EvalContext, containerOverride?: RefContainer): Promise<string> {
+    const formattingContainer = containerOverride ?? ctx?.container;
     // New: host-provided override
-    if (ctx?.data.formatPrintf) {
-        const override = await ctx.data.formatPrintf(spec, v, ctx.container);
+    if (ctx?.data.formatPrintf && formattingContainer) {
+        const override = await ctx.data.formatPrintf(spec, v, formattingContainer);
         if (typeof override === 'string') {
             return override;
         }

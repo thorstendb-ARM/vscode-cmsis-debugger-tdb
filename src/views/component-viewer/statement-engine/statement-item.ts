@@ -54,14 +54,12 @@ export class StatementItem extends StatementBase {
 
         if(guiName === undefined) {
             const guiChildren = [...childGuiTree.children];  // copy to keep iteration safe during detach
-            let printFound = false;
             for(const guiChild of guiChildren) {
                 if(guiChild.isPrint) {
                     const guiNamePrint = guiChild.getGuiName();
                     const guiValuePrint = guiChild.getGuiValue();
                     childGuiTree.setGuiName(guiNamePrint);
                     childGuiTree.setGuiValue(guiValuePrint);
-                    printFound = true;
                     break;  // use first found
                 }
             }
@@ -72,7 +70,7 @@ export class StatementItem extends StatementBase {
                 }
             }
 
-            if(!printFound && childGuiTree.children.length === 0) {
+            if(guiName === undefined && childGuiTree.children.length === 0) { // TODO: check other conditions to drop
                 childGuiTree.detach();  // drop empty items that never produced a GUI name/value
             }
         }
