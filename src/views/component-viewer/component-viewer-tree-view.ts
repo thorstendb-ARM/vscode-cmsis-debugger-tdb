@@ -93,7 +93,7 @@ export class ComponentViewerTreeDataProvider implements vscode.TreeDataProvider<
         this.refresh();
     }
     */
-    private async refresh(): Promise<void> {
+    private refresh(): void {
         this._onDidChangeTreeData.fire();
     }
 
@@ -105,13 +105,13 @@ export class ComponentViewerTreeDataProvider implements vscode.TreeDataProvider<
 
     public async showModelData() {
         await this.addRootObject();
-        await this.refresh();
+        this.refresh();
     }
 
     public async deleteModels() {
         this._scvdModel.scvdGuiOut = [];
         this._objectOutRoots = [];
-        await this.refresh();
+        this.refresh();
     }
 
     private async addRootObject(): Promise<void> {
@@ -121,6 +121,5 @@ export class ComponentViewerTreeDataProvider implements vscode.TreeDataProvider<
         this._scvdModel.scvdGuiOut.forEach(guiOut => {
             this._objectOutRoots.push(guiOut);
         });
-        this.refresh();
     }
 }
